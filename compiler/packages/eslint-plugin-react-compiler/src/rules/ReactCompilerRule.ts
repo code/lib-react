@@ -114,10 +114,7 @@ const rule: Rule.RuleModule = {
     }
 
     let babelAST;
-    if (
-      context.filename.endsWith(".tsx") ||
-      context.filename.endsWith(".ts")
-    ) {
+    if (filename.endsWith(".tsx") || filename.endsWith(".ts")) {
       try {
         const { parse: babelParse } = require("@babel/parser");
         babelAST = babelParse(sourceCode, {
@@ -127,12 +124,14 @@ const rule: Rule.RuleModule = {
         });
       } catch {}
     } else {
-      babelAST = HermesParser.parse(sourceCode, {
-        babel: true,
-        enableExperimentalComponentSyntax: true,
-        sourceFilename: filename,
-        sourceType: "module",
-      });
+      try {
+        babelAST = HermesParser.parse(sourceCode, {
+          babel: true,
+          enableExperimentalComponentSyntax: true,
+          sourceFilename: filename,
+          sourceType: "module",
+        });
+      } catch {}
     }
 
     if (babelAST != null) {
@@ -146,6 +145,8 @@ const rule: Rule.RuleModule = {
             [BabelPluginReactCompiler, options],
           ],
           sourceType: "module",
+          configFile: false,
+          babelrc: false,
         });
       } catch (err) {
         if (isReactCompilerError(err) && Array.isArray(err.details)) {

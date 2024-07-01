@@ -5,7 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import { parse, ParserPlugin } from "@babel/parser";
+import { parse as babelParse, ParserPlugin } from "@babel/parser";
+import * as HermesParser from "hermes-parser";
 import traverse, { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
 import {
@@ -42,8 +43,26 @@ import {
   PrintedCompilerPipelineValue,
 } from "./Output";
 
+function parseInput(input: string, language: "flow" | "typescript") {
+  // Extract the first line to quickly check for custom test directives
+  if (language === "flow") {
+    return HermesParser.parse(input, {
+      babel: true,
+      flow: "all",
+      sourceType: "module",
+      enableExperimentalComponentSyntax: true,
+    });
+  } else {
+    return babelParse(input, {
+      plugins: ["typescript", "jsx"],
+      sourceType: "module",
+    });
+  }
+}
+
 function parseFunctions(
   source: string,
+  language: "flow" | "typescript"
 ): Array<
   NodePath<
     t.FunctionDeclaration | t.ArrowFunctionExpression | t.FunctionExpression
@@ -55,20 +74,7 @@ function parseFunctions(
     >
   > = [];
   try {
-    const isFlow = source
-      .trim()
-      .split("\n", 1)[0]
-      .match(/\s*\/\/\s*\@flow\s*/);
-    let type_transform: ParserPlugin;
-    if (isFlow) {
-      type_transform = "flow";
-    } else {
-      type_transform = "typescript";
-    }
-    const ast = parse(source, {
-      plugins: [type_transform, "jsx"],
-      sourceType: "module",
-    });
+    const ast = parseInput(source, language);
     traverse(ast, {
       FunctionDeclaration(nodePath) {
         items.push(nodePath);
@@ -148,7 +154,7 @@ function isHookName(s: string): boolean {
 }
 
 function getReactFunctionType(
-  id: NodePath<t.Identifier | null | undefined>,
+  id: NodePath<t.Identifier | null | undefined>
 ): ReactFunctionType {
   if (id && id.node && id.isIdentifier()) {
     if (isHookName(id.node.name)) {
@@ -163,7 +169,7 @@ function getReactFunctionType(
   return "Other";
 }
 
-function compile(source: string): CompilerOutput {
+function compile(source: string): [CompilerOutput, "flow" | "typescript"] {
   const results = new Map<string, PrintedCompilerPipelineValue[]>();
   const error = new CompilerError();
   const upsert = (result: PrintedCompilerPipelineValue) => {
@@ -174,12 +180,18 @@ function compile(source: string): CompilerOutput {
       results.set(result.name, [result]);
     }
   };
+  let language: "flow" | "typescript";
+  if (source.match(/\@flow/)) {
+    language = "flow";
+  } else {
+    language = "typescript";
+  }
   try {
     // Extract the first line to quickly check for custom test directives
     const pragma = source.substring(0, source.indexOf("\n"));
     const config = parseConfigPragma(pragma);
 
-    for (const fn of parseFunctions(source)) {
+    for (const fn of parseFunctions(source, language)) {
       if (!fn.isFunctionDeclaration()) {
         error.pushErrorDetail(
           new CompilerErrorDetail({
@@ -189,7 +201,7 @@ function compile(source: string): CompilerOutput {
             severity: ErrorSeverity.Todo,
             loc: fn.node.loc ?? null,
             suggestions: null,
-          }),
+          })
         );
         continue;
       }
@@ -205,7 +217,7 @@ function compile(source: string): CompilerOutput {
         "_c",
         null,
         null,
-        null,
+        null
       )) {
         const fnName = fn.node.id?.name ?? null;
         switch (result.kind) {
@@ -274,14 +286,14 @@ function compile(source: string): CompilerOutput {
           reason: `Unexpected failure when transforming input! ${err}`,
           loc: null,
           suggestions: null,
-        }),
+        })
       );
     }
   }
   if (error.hasErrors()) {
-    return { kind: "err", results, error: error };
+    return [{ kind: "err", results, error: error }, language];
   }
-  return { kind: "ok", results };
+  return [{ kind: "ok", results }, language];
 }
 
 export default function Editor() {
@@ -289,9 +301,9 @@ export default function Editor() {
   const deferredStore = useDeferredValue(store);
   const dispatchStore = useStoreDispatch();
   const { enqueueSnackbar } = useSnackbar();
-  const compilerOutput = useMemo(
+  const [compilerOutput, language] = useMemo(
     () => compile(deferredStore.source),
-    [deferredStore.source],
+    [deferredStore.source]
   );
 
   useMountEffect(() => {
@@ -305,7 +317,7 @@ export default function Editor() {
         ...createMessage(
           "Bad URL - fell back to the default Playground.",
           MessageLevel.Info,
-          MessageSource.Playground,
+          MessageSource.Playground
         ),
       });
       mountStore = defaultStore;
@@ -319,11 +331,9 @@ export default function Editor() {
   return (
     <>
       <div className="relative flex basis top-14">
-        <div
-          style={{ minWidth: 650 }}
-          className={clsx("relative sm:basis-1/4")}
-        >
+        <div className={clsx("relative sm:basis-1/4")}>
           <Input
+            language={language}
             errors={
               compilerOutput.kind === "err" ? compilerOutput.error.details : []
             }

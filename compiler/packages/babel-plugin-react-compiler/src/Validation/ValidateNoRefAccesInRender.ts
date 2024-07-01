@@ -10,6 +10,7 @@ import {
   HIRFunction,
   IdentifierId,
   Place,
+  SourceLocation,
   isRefValueType,
   isUseRefType,
 } from "../HIR";
@@ -19,6 +20,7 @@ import {
   eachTerminalOperand,
 } from "../HIR/visitors";
 import { Err, Ok, Result } from "../Utils/Result";
+import { isEffectHook } from "./ValidateMemoizedEffectDependencies";
 
 /**
  * Validates that a function does not access a ref value during render. This includes a partial check
@@ -113,29 +115,72 @@ function validateNoRefAccessInRenderImpl(
           }
           break;
         }
+        case "MethodCall": {
+          if (!isEffectHook(instr.value.property.identifier)) {
+            for (const operand of eachInstructionValueOperand(instr.value)) {
+              validateNoRefAccess(
+                errors,
+                refAccessingFunctions,
+                operand,
+                operand.loc
+              );
+            }
+          }
+          break;
+        }
         case "CallExpression": {
           const callee = instr.value.callee;
-          // Report a more precise error when calling a local function that accesses a ref
-          if (refAccessingFunctions.has(callee.identifier.id)) {
-            errors.push({
-              severity: ErrorSeverity.InvalidReact,
-              reason:
-                "This function accesses a ref value (the `current` property), which may not be accessed during render. (https://react.dev/reference/react/useRef)",
-              loc: callee.loc,
-              description: `Function ${printPlace(callee)} accesses a ref`,
-              suggestions: null,
-            });
-          }
-          for (const operand of eachInstructionValueOperand(instr.value)) {
-            validateNoRefAccess(errors, refAccessingFunctions, operand);
+          const isUseEffect = isEffectHook(callee.identifier);
+          if (!isUseEffect) {
+            // Report a more precise error when calling a local function that accesses a ref
+            if (refAccessingFunctions.has(callee.identifier.id)) {
+              errors.push({
+                severity: ErrorSeverity.InvalidReact,
+                reason:
+                  "This function accesses a ref value (the `current` property), which may not be accessed during render. (https://react.dev/reference/react/useRef)",
+                loc: callee.loc,
+                description: `Function ${printPlace(callee)} accesses a ref`,
+                suggestions: null,
+              });
+            }
+            for (const operand of eachInstructionValueOperand(instr.value)) {
+              validateNoRefAccess(
+                errors,
+                refAccessingFunctions,
+                operand,
+                operand.loc
+              );
+            }
           }
           break;
         }
         case "ObjectExpression":
-        case "ArrayExpression":
-        case "MethodCall": {
+        case "ArrayExpression": {
           for (const operand of eachInstructionValueOperand(instr.value)) {
-            validateNoRefAccess(errors, refAccessingFunctions, operand);
+            validateNoRefAccess(
+              errors,
+              refAccessingFunctions,
+              operand,
+              operand.loc
+            );
+          }
+          break;
+        }
+        case "PropertyDelete":
+        case "PropertyStore":
+        case "ComputedDelete":
+        case "ComputedStore": {
+          validateNoRefAccess(
+            errors,
+            refAccessingFunctions,
+            instr.value.object,
+            instr.loc
+          );
+          for (const operand of eachInstructionValueOperand(instr.value)) {
+            if (operand === instr.value.object) {
+              continue;
+            }
+            validateNoRefValueAccess(errors, refAccessingFunctions, operand);
           }
           break;
         }
@@ -161,12 +206,12 @@ function validateNoRefAccessInRenderImpl(
 
 function validateNoRefValueAccess(
   errors: CompilerError,
-  unconditionalSetStateFunctions: Set<IdentifierId>,
+  refAccessingFunctions: Set<IdentifierId>,
   operand: Place
 ): void {
   if (
     isRefValueType(operand.identifier) ||
-    unconditionalSetStateFunctions.has(operand.identifier.id)
+    refAccessingFunctions.has(operand.identifier.id)
   ) {
     errors.push({
       severity: ErrorSeverity.InvalidReact,
@@ -181,20 +226,25 @@ function validateNoRefValueAccess(
 
 function validateNoRefAccess(
   errors: CompilerError,
-  unconditionalSetStateFunctions: Set<IdentifierId>,
-  operand: Place
+  refAccessingFunctions: Set<IdentifierId>,
+  operand: Place,
+  loc: SourceLocation
 ): void {
   if (
     isRefValueType(operand.identifier) ||
     isUseRefType(operand.identifier) ||
-    unconditionalSetStateFunctions.has(operand.identifier.id)
+    refAccessingFunctions.has(operand.identifier.id)
   ) {
     errors.push({
       severity: ErrorSeverity.InvalidReact,
       reason:
         "Ref values (the `current` property) may not be accessed during render. (https://react.dev/reference/react/useRef)",
-      loc: operand.loc,
-      description: `Cannot access ref value at ${printPlace(operand)}`,
+      loc: loc,
+      description:
+        operand.identifier.name !== null &&
+        operand.identifier.name.kind === "named"
+          ? `Cannot access ref value \`${operand.identifier.name.value}\``
+          : null,
       suggestions: null,
     });
   }

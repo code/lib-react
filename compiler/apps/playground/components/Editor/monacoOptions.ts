@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-
 import type { EditorProps } from "@monaco-editor/react";
 
 export const monacoOptions: Partial<EditorProps["options"]> = {
@@ -13,6 +12,7 @@ export const monacoOptions: Partial<EditorProps["options"]> = {
   padding: { top: 8 },
   scrollbar: {
     verticalScrollbarSize: 10,
+    alwaysConsumeMouseWheel: false,
   },
   minimap: {
     enabled: false,

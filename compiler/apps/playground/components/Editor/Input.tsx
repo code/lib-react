@@ -10,6 +10,7 @@ import { CompilerErrorDetail } from "babel-plugin-react-compiler/src";
 import invariant from "invariant";
 import type { editor } from "monaco-editor";
 import * as monaco from "monaco-editor";
+import { Resizable } from "re-resizable";
 import { useEffect, useState } from "react";
 import { renderReactCompilerMarkers } from "../../lib/reactCompilerMonacoDiagnostics";
 import { useStore, useStoreDispatch } from "../StoreContext";
@@ -22,9 +23,10 @@ loader.config({ monaco });
 
 type Props = {
   errors: CompilerErrorDetail[];
+  language: "flow" | "typescript";
 };
 
-export default function Input({ errors }: Props) {
+export default function Input({ errors, language }: Props) {
   const [monaco, setMonaco] = useState<Monaco | null>(null);
   const store = useStore();
   const dispatchStore = useStoreDispatch();
@@ -41,6 +43,35 @@ export default function Input({ errors }: Props) {
     model.updateOptions({ tabSize: 2 });
   }, [monaco, errors]);
 
+  const flowDiagnosticDisable = [
+    7028 /* unused label */, 6133 /* var declared but not read */,
+  ];
+  useEffect(() => {
+    // Ignore "can only be used in TypeScript files." errors, since
+    // we want to support syntax highlighting for Flow (*.js) files
+    // and Flow is not a built-in language.
+    if (!monaco) return;
+    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+      diagnosticCodesToIgnore: [
+        8002,
+        8003,
+        8004,
+        8005,
+        8006,
+        8008,
+        8009,
+        8010,
+        8011,
+        8012,
+        8013,
+        ...(language === "flow" ? flowDiagnosticDisable : []),
+      ],
+      noSemanticValidation: true,
+      // Monaco can't validate Flow component syntax
+      noSyntaxValidation: language === "flow",
+    });
+  }, [monaco, language]);
+
   const handleChange = (value: string | undefined) => {
     if (!value) return;
 
@@ -55,17 +86,6 @@ export default function Input({ errors }: Props) {
   const handleMount = (_: editor.IStandaloneCodeEditor, monaco: Monaco) => {
     setMonaco(monaco);
 
-    // Ignore "can only be used in TypeScript files." errors, since
-    // we want to support syntax highlighting for Flow (*.js) files
-    // and Flow is not a built-in language.
-    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
-      diagnosticCodesToIgnore: [
-        8002, 8003, 8004, 8005, 8006, 8008, 8009, 8010, 8011, 8012, 8013,
-      ],
-      noSemanticValidation: true,
-      noSyntaxValidation: false,
-    });
-
     const tscOptions = {
       allowNonTsExtensions: true,
       target: monaco.languages.typescript.ScriptTarget.ES2015,
@@ -75,7 +95,7 @@ export default function Input({ errors }: Props) {
       allowSyntheticDefaultImports: true,
     };
     monaco.languages.typescript.javascriptDefaults.setCompilerOptions(
-      tscOptions,
+      tscOptions
     );
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
       ...tscOptions,
@@ -102,9 +122,13 @@ export default function Input({ errors }: Props) {
 
   return (
     <div className="relative flex flex-col flex-none border-r border-gray-200">
-      {/* Restrict MonacoEditor's height, since the config autoLayout:true
-          will grow the editor to fit within parent element */}
-      <div className="w-full" style={{ height: "calc(100vh - 3.5rem)" }}>
+      <Resizable
+        minWidth={650}
+        enable={{ right: true }}
+        // Restrict MonacoEditor's height, since the config autoLayout:true
+        // will grow the editor to fit within parent element
+        className="!h-[calc(100vh_-_3.5rem)]"
+      >
         <MonacoEditor
           path={"index.js"}
           // .js and .jsx files are specified to be TS so that Monaco can actually
@@ -116,7 +140,7 @@ export default function Input({ errors }: Props) {
           onChange={handleChange}
           options={monacoOptions}
         />
-      </div>
+      </Resizable>
     </div>
   );
 }
