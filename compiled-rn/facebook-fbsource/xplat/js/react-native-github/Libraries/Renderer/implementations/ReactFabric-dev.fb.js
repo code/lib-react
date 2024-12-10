@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<797a9030262014443dae5b782164aed3>>
+ * @generated SignedSource<<4c06b816ea6cab18df01b17b4b4d41b8>>
  */
 
 "use strict";
@@ -14420,12 +14420,6 @@ __DEV__ &&
       enableFabricCompleteRootInCommitPhase &&
         completeRoot(container, newChildren);
     }
-    function getInstanceFromNode(node) {
-      return null != node.canonical &&
-        null != node.canonical.internalInstanceHandle
-        ? node.canonical.internalInstanceHandle
-        : node;
-    }
     function nativeOnUncaughtError(error, errorInfo) {
       !1 !==
         ReactNativePrivateInterface.ReactFiberErrorDialog.showErrorDialog({
@@ -17330,7 +17324,12 @@ __DEV__ &&
       function (instance) {
         return instance.canonical.currentProps;
       },
-      getInstanceFromNode,
+      function (node) {
+        return null != node.canonical &&
+          null != node.canonical.internalInstanceHandle
+          ? node.canonical.internalInstanceHandle
+          : node;
+      },
       function (fiber) {
         fiber = getPublicInstance(fiber.stateNode);
         if (null == fiber)
@@ -17380,11 +17379,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.0.0-native-fb-de68d2f4-20241204",
+        version: "19.0.0-native-fb-4a8fc0f9-20241210",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        findFiberByHostInstance: getInstanceFromNode,
-        reconcilerVersion: "19.0.0-native-fb-de68d2f4-20241204"
+        reconcilerVersion: "19.0.0-native-fb-4a8fc0f9-20241210"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
