@@ -11138,12 +11138,6 @@ module.exports = function ($$$config) {
               }),
               key
             );
-        case REACT_DEBUG_TRACING_MODE_TYPE:
-          if (enableDebugTracing) {
-            fiberTag = 8;
-            mode |= 4;
-            break;
-          }
         default:
           if ("object" === typeof type && null !== type)
             switch (type.$$typeof) {
@@ -11415,7 +11409,6 @@ module.exports = function ($$$config) {
       dynamicFeatureFlags.disableDefaultPropsExceptForClasses,
     disableSchedulerTimeoutInWorkLoop =
       dynamicFeatureFlags.disableSchedulerTimeoutInWorkLoop,
-    enableDebugTracing = dynamicFeatureFlags.enableDebugTracing,
     enableDeferRootSchedulingToMicrotask =
       dynamicFeatureFlags.enableDeferRootSchedulingToMicrotask,
     enableDO_NOT_USE_disableStrictPassiveEffect =
@@ -11455,7 +11448,6 @@ module.exports = function ($$$config) {
     REACT_MEMO_TYPE = Symbol.for("react.memo"),
     REACT_LAZY_TYPE = Symbol.for("react.lazy"),
     REACT_SCOPE_TYPE = Symbol.for("react.scope"),
-    REACT_DEBUG_TRACING_MODE_TYPE = Symbol.for("react.debug_trace_mode"),
     REACT_OFFSCREEN_TYPE = Symbol.for("react.offscreen"),
     REACT_LEGACY_HIDDEN_TYPE = Symbol.for("react.legacy_hidden"),
     REACT_TRACING_MARKER_TYPE = Symbol.for("react.tracing_marker"),
@@ -11696,9 +11688,9 @@ module.exports = function ($$$config) {
       useFormState: throwInvalidHookError,
       useActionState: throwInvalidHookError,
       useOptimistic: throwInvalidHookError,
-      useMemoCache: throwInvalidHookError
+      useMemoCache: throwInvalidHookError,
+      useCacheRefresh: throwInvalidHookError
     };
-  ContextOnlyDispatcher.useCacheRefresh = throwInvalidHookError;
   ContextOnlyDispatcher.useEffectEvent = throwInvalidHookError;
   enableUseResourceEffectHook &&
     (ContextOnlyDispatcher.useResourceEffect = throwInvalidHookError);
@@ -11957,9 +11949,9 @@ module.exports = function ($$$config) {
       var hook = updateWorkInProgressHook();
       return updateOptimisticImpl(hook, currentHook, passthrough, reducer);
     },
-    useMemoCache: useMemoCache
+    useMemoCache: useMemoCache,
+    useCacheRefresh: updateRefresh
   };
-  HooksDispatcherOnUpdate.useCacheRefresh = updateRefresh;
   HooksDispatcherOnUpdate.useEffectEvent = updateEvent;
   enableUseResourceEffectHook &&
     (HooksDispatcherOnUpdate.useResourceEffect = updateResourceEffect);
@@ -12014,9 +12006,9 @@ module.exports = function ($$$config) {
       hook.baseState = passthrough;
       return [passthrough, hook.queue.dispatch];
     },
-    useMemoCache: useMemoCache
+    useMemoCache: useMemoCache,
+    useCacheRefresh: updateRefresh
   };
-  HooksDispatcherOnRerender.useCacheRefresh = updateRefresh;
   HooksDispatcherOnRerender.useEffectEvent = updateEvent;
   enableUseResourceEffectHook &&
     (HooksDispatcherOnRerender.useResourceEffect = updateResourceEffect);
@@ -12574,7 +12566,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.1.0-www-modern-c80b336d-20241214"
+      reconcilerVersion: "19.1.0-www-modern-e06c72fc-20241215"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);
