@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<3ed1e5a2dc7c6685f99dc6ec77a10c29>>
+ * @generated SignedSource<<a517df411392761c0275e6bd65df4cb2>>
  */
 
 "use strict";
@@ -13391,7 +13391,6 @@ __DEV__ &&
       REACT_MEMO_TYPE = Symbol.for("react.memo"),
       REACT_LAZY_TYPE = Symbol.for("react.lazy");
     Symbol.for("react.scope");
-    Symbol.for("react.debug_trace_mode");
     var REACT_OFFSCREEN_TYPE = Symbol.for("react.offscreen");
     Symbol.for("react.legacy_hidden");
     Symbol.for("react.tracing_marker");
@@ -13777,9 +13776,9 @@ __DEV__ &&
         useFormState: throwInvalidHookError,
         useActionState: throwInvalidHookError,
         useOptimistic: throwInvalidHookError,
-        useMemoCache: throwInvalidHookError
+        useMemoCache: throwInvalidHookError,
+        useCacheRefresh: throwInvalidHookError
       };
-    ContextOnlyDispatcher.useCacheRefresh = throwInvalidHookError;
     ContextOnlyDispatcher.useResourceEffect = throwInvalidHookError;
     var HooksDispatcherOnMountInDEV = null,
       HooksDispatcherOnMountWithHookTypesInDEV = null,
@@ -15526,10 +15525,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.1.0-native-fb-c80b336d-20241214",
+        version: "19.1.0-native-fb-e06c72fc-20241215",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.1.0-native-fb-c80b336d-20241214"
+        reconcilerVersion: "19.1.0-native-fb-e06c72fc-20241215"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -15674,5 +15673,5 @@ __DEV__ &&
             flushSyncWorkAcrossRoots_impl(0, !0));
       }
     };
-    exports.version = "19.1.0-native-fb-c80b336d-20241214";
+    exports.version = "19.1.0-native-fb-e06c72fc-20241215";
   })();

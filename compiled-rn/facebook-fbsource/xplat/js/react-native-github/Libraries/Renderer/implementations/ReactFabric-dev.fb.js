@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<7cfe6b5eeba77e7b7a5664e43eaf04ae>>
+ * @generated SignedSource<<be59e8a926aa913f5da56f788dafbb21>>
  */
 
 "use strict";
@@ -14617,7 +14617,6 @@ __DEV__ &&
       REACT_MEMO_TYPE = Symbol.for("react.memo"),
       REACT_LAZY_TYPE = Symbol.for("react.lazy");
     Symbol.for("react.scope");
-    Symbol.for("react.debug_trace_mode");
     var REACT_OFFSCREEN_TYPE = Symbol.for("react.offscreen");
     Symbol.for("react.legacy_hidden");
     Symbol.for("react.tracing_marker");
@@ -15615,9 +15614,9 @@ __DEV__ &&
         useFormState: throwInvalidHookError,
         useActionState: throwInvalidHookError,
         useOptimistic: throwInvalidHookError,
-        useMemoCache: throwInvalidHookError
+        useMemoCache: throwInvalidHookError,
+        useCacheRefresh: throwInvalidHookError
       };
-    ContextOnlyDispatcher.useCacheRefresh = throwInvalidHookError;
     enableUseResourceEffectHook &&
       (ContextOnlyDispatcher.useResourceEffect = throwInvalidHookError);
     var HooksDispatcherOnMountInDEV = null,
@@ -17469,10 +17468,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.1.0-native-fb-c80b336d-20241214",
+        version: "19.1.0-native-fb-e06c72fc-20241215",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.1.0-native-fb-c80b336d-20241214"
+        reconcilerVersion: "19.1.0-native-fb-e06c72fc-20241215"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
