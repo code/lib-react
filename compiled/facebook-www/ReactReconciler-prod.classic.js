@@ -4942,7 +4942,7 @@ module.exports = function ($$$config) {
         )
           return (
             isSuspenseInstanceFallback(nextInstance)
-              ? (workInProgress.lanes = 16)
+              ? (workInProgress.lanes = 32)
               : (workInProgress.lanes = 536870912),
             null
           );
@@ -12855,7 +12855,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.1.0-www-classic-9e2c2331-20241214"
+      reconcilerVersion: "19.1.0-www-classic-c80b336d-20241214"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);

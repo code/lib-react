@@ -7546,7 +7546,7 @@ __DEV__ &&
           )
             return (
               isSuspenseInstanceFallback(nextInstance)
-                ? (workInProgress.lanes = 16)
+                ? (workInProgress.lanes = 32)
                 : (workInProgress.lanes = 536870912),
               null
             );
@@ -19127,7 +19127,7 @@ __DEV__ &&
         version: rendererVersion,
         rendererPackageName: rendererPackageName,
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.1.0-www-modern-9e2c2331-20241214"
+        reconcilerVersion: "19.1.0-www-modern-c80b336d-20241214"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
