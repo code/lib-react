@@ -1276,8 +1276,7 @@ module.exports = function ($$$config) {
         : (lastScheduledRoot = lastScheduledRoot.next = root));
     mightHavePendingSyncWork = !0;
     didScheduleMicrotask ||
-      ((didScheduleMicrotask = !0),
-      scheduleImmediateTask(processRootScheduleInMicrotask));
+      ((didScheduleMicrotask = !0), scheduleImmediateRootScheduleTask());
     enableDeferRootSchedulingToMicrotask ||
       scheduleTaskForRootDuringMicrotask(root, now());
   }
@@ -1323,6 +1322,9 @@ module.exports = function ($$$config) {
       } while (didPerformSomeWork);
       isFlushingWork = !1;
     }
+  }
+  function processRootScheduleInImmediateTask() {
+    processRootScheduleInMicrotask();
   }
   function processRootScheduleInMicrotask() {
     mightHavePendingSyncWork = didScheduleMicrotask = !1;
@@ -1452,14 +1454,20 @@ module.exports = function ($$$config) {
     if (flushPassiveEffects()) return null;
     performWorkOnRoot(root, lanes, !0);
   }
-  function scheduleImmediateTask(cb) {
+  function scheduleImmediateRootScheduleTask() {
     supportsMicrotasks
       ? scheduleMicrotask(function () {
           0 !== (executionContext & 6)
-            ? scheduleCallback$3(ImmediatePriority, cb)
-            : cb();
+            ? scheduleCallback$3(
+                ImmediatePriority,
+                processRootScheduleInImmediateTask
+              )
+            : processRootScheduleInMicrotask();
         })
-      : scheduleCallback$3(ImmediatePriority, cb);
+      : scheduleCallback$3(
+          ImmediatePriority,
+          processRootScheduleInImmediateTask
+        );
   }
   function requestTransitionLane() {
     0 === currentEventTransitionLane &&
@@ -9103,6 +9111,14 @@ module.exports = function ($$$config) {
         );
         flags & 2048 && commitHookEffectListMount(9, finishedWork);
         break;
+      case 1:
+        recursivelyTraversePassiveMountEffects(
+          finishedRoot,
+          finishedWork,
+          committedLanes,
+          committedTransitions
+        );
+        break;
       case 3:
         recursivelyTraversePassiveMountEffects(
           finishedRoot,
@@ -10553,7 +10569,7 @@ module.exports = function ($$$config) {
               throw Error(formatProdErrorMessage(462));
           }
         }
-        workLoopConcurrent();
+        workLoopConcurrentByScheduler();
         break;
       } catch (thrownValue$176) {
         handleThrow(root, thrownValue$176);
@@ -10569,7 +10585,7 @@ module.exports = function ($$$config) {
     finishQueueingConcurrentUpdates();
     return workInProgressRootExitStatus;
   }
-  function workLoopConcurrent() {
+  function workLoopConcurrentByScheduler() {
     for (; null !== workInProgress && !shouldYield(); )
       performUnitOfWork(workInProgress);
   }
@@ -12805,7 +12821,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.1.0-www-classic-99471c02-20241220"
+      reconcilerVersion: "19.1.0-www-classic-0de1233f-20250102"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);
@@ -12823,7 +12839,7 @@ module.exports = function ($$$config) {
     return internals;
   };
   exports.isAlreadyRendering = function () {
-    return !1;
+    return 0 !== (executionContext & 6);
   };
   exports.observeVisibleRects = function (
     hostRoot,
