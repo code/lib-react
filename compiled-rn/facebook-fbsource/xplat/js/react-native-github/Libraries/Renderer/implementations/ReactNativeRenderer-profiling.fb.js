@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<94488a1d0687b6e3d256d108b9a29f39>>
+ * @generated SignedSource<<acc24c63d077d9351ffefbe37829e1fb>>
  */
 
 "use strict";
@@ -2875,7 +2875,7 @@ function ensureRootIsScheduled(root) {
   mightHavePendingSyncWork = !0;
   didScheduleMicrotask ||
     ((didScheduleMicrotask = !0),
-    scheduleCallback$3(ImmediatePriority, processRootScheduleInMicrotask));
+    scheduleCallback$3(ImmediatePriority, processRootScheduleInImmediateTask));
 }
 function flushSyncWorkAcrossRoots_impl(syncTransitionLanes, onlyLegacy) {
   if (!isFlushingWork && mightHavePendingSyncWork) {
@@ -2920,7 +2920,7 @@ function flushSyncWorkAcrossRoots_impl(syncTransitionLanes, onlyLegacy) {
     isFlushingWork = !1;
   }
 }
-function processRootScheduleInMicrotask() {
+function processRootScheduleInImmediateTask() {
   mightHavePendingSyncWork = didScheduleMicrotask = !1;
   0 !== currentEventTransitionLane && (currentEventTransitionLane = 0);
   for (
@@ -9813,6 +9813,14 @@ function commitPassiveMountOnFiber(
       );
       flags & 2048 && commitHookPassiveMountEffects(finishedWork, 9);
       break;
+    case 1:
+      recursivelyTraversePassiveMountEffects(
+        finishedRoot,
+        finishedWork,
+        committedLanes,
+        committedTransitions
+      );
+      break;
     case 3:
       var prevEffectDuration = pushNestedEffectDurations();
       recursivelyTraversePassiveMountEffects(
@@ -10958,7 +10966,7 @@ function renderRootConcurrent(root, lanes) {
           default:
             throw Error("Unexpected SuspendedReason. This is a bug in React.");
         }
-      workLoopConcurrent();
+      workLoopConcurrentByScheduler();
       break;
     } catch (thrownValue$155) {
       handleThrow(root, thrownValue$155);
@@ -10981,7 +10989,7 @@ function renderRootConcurrent(root, lanes) {
   finishQueueingConcurrentUpdates();
   return workInProgressRootExitStatus;
 }
-function workLoopConcurrent() {
+function workLoopConcurrentByScheduler() {
   for (; null !== workInProgress && !shouldYield(); )
     performUnitOfWork(workInProgress);
 }
@@ -11905,11 +11913,11 @@ function updateContainer(element, container, parentComponent, callback) {
   return lane;
 }
 var isomorphicReactPackageVersion = React.version;
-if ("19.1.0-native-fb-99471c02-20241220" !== isomorphicReactPackageVersion)
+if ("19.1.0-native-fb-0de1233f-20250102" !== isomorphicReactPackageVersion)
   throw Error(
     'Incompatible React versions: The "react" and "react-native-renderer" packages must have the exact same version. Instead got:\n  - react:                  ' +
       (isomorphicReactPackageVersion +
-        "\n  - react-native-renderer:  19.1.0-native-fb-99471c02-20241220\nLearn more: https://react.dev/warnings/version-mismatch")
+        "\n  - react-native-renderer:  19.1.0-native-fb-0de1233f-20250102\nLearn more: https://react.dev/warnings/version-mismatch")
   );
 if (
   "function" !==
@@ -11956,16 +11964,16 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1369 = {
+  internals$jscomp$inline_1375 = {
     bundleType: 0,
-    version: "19.1.0-native-fb-99471c02-20241220",
+    version: "19.1.0-native-fb-0de1233f-20250102",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.1.0-native-fb-99471c02-20241220"
+    reconcilerVersion: "19.1.0-native-fb-0de1233f-20250102"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1369.rendererConfig = extraDevToolsConfig);
-internals$jscomp$inline_1369.getLaneLabelMap = function () {
+  (internals$jscomp$inline_1375.rendererConfig = extraDevToolsConfig);
+internals$jscomp$inline_1375.getLaneLabelMap = function () {
   for (
     var map = new Map(), lane = 1, index$159 = 0;
     31 > index$159;
@@ -11977,20 +11985,20 @@ internals$jscomp$inline_1369.getLaneLabelMap = function () {
   }
   return map;
 };
-internals$jscomp$inline_1369.injectProfilingHooks = function (profilingHooks) {
+internals$jscomp$inline_1375.injectProfilingHooks = function (profilingHooks) {
   injectedProfilingHooks = profilingHooks;
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1672 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1678 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1672.isDisabled &&
-    hook$jscomp$inline_1672.supportsFiber
+    !hook$jscomp$inline_1678.isDisabled &&
+    hook$jscomp$inline_1678.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1672.inject(
-        internals$jscomp$inline_1369
+      (rendererID = hook$jscomp$inline_1678.inject(
+        internals$jscomp$inline_1375
       )),
-        (injectedHook = hook$jscomp$inline_1672);
+        (injectedHook = hook$jscomp$inline_1678);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {
