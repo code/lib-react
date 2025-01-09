@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<66aaac098bd82e791df9bf041cda7c18>>
+ * @generated SignedSource<<716d4b17d7f541d5c7b4cb2073dd2225>>
  */
 
 "use strict";
@@ -13430,8 +13430,8 @@ __DEV__ &&
         }
         pendingEffectsStatus = PENDING_MUTATION_PHASE;
         flushMutationEffects();
-        pendingEffectsStatus = PENDING_LAYOUT_PHASE;
         flushLayoutEffects();
+        flushSpawnedWork();
       }
     }
     function flushMutationEffects() {
@@ -13463,7 +13463,7 @@ __DEV__ &&
           }
         }
         root.current = finishedWork;
-        pendingEffectsStatus = PENDING_AFTER_MUTATION_PHASE;
+        pendingEffectsStatus = PENDING_LAYOUT_PHASE;
       }
     }
     function flushLayoutEffects() {
@@ -13472,7 +13472,6 @@ __DEV__ &&
         var root = pendingEffectsRoot,
           finishedWork = pendingFinishedWork,
           lanes = pendingEffectsLanes,
-          recoverableErrors = pendingRecoverableErrors,
           rootHasLayoutEffect = 0 !== (finishedWork.flags & 8772);
         if (0 !== (finishedWork.subtreeFlags & 8772) || rootHasLayoutEffect) {
           rootHasLayoutEffect = ReactSharedInternals.T;
@@ -13504,21 +13503,34 @@ __DEV__ &&
               (ReactSharedInternals.T = rootHasLayoutEffect);
           }
         }
+        pendingEffectsStatus = PENDING_AFTER_MUTATION_PHASE;
+      }
+    }
+    function flushSpawnedWork() {
+      if (
+        pendingEffectsStatus === PENDING_SPAWNED_WORK ||
+        pendingEffectsStatus === PENDING_AFTER_MUTATION_PHASE
+      ) {
+        pendingEffectsStatus = NO_PENDING_EFFECTS;
         requestPaint();
-        (rootHasLayoutEffect =
-          0 !== (finishedWork.subtreeFlags & 10256) ||
-          0 !== (finishedWork.flags & 10256))
+        var root = pendingEffectsRoot,
+          finishedWork = pendingFinishedWork,
+          lanes = pendingEffectsLanes,
+          recoverableErrors = pendingRecoverableErrors,
+          rootDidHavePassiveEffects =
+            0 !== (finishedWork.subtreeFlags & 10256) ||
+            0 !== (finishedWork.flags & 10256);
+        rootDidHavePassiveEffects
           ? (pendingEffectsStatus = PENDING_PASSIVE_PHASE)
           : ((pendingEffectsStatus = NO_PENDING_EFFECTS),
             (pendingEffectsRoot = null),
             releaseRootPooledCache(root, root.pendingLanes),
             (nestedPassiveUpdateCount = 0),
             (rootWithPassiveNestedUpdates = null));
-        previousPriority = root.pendingLanes;
-        0 === previousPriority &&
-          (legacyErrorBoundariesThatAlreadyFailed = null);
-        rootHasLayoutEffect || commitDoubleInvokeEffectsInDEV(root, !1);
-        rootHasLayoutEffect = lanesToEventPriority(lanes);
+        var remainingLanes = root.pendingLanes;
+        0 === remainingLanes && (legacyErrorBoundariesThatAlreadyFailed = null);
+        rootDidHavePassiveEffects || commitDoubleInvokeEffectsInDEV(root, !1);
+        rootDidHavePassiveEffects = lanesToEventPriority(lanes);
         finishedWork = finishedWork.stateNode;
         if (
           injectedHook &&
@@ -13526,7 +13538,7 @@ __DEV__ &&
         )
           try {
             var didError = 128 === (finishedWork.current.flags & 128);
-            switch (rootHasLayoutEffect) {
+            switch (rootDidHavePassiveEffects) {
               case DiscreteEventPriority:
                 var schedulerPriority = ImmediatePriority;
                 break;
@@ -13587,8 +13599,8 @@ __DEV__ &&
           0 !== root.tag &&
           flushPendingEffects();
         ensureRootIsScheduled(root);
-        previousPriority = root.pendingLanes;
-        0 !== (lanes & 4194218) && 0 !== (previousPriority & 42)
+        remainingLanes = root.pendingLanes;
+        0 !== (lanes & 4194218) && 0 !== (remainingLanes & 42)
           ? ((nestedUpdateScheduled = !0),
             root === rootWithNestedUpdates
               ? nestedUpdateCount++
@@ -13618,9 +13630,7 @@ __DEV__ &&
     function flushPendingEffects(wasDelayedCommit) {
       flushMutationEffects();
       flushLayoutEffects();
-      pendingEffectsStatus === PENDING_AFTER_MUTATION_PHASE &&
-        ((pendingEffectsStatus = NO_PENDING_EFFECTS),
-        (pendingEffectsStatus = PENDING_LAYOUT_PHASE));
+      flushSpawnedWork();
       return flushPassiveEffects(wasDelayedCommit);
     }
     function flushPassiveEffects() {
@@ -17599,9 +17609,10 @@ __DEV__ &&
       THROTTLED_COMMIT = 2,
       NO_PENDING_EFFECTS = 0,
       PENDING_MUTATION_PHASE = 1,
-      PENDING_AFTER_MUTATION_PHASE = 2,
-      PENDING_LAYOUT_PHASE = 3,
-      PENDING_PASSIVE_PHASE = 4,
+      PENDING_LAYOUT_PHASE = 2,
+      PENDING_AFTER_MUTATION_PHASE = 3,
+      PENDING_SPAWNED_WORK = 4,
+      PENDING_PASSIVE_PHASE = 5,
       pendingEffectsStatus = 0,
       pendingEffectsRoot = null,
       pendingFinishedWork = null,
@@ -17709,11 +17720,11 @@ __DEV__ &&
       shouldSuspendImpl = newShouldSuspendImpl;
     };
     var isomorphicReactPackageVersion = React.version;
-    if ("19.1.0-native-fb-98418e89-20250108" !== isomorphicReactPackageVersion)
+    if ("19.1.0-native-fb-fd9cfa41-20250108" !== isomorphicReactPackageVersion)
       throw Error(
         'Incompatible React versions: The "react" and "react-native-renderer" packages must have the exact same version. Instead got:\n  - react:                  ' +
           (isomorphicReactPackageVersion +
-            "\n  - react-native-renderer:  19.1.0-native-fb-98418e89-20250108\nLearn more: https://react.dev/warnings/version-mismatch")
+            "\n  - react-native-renderer:  19.1.0-native-fb-fd9cfa41-20250108\nLearn more: https://react.dev/warnings/version-mismatch")
       );
     if (
       "function" !==
@@ -17739,10 +17750,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.1.0-native-fb-98418e89-20250108",
+        version: "19.1.0-native-fb-fd9cfa41-20250108",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.1.0-native-fb-98418e89-20250108"
+        reconcilerVersion: "19.1.0-native-fb-fd9cfa41-20250108"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
