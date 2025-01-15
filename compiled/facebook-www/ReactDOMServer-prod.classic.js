@@ -81,6 +81,7 @@ var dynamicFeatureFlags = require("ReactFeatureFlags"),
   REACT_OFFSCREEN_TYPE = Symbol.for("react.offscreen"),
   REACT_LEGACY_HIDDEN_TYPE = Symbol.for("react.legacy_hidden"),
   REACT_TRACING_MARKER_TYPE = Symbol.for("react.tracing_marker"),
+  REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel"),
   REACT_VIEW_TRANSITION_TYPE = Symbol.for("react.view_transition"),
   MAYBE_ITERATOR_SYMBOL = Symbol.iterator,
   isArrayImpl = Array.isArray;
@@ -3264,6 +3265,9 @@ function unwrapThenable(thenable) {
   null === thenableState && (thenableState = []);
   return trackUsedThenable(thenableState, thenable, index);
 }
+function unsupportedRefresh() {
+  throw Error(formatProdErrorMessage(393));
+}
 function noop$1() {}
 var HooksDispatcher = {
   readContext: function (context) {
@@ -3342,6 +3346,14 @@ var HooksDispatcher = {
   useHostTransitionStatus: function () {
     resolveCurrentlyRenderingComponent();
     return sharedNotPendingObject;
+  },
+  useMemoCache: function (size) {
+    for (var data = Array(size), i = 0; i < size; i++)
+      data[i] = REACT_MEMO_CACHE_SENTINEL;
+    return data;
+  },
+  useCacheRefresh: function () {
+    return unsupportedRefresh;
   },
   useEffectEvent: function () {
     return throwOnUseEffectEventCall;
@@ -5898,4 +5910,4 @@ exports.renderToString = function (children, options) {
     'The server used "renderToString" which does not support Suspense. If you intended for this Suspense boundary to render the fallback content on the server consider throwing an Error somewhere within the Suspense boundary. If you intended to have the server wait for the suspended component please switch to "renderToReadableStream" which supports Suspense on the server'
   );
 };
-exports.version = "19.1.0-www-classic-b3a95caf-20250113";
+exports.version = "19.1.0-www-classic-886c5ad9-20250115";
