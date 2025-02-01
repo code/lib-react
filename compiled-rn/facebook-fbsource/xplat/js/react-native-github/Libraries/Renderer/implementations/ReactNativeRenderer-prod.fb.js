@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<f56fb3699fc833aacf29e01484b85fcc>>
+ * @generated SignedSource<<003e3291c5156b1267260222504b023c>>
  */
 
 "use strict";
@@ -8610,9 +8610,6 @@ function recursivelyTraverseMutationEffects(root$jscomp$0, parentFiber) {
             hostParentIsContainer = !1;
             break a;
           case 3:
-            hostParent = parent.stateNode.containerInfo;
-            hostParentIsContainer = !0;
-            break a;
           case 4:
             hostParent = parent.stateNode.containerInfo;
             hostParentIsContainer = !0;
@@ -11160,11 +11157,11 @@ function updateContainer(element, container, parentComponent, callback) {
   return lane;
 }
 var isomorphicReactPackageVersion = React.version;
-if ("19.1.0-native-fb-9ff42a87-20250130" !== isomorphicReactPackageVersion)
+if ("19.1.0-native-fb-152bfe37-20250131" !== isomorphicReactPackageVersion)
   throw Error(
     'Incompatible React versions: The "react" and "react-native-renderer" packages must have the exact same version. Instead got:\n  - react:                  ' +
       (isomorphicReactPackageVersion +
-        "\n  - react-native-renderer:  19.1.0-native-fb-9ff42a87-20250130\nLearn more: https://react.dev/warnings/version-mismatch")
+        "\n  - react-native-renderer:  19.1.0-native-fb-152bfe37-20250131\nLearn more: https://react.dev/warnings/version-mismatch")
   );
 if (
   "function" !==
@@ -11213,10 +11210,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1289 = {
     bundleType: 0,
-    version: "19.1.0-native-fb-9ff42a87-20250130",
+    version: "19.1.0-native-fb-152bfe37-20250131",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.1.0-native-fb-9ff42a87-20250130"
+    reconcilerVersion: "19.1.0-native-fb-152bfe37-20250131"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1289.rendererConfig = extraDevToolsConfig);
