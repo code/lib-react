@@ -59,6 +59,7 @@ var dynamicFeatureFlags = require("ReactFeatureFlags"),
   enableTransitionTracing = dynamicFeatureFlags.enableTransitionTracing,
   enableUseResourceEffectHook = dynamicFeatureFlags.enableUseResourceEffectHook,
   renameElementSymbol = dynamicFeatureFlags.renameElementSymbol,
+  enableViewTransition = dynamicFeatureFlags.enableViewTransition,
   REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"),
   REACT_ELEMENT_TYPE = renameElementSymbol
     ? Symbol.for("react.transitional.element")
@@ -345,7 +346,12 @@ function createResumableState(
   };
 }
 function createPreambleState() {
-  return { htmlChunks: null, headChunks: null, bodyChunks: null };
+  return {
+    htmlChunks: null,
+    headChunks: null,
+    bodyChunks: null,
+    contribution: 0
+  };
 }
 function createFormatContext(insertionMode, selectedValue, tagScope) {
   return {
@@ -800,6 +806,29 @@ function pushScriptImpl(target, props) {
     target.push(("" + children).replace(scriptRegex, scriptReplacer));
   target.push(endChunkForTag("script"));
   return null;
+}
+function pushStartSingletonElement(target, props, tag) {
+  target.push(startChunkForTag(tag));
+  var innerHTML = (tag = null),
+    propKey;
+  for (propKey in props)
+    if (hasOwnProperty.call(props, propKey)) {
+      var propValue = props[propKey];
+      if (null != propValue)
+        switch (propKey) {
+          case "children":
+            tag = propValue;
+            break;
+          case "dangerouslySetInnerHTML":
+            innerHTML = propValue;
+            break;
+          default:
+            pushAttribute(target, propKey, propValue);
+        }
+    }
+  target.push(">");
+  pushInnerHTML(target, innerHTML, tag);
+  return tag;
 }
 function pushStartGenericElement(target, props, tag) {
   target.push(startChunkForTag(tag));
@@ -1738,7 +1767,7 @@ function pushStartInstance(
         if (preamble.headChunks)
           throw Error(formatProdErrorMessage(545, "`<head>`"));
         preamble.headChunks = [];
-        var JSCompiler_inline_result$jscomp$9 = pushStartGenericElement(
+        var JSCompiler_inline_result$jscomp$9 = pushStartSingletonElement(
           preamble.headChunks,
           props,
           "head"
@@ -1756,7 +1785,7 @@ function pushStartInstance(
         if (preamble$jscomp$0.bodyChunks)
           throw Error(formatProdErrorMessage(545, "`<body>`"));
         preamble$jscomp$0.bodyChunks = [];
-        var JSCompiler_inline_result$jscomp$10 = pushStartGenericElement(
+        var JSCompiler_inline_result$jscomp$10 = pushStartSingletonElement(
           preamble$jscomp$0.bodyChunks,
           props,
           "body"
@@ -1774,7 +1803,7 @@ function pushStartInstance(
         if (preamble$jscomp$1.htmlChunks)
           throw Error(formatProdErrorMessage(545, "`<html>`"));
         preamble$jscomp$1.htmlChunks = [""];
-        var JSCompiler_inline_result$jscomp$11 = pushStartGenericElement(
+        var JSCompiler_inline_result$jscomp$11 = pushStartSingletonElement(
           preamble$jscomp$1.htmlChunks,
           props,
           "html"
@@ -1849,11 +1878,17 @@ function endChunkForTag(tag) {
 function hoistPreambleState(renderState, preambleState) {
   renderState = renderState.preamble;
   null === renderState.htmlChunks &&
-    (renderState.htmlChunks = preambleState.htmlChunks);
+    preambleState.htmlChunks &&
+    ((renderState.htmlChunks = preambleState.htmlChunks),
+    (preambleState.contribution |= 1));
   null === renderState.headChunks &&
-    (renderState.headChunks = preambleState.headChunks);
+    preambleState.headChunks &&
+    ((renderState.headChunks = preambleState.headChunks),
+    (preambleState.contribution |= 4));
   null === renderState.bodyChunks &&
-    (renderState.bodyChunks = preambleState.bodyChunks);
+    preambleState.bodyChunks &&
+    ((renderState.bodyChunks = preambleState.bodyChunks),
+    (preambleState.contribution |= 2));
 }
 function writeBootstrap(destination, renderState) {
   renderState = renderState.bootstrapChunks;
@@ -1870,6 +1905,13 @@ function writeStartPendingSuspenseBoundary(destination, renderState, id) {
   renderState = id.toString(16);
   destination.push(renderState);
   return destination.push('"></template>');
+}
+function writePreambleContribution(destination, preambleState) {
+  preambleState = preambleState.contribution;
+  0 !== preambleState &&
+    (destination.push("\x3c!--"),
+    destination.push("" + preambleState),
+    destination.push("--\x3e"));
 }
 function writeStartSegment(destination, renderState, formatContext, id) {
   switch (formatContext.insertionMode) {
@@ -2716,17 +2758,17 @@ function createRenderState(resumableState, generateStaticMarkup) {
       "\x3c/script>"
     );
   bootstrapScriptContent = idPrefix + "P:";
-  var JSCompiler_object_inline_segmentPrefix_1656 = idPrefix + "S:";
+  var JSCompiler_object_inline_segmentPrefix_1678 = idPrefix + "S:";
   idPrefix += "B:";
-  var JSCompiler_object_inline_preamble_1659 = createPreambleState(),
-    JSCompiler_object_inline_preconnects_1669 = new Set(),
-    JSCompiler_object_inline_fontPreloads_1670 = new Set(),
-    JSCompiler_object_inline_highImagePreloads_1671 = new Set(),
-    JSCompiler_object_inline_styles_1672 = new Map(),
-    JSCompiler_object_inline_bootstrapScripts_1673 = new Set(),
-    JSCompiler_object_inline_scripts_1674 = new Set(),
-    JSCompiler_object_inline_bulkPreloads_1675 = new Set(),
-    JSCompiler_object_inline_preloads_1676 = {
+  var JSCompiler_object_inline_preamble_1681 = createPreambleState(),
+    JSCompiler_object_inline_preconnects_1691 = new Set(),
+    JSCompiler_object_inline_fontPreloads_1692 = new Set(),
+    JSCompiler_object_inline_highImagePreloads_1693 = new Set(),
+    JSCompiler_object_inline_styles_1694 = new Map(),
+    JSCompiler_object_inline_bootstrapScripts_1695 = new Set(),
+    JSCompiler_object_inline_scripts_1696 = new Set(),
+    JSCompiler_object_inline_bulkPreloads_1697 = new Set(),
+    JSCompiler_object_inline_preloads_1698 = {
       images: new Map(),
       stylesheets: new Map(),
       scripts: new Map(),
@@ -2763,7 +2805,7 @@ function createRenderState(resumableState, generateStaticMarkup) {
       scriptConfig.moduleScriptResources[href] = null;
       scriptConfig = [];
       pushLinkImpl(scriptConfig, props);
-      JSCompiler_object_inline_bootstrapScripts_1673.add(scriptConfig);
+      JSCompiler_object_inline_bootstrapScripts_1695.add(scriptConfig);
       bootstrapChunks.push('<script src="', escapeTextForBrowser(src));
       "string" === typeof integrity &&
         bootstrapChunks.push('" integrity="', escapeTextForBrowser(integrity));
@@ -2804,7 +2846,7 @@ function createRenderState(resumableState, generateStaticMarkup) {
         (props.moduleScriptResources[scriptConfig] = null),
         (props = []),
         pushLinkImpl(props, integrity),
-        JSCompiler_object_inline_bootstrapScripts_1673.add(props),
+        JSCompiler_object_inline_bootstrapScripts_1695.add(props),
         bootstrapChunks.push(
           '<script type="module" src="',
           escapeTextForBrowser(i)
@@ -2819,10 +2861,10 @@ function createRenderState(resumableState, generateStaticMarkup) {
         bootstrapChunks.push('" async="">\x3c/script>');
   return {
     placeholderPrefix: bootstrapScriptContent,
-    segmentPrefix: JSCompiler_object_inline_segmentPrefix_1656,
+    segmentPrefix: JSCompiler_object_inline_segmentPrefix_1678,
     boundaryPrefix: idPrefix,
     startInlineScript: "<script>",
-    preamble: JSCompiler_object_inline_preamble_1659,
+    preamble: JSCompiler_object_inline_preamble_1681,
     externalRuntimeScript: null,
     bootstrapChunks: bootstrapChunks,
     importMapChunks: [],
@@ -2838,14 +2880,14 @@ function createRenderState(resumableState, generateStaticMarkup) {
     charsetChunks: [],
     viewportChunks: [],
     hoistableChunks: [],
-    preconnects: JSCompiler_object_inline_preconnects_1669,
-    fontPreloads: JSCompiler_object_inline_fontPreloads_1670,
-    highImagePreloads: JSCompiler_object_inline_highImagePreloads_1671,
-    styles: JSCompiler_object_inline_styles_1672,
-    bootstrapScripts: JSCompiler_object_inline_bootstrapScripts_1673,
-    scripts: JSCompiler_object_inline_scripts_1674,
-    bulkPreloads: JSCompiler_object_inline_bulkPreloads_1675,
-    preloads: JSCompiler_object_inline_preloads_1676,
+    preconnects: JSCompiler_object_inline_preconnects_1691,
+    fontPreloads: JSCompiler_object_inline_fontPreloads_1692,
+    highImagePreloads: JSCompiler_object_inline_highImagePreloads_1693,
+    styles: JSCompiler_object_inline_styles_1694,
+    bootstrapScripts: JSCompiler_object_inline_bootstrapScripts_1695,
+    scripts: JSCompiler_object_inline_scripts_1696,
+    bulkPreloads: JSCompiler_object_inline_bulkPreloads_1697,
+    preloads: JSCompiler_object_inline_preloads_1698,
     stylesToHoist: !1,
     generateStaticMarkup: generateStaticMarkup
   };
@@ -2887,6 +2929,7 @@ function getComponentNameFromType(type) {
     case REACT_SUSPENSE_LIST_TYPE:
       return "SuspenseList";
     case REACT_VIEW_TRANSITION_TYPE:
+      if (enableViewTransition) return "ViewTransition";
     case REACT_TRACING_MARKER_TYPE:
       if (enableTransitionTracing) return "TracingMarker";
   }
@@ -3581,6 +3624,9 @@ function describeComponentStackByType(type) {
       return describeBuiltInComponentFrame("SuspenseList");
     case REACT_SUSPENSE_TYPE:
       return describeBuiltInComponentFrame("Suspense");
+    case REACT_VIEW_TRANSITION_TYPE:
+      if (enableViewTransition)
+        return describeBuiltInComponentFrame("ViewTransition");
   }
   return "";
 }
@@ -4225,6 +4271,13 @@ function renderElement(request, task, keyPath, type, props, ref) {
         task.keyPath = type;
         return;
       case REACT_VIEW_TRANSITION_TYPE:
+        if (enableViewTransition) {
+          type = task.keyPath;
+          task.keyPath = keyPath;
+          renderNodeDestructive(request, task, props.children, -1);
+          task.keyPath = type;
+          return;
+        }
       case REACT_SCOPE_TYPE:
         type = task.keyPath;
         task.keyPath = keyPath;
@@ -4928,15 +4981,15 @@ function renderNode(request, task, node, childIndex) {
       chunkLength = segment.chunks.length;
     try {
       return renderNodeDestructive(request, task, node, childIndex);
-    } catch (thrownValue$51) {
+    } catch (thrownValue$52) {
       if (
         (resetHooksState(),
         (segment.children.length = childrenLength),
         (segment.chunks.length = chunkLength),
         (node =
-          thrownValue$51 === SuspenseException
+          thrownValue$52 === SuspenseException
             ? getSuspendedThenable()
-            : thrownValue$51),
+            : thrownValue$52),
         "object" === typeof node && null !== node)
       ) {
         if ("function" === typeof node.then) {
@@ -5495,24 +5548,26 @@ function flushSegment(request, destination, segment, hoistableState) {
   if (null === boundary)
     return flushSubtree(request, destination, segment, hoistableState);
   boundary.parentFlushed = !0;
-  if (4 === boundary.status)
-    return (
-      request.renderState.generateStaticMarkup ||
-        ((boundary = boundary.errorDigest),
-        destination.push("\x3c!--$!--\x3e"),
-        destination.push("<template"),
-        boundary &&
-          (destination.push(' data-dgst="'),
-          (boundary = escapeTextForBrowser(boundary)),
-          destination.push(boundary),
-          destination.push('"')),
-        destination.push("></template>")),
-      flushSubtree(request, destination, segment, hoistableState),
-      (request = request.renderState.generateStaticMarkup
-        ? !0
-        : destination.push("\x3c!--/$--\x3e")),
-      request
-    );
+  if (4 === boundary.status) {
+    if (!request.renderState.generateStaticMarkup) {
+      var errorDigest = boundary.errorDigest;
+      destination.push("\x3c!--$!--\x3e");
+      destination.push("<template");
+      errorDigest &&
+        (destination.push(' data-dgst="'),
+        (errorDigest = escapeTextForBrowser(errorDigest)),
+        destination.push(errorDigest),
+        destination.push('"'));
+      destination.push("></template>");
+    }
+    flushSubtree(request, destination, segment, hoistableState);
+    request.renderState.generateStaticMarkup
+      ? (destination = !0)
+      : ((request = boundary.fallbackPreamble) &&
+          writePreambleContribution(destination, request),
+        (destination = destination.push("\x3c!--/$--\x3e")));
+    return destination;
+  }
   if (1 !== boundary.status)
     return (
       0 === boundary.status &&
@@ -5555,10 +5610,12 @@ function flushSegment(request, destination, segment, hoistableState) {
   segment = boundary.completedSegments;
   if (1 !== segment.length) throw Error(formatProdErrorMessage(391));
   flushSegment(request, destination, segment[0], hoistableState);
-  request = request.renderState.generateStaticMarkup
-    ? !0
-    : destination.push("\x3c!--/$--\x3e");
-  return request;
+  request.renderState.generateStaticMarkup
+    ? (destination = !0)
+    : ((request = boundary.contentPreamble) &&
+        writePreambleContribution(destination, request),
+      (destination = destination.push("\x3c!--/$--\x3e")));
+  return destination;
 }
 function flushSegmentContainer(request, destination, segment, hoistableState) {
   writeStartSegment(
@@ -5869,11 +5926,11 @@ function flushCompletedQueues(request, destination) {
       completedBoundaries.splice(0, i);
       var partialBoundaries = request.partialBoundaries;
       for (i = 0; i < partialBoundaries.length; i++) {
-        var boundary$54 = partialBoundaries[i];
+        var boundary$55 = partialBoundaries[i];
         a: {
           clientRenderedBoundaries = request;
           boundary = destination;
-          var completedSegments = boundary$54.completedSegments;
+          var completedSegments = boundary$55.completedSegments;
           for (
             JSCompiler_inline_result = 0;
             JSCompiler_inline_result < completedSegments.length;
@@ -5883,7 +5940,7 @@ function flushCompletedQueues(request, destination) {
               !flushPartiallyCompletedSegment(
                 clientRenderedBoundaries,
                 boundary,
-                boundary$54,
+                boundary$55,
                 completedSegments[JSCompiler_inline_result]
               )
             ) {
@@ -5895,7 +5952,7 @@ function flushCompletedQueues(request, destination) {
           completedSegments.splice(0, JSCompiler_inline_result);
           JSCompiler_inline_result$jscomp$0 = writeHoistablesForBoundary(
             boundary,
-            boundary$54.contentState,
+            boundary$55.contentState,
             clientRenderedBoundaries.renderState
           );
         }
@@ -5979,8 +6036,8 @@ function abort(request, reason) {
     }
     null !== request.destination &&
       flushCompletedQueues(request, request.destination);
-  } catch (error$56) {
-    logRecoverableError(request, error$56, {}), fatalError(request, error$56);
+  } catch (error$57) {
+    logRecoverableError(request, error$57, {}), fatalError(request, error$57);
   }
 }
 function onError() {}
@@ -6049,4 +6106,4 @@ exports.renderToString = function (children, options) {
     'The server used "renderToString" which does not support Suspense. If you intended for this Suspense boundary to render the fallback content on the server consider throwing an Error somewhere within the Suspense boundary. If you intended to have the server wait for the suspended component please switch to "renderToReadableStream" which supports Suspense on the server'
   );
 };
-exports.version = "19.1.0-www-modern-152bfe37-20250131";
+exports.version = "19.1.0-www-modern-32b41149-20250204";
