@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<c50b34c1aa2fda44e91556cb066a52ff>>
+ * @generated SignedSource<<18f8c983be0fd26198908340ac3a6a48>>
  */
 
 "use strict";
@@ -4187,18 +4187,11 @@ function pushPrimaryTreeSuspenseHandler(handler) {
       : null !== current.memoizedState && (shellBoundary = handler));
 }
 function pushOffscreenSuspenseHandler(fiber) {
-  if (22 === fiber.tag) {
-    if (
-      (push(suspenseStackCursor, suspenseStackCursor.current),
+  22 === fiber.tag
+    ? (push(suspenseStackCursor, suspenseStackCursor.current),
       push(suspenseHandlerStackCursor, fiber),
-      null === shellBoundary)
-    ) {
-      var current = fiber.alternate;
-      null !== current &&
-        null !== current.memoizedState &&
-        (shellBoundary = fiber);
-    }
-  } else reuseSuspenseHandlerOnStack(fiber);
+      null === shellBoundary && (shellBoundary = fiber))
+    : reuseSuspenseHandlerOnStack(fiber);
 }
 function reuseSuspenseHandlerOnStack() {
   push(suspenseStackCursor, suspenseStackCursor.current);
@@ -7652,7 +7645,6 @@ function completeWork(current, workInProgress, renderLanes) {
   var newProps = workInProgress.pendingProps;
   switch (workInProgress.tag) {
     case 28:
-    case 31:
     case 16:
     case 15:
     case 0:
@@ -7778,6 +7770,8 @@ function completeWork(current, workInProgress, renderLanes) {
       }
       bubbleProperties(workInProgress);
       return null;
+    case 31:
+      return bubbleProperties(workInProgress), null;
     case 13:
       newProps = workInProgress.memoizedState;
       if (
@@ -9235,6 +9229,18 @@ function commitMutationEffectsOnFiber(finishedWork, root) {
               viewConfig = root;
               try {
                 throw Error("Not yet implemented.");
+              } catch (error) {
+                captureCommitPhaseError(viewConfig, viewConfig.return, error);
+              }
+            }
+          } else if (18 === root.tag) {
+            if (null === current) {
+              viewConfig = root;
+              try {
+                var instance$jscomp$1 = viewConfig.stateNode;
+                instance
+                  ? shim$1(instance$jscomp$1)
+                  : shim$1(viewConfig.stateNode);
               } catch (error) {
                 captureCommitPhaseError(viewConfig, viewConfig.return, error);
               }
@@ -11719,11 +11725,11 @@ function updateContainer(element, container, parentComponent, callback) {
   return lane;
 }
 var isomorphicReactPackageVersion = React.version;
-if ("19.2.0-native-fb-4a36d3ea-20250416" !== isomorphicReactPackageVersion)
+if ("19.2.0-native-fb-17f88c80-20250422" !== isomorphicReactPackageVersion)
   throw Error(
     'Incompatible React versions: The "react" and "react-native-renderer" packages must have the exact same version. Instead got:\n  - react:                  ' +
       (isomorphicReactPackageVersion +
-        "\n  - react-native-renderer:  19.2.0-native-fb-4a36d3ea-20250416\nLearn more: https://react.dev/warnings/version-mismatch")
+        "\n  - react-native-renderer:  19.2.0-native-fb-17f88c80-20250422\nLearn more: https://react.dev/warnings/version-mismatch")
   );
 if (
   "function" !==
@@ -11772,10 +11778,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1381 = {
     bundleType: 0,
-    version: "19.2.0-native-fb-4a36d3ea-20250416",
+    version: "19.2.0-native-fb-17f88c80-20250422",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.2.0-native-fb-4a36d3ea-20250416"
+    reconcilerVersion: "19.2.0-native-fb-17f88c80-20250422"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1381.rendererConfig = extraDevToolsConfig);
@@ -11795,16 +11801,16 @@ internals$jscomp$inline_1381.injectProfilingHooks = function (profilingHooks) {
   injectedProfilingHooks = profilingHooks;
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1682 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1688 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1682.isDisabled &&
-    hook$jscomp$inline_1682.supportsFiber
+    !hook$jscomp$inline_1688.isDisabled &&
+    hook$jscomp$inline_1688.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1682.inject(
+      (rendererID = hook$jscomp$inline_1688.inject(
         internals$jscomp$inline_1381
       )),
-        (injectedHook = hook$jscomp$inline_1682);
+        (injectedHook = hook$jscomp$inline_1688);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {

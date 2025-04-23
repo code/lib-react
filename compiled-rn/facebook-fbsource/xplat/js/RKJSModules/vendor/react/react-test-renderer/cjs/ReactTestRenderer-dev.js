@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<b3debc4eba073473e13b12303a28ca0c>>
+ * @generated SignedSource<<c262b49ca303d859bd3e412983cc967b>>
  */
 
 "use strict";
@@ -1279,6 +1279,8 @@ __DEV__ &&
           return fiber.type;
         case 16:
           return "Lazy";
+        case 31:
+          return "Activity";
         case 13:
           return "Suspense";
         case 19:
@@ -4007,18 +4009,11 @@ __DEV__ &&
           : null !== current.memoizedState && (shellBoundary = handler));
     }
     function pushOffscreenSuspenseHandler(fiber) {
-      if (22 === fiber.tag) {
-        if (
-          (push(suspenseStackCursor, suspenseStackCursor.current, fiber),
+      22 === fiber.tag
+        ? (push(suspenseStackCursor, suspenseStackCursor.current, fiber),
           push(suspenseHandlerStackCursor, fiber, fiber),
-          null === shellBoundary)
-        ) {
-          var current = fiber.alternate;
-          null !== current &&
-            null !== current.memoizedState &&
-            (shellBoundary = fiber);
-        }
-      } else reuseSuspenseHandlerOnStack(fiber);
+          null === shellBoundary && (shellBoundary = fiber))
+        : reuseSuspenseHandlerOnStack(fiber);
     }
     function reuseSuspenseHandlerOnStack(fiber) {
       push(suspenseStackCursor, suspenseStackCursor.current, fiber);
@@ -8388,7 +8383,6 @@ __DEV__ &&
       var newProps = workInProgress.pendingProps;
       switch (workInProgress.tag) {
         case 28:
-        case 31:
         case 16:
         case 15:
         case 0:
@@ -8509,6 +8503,8 @@ __DEV__ &&
           }
           bubbleProperties(workInProgress);
           return null;
+        case 31:
+          return bubbleProperties(workInProgress), null;
         case 13:
           newProps = workInProgress.memoizedState;
           if (
@@ -10128,6 +10124,26 @@ __DEV__ &&
                           unhideTextInstance,
                           instance,
                           wasHidden.memoizedProps
+                        );
+                  } catch (error) {
+                    captureCommitPhaseError(wasHidden, wasHidden.return, error);
+                  }
+                }
+              } else if (18 === root.tag) {
+                if (null === current) {
+                  wasHidden = root;
+                  try {
+                    var instance$jscomp$0 = wasHidden.stateNode;
+                    existingHiddenCallbacks
+                      ? runWithFiberInDEV(
+                          wasHidden,
+                          hideDehydratedBoundary,
+                          instance$jscomp$0
+                        )
+                      : runWithFiberInDEV(
+                          wasHidden,
+                          unhideDehydratedBoundary,
+                          wasHidden.stateNode
                         );
                   } catch (error) {
                     captureCommitPhaseError(wasHidden, wasHidden.return, error);
@@ -13473,6 +13489,8 @@ __DEV__ &&
       registerSuspenseInstanceRetry = shim$1,
       clearSuspenseBoundary = shim$1,
       clearSuspenseBoundaryFromContainer = shim$1,
+      hideDehydratedBoundary = shim$1,
+      unhideDehydratedBoundary = shim$1,
       preloadResource = shim,
       suspendResource = shim,
       NO_CONTEXT = {},
@@ -15421,10 +15439,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.2.0-native-fb-4a36d3ea-20250416",
+        version: "19.2.0-native-fb-17f88c80-20250422",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.2.0-native-fb-4a36d3ea-20250416"
+        reconcilerVersion: "19.2.0-native-fb-17f88c80-20250422"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -15569,5 +15587,5 @@ __DEV__ &&
             flushSyncWorkAcrossRoots_impl(0, !0));
       }
     };
-    exports.version = "19.2.0-native-fb-4a36d3ea-20250416";
+    exports.version = "19.2.0-native-fb-17f88c80-20250422";
   })();

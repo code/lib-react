@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<ad03ad84b1c5c28e58de9cb162938368>>
+ * @generated SignedSource<<c104fd2344190dd688cfe690ddffbff9>>
  */
 
 "use strict";
@@ -4023,18 +4023,11 @@ function pushPrimaryTreeSuspenseHandler(handler) {
       : null !== current.memoizedState && (shellBoundary = handler));
 }
 function pushOffscreenSuspenseHandler(fiber) {
-  if (22 === fiber.tag) {
-    if (
-      (push(suspenseStackCursor, suspenseStackCursor.current),
+  22 === fiber.tag
+    ? (push(suspenseStackCursor, suspenseStackCursor.current),
       push(suspenseHandlerStackCursor, fiber),
-      null === shellBoundary)
-    ) {
-      var current = fiber.alternate;
-      null !== current &&
-        null !== current.memoizedState &&
-        (shellBoundary = fiber);
-    }
-  } else reuseSuspenseHandlerOnStack(fiber);
+      null === shellBoundary && (shellBoundary = fiber))
+    : reuseSuspenseHandlerOnStack(fiber);
 }
 function reuseSuspenseHandlerOnStack() {
   push(suspenseStackCursor, suspenseStackCursor.current);
@@ -7607,7 +7600,6 @@ function completeWork(current, workInProgress, renderLanes) {
   var newProps = workInProgress.pendingProps;
   switch (workInProgress.tag) {
     case 28:
-    case 31:
     case 16:
     case 15:
     case 0:
@@ -7801,6 +7793,8 @@ function completeWork(current, workInProgress, renderLanes) {
       }
       bubbleProperties(workInProgress);
       return null;
+    case 31:
+      return bubbleProperties(workInProgress), null;
     case 13:
       newProps = workInProgress.memoizedState;
       if (
@@ -11631,10 +11625,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1318 = {
     bundleType: 0,
-    version: "19.2.0-native-fb-4a36d3ea-20250416",
+    version: "19.2.0-native-fb-17f88c80-20250422",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.2.0-native-fb-4a36d3ea-20250416"
+    reconcilerVersion: "19.2.0-native-fb-17f88c80-20250422"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1318.rendererConfig = extraDevToolsConfig);

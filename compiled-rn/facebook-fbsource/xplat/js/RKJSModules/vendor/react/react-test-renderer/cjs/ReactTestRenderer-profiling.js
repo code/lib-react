@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<c537f366a841b4fd3e6a2d4880a287f3>>
+ * @generated SignedSource<<8b8618533c9d803de0ea5139ba1e5479>>
  */
 
 "use strict";
@@ -2748,18 +2748,11 @@ function pushPrimaryTreeSuspenseHandler(handler) {
       : null !== current.memoizedState && (shellBoundary = handler));
 }
 function pushOffscreenSuspenseHandler(fiber) {
-  if (22 === fiber.tag) {
-    if (
-      (push(suspenseStackCursor, suspenseStackCursor.current),
+  22 === fiber.tag
+    ? (push(suspenseStackCursor, suspenseStackCursor.current),
       push(suspenseHandlerStackCursor, fiber),
-      null === shellBoundary)
-    ) {
-      var current = fiber.alternate;
-      null !== current &&
-        null !== current.memoizedState &&
-        (shellBoundary = fiber);
-    }
-  } else reuseSuspenseHandlerOnStack(fiber);
+      null === shellBoundary && (shellBoundary = fiber))
+    : reuseSuspenseHandlerOnStack(fiber);
 }
 function reuseSuspenseHandlerOnStack() {
   push(suspenseStackCursor, suspenseStackCursor.current);
@@ -6217,7 +6210,6 @@ function completeWork(current, workInProgress, renderLanes) {
   var newProps = workInProgress.pendingProps;
   switch (workInProgress.tag) {
     case 28:
-    case 31:
     case 16:
     case 15:
     case 0:
@@ -6326,6 +6318,8 @@ function completeWork(current, workInProgress, renderLanes) {
       }
       bubbleProperties(workInProgress);
       return null;
+    case 31:
+      return bubbleProperties(workInProgress), null;
     case 13:
       newProps = workInProgress.memoizedState;
       if (
@@ -7624,6 +7618,18 @@ function commitMutationEffectsOnFiber(finishedWork, root) {
               wasHidden = current;
               try {
                 wasHidden.stateNode.isHidden = instance ? !0 : !1;
+              } catch (error) {
+                captureCommitPhaseError(wasHidden, wasHidden.return, error);
+              }
+            }
+          } else if (18 === current.tag) {
+            if (null === root) {
+              wasHidden = current;
+              try {
+                var instance$jscomp$0 = wasHidden.stateNode;
+                instance
+                  ? shim$1(instance$jscomp$0)
+                  : shim$1(wasHidden.stateNode);
               } catch (error) {
                 captureCommitPhaseError(wasHidden, wasHidden.return, error);
               }
@@ -10325,10 +10331,10 @@ function wrapFiber(fiber) {
 }
 var internals$jscomp$inline_1229 = {
   bundleType: 0,
-  version: "19.2.0-native-fb-4a36d3ea-20250416",
+  version: "19.2.0-native-fb-17f88c80-20250422",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.2.0-native-fb-4a36d3ea-20250416",
+  reconcilerVersion: "19.2.0-native-fb-17f88c80-20250422",
   getLaneLabelMap: function () {
     for (
       var map = new Map(), lane = 1, index$148 = 0;
@@ -10346,16 +10352,16 @@ var internals$jscomp$inline_1229 = {
   }
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1476 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1482 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1476.isDisabled &&
-    hook$jscomp$inline_1476.supportsFiber
+    !hook$jscomp$inline_1482.isDisabled &&
+    hook$jscomp$inline_1482.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1476.inject(
+      (rendererID = hook$jscomp$inline_1482.inject(
         internals$jscomp$inline_1229
       )),
-        (injectedHook = hook$jscomp$inline_1476);
+        (injectedHook = hook$jscomp$inline_1482);
     } catch (err) {}
 }
 exports._Scheduler = Scheduler;
@@ -10479,4 +10485,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.2.0-native-fb-4a36d3ea-20250416";
+exports.version = "19.2.0-native-fb-17f88c80-20250422";
