@@ -2709,18 +2709,11 @@ function pushPrimaryTreeSuspenseHandler(handler) {
       : push(suspenseHandlerStackCursor, suspenseHandlerStackCursor.current);
 }
 function pushOffscreenSuspenseHandler(fiber) {
-  if (22 === fiber.tag) {
-    if (
-      (push(suspenseStackCursor, suspenseStackCursor.current),
+  22 === fiber.tag
+    ? (push(suspenseStackCursor, suspenseStackCursor.current),
       push(suspenseHandlerStackCursor, fiber),
-      null === shellBoundary)
-    ) {
-      var current = fiber.alternate;
-      null !== current &&
-        null !== current.memoizedState &&
-        (shellBoundary = fiber);
-    }
-  } else reuseSuspenseHandlerOnStack(fiber);
+      null === shellBoundary && (shellBoundary = fiber))
+    : reuseSuspenseHandlerOnStack(fiber);
 }
 function reuseSuspenseHandlerOnStack() {
   push(suspenseStackCursor, suspenseStackCursor.current);
@@ -6365,7 +6358,6 @@ function bubbleProperties(completedWork) {
 function completeWork(current, workInProgress, renderLanes) {
   var newProps = workInProgress.pendingProps;
   switch (workInProgress.tag) {
-    case 31:
     case 16:
     case 15:
     case 0:
@@ -6489,6 +6481,8 @@ function completeWork(current, workInProgress, renderLanes) {
       }
       bubbleProperties(workInProgress);
       return null;
+    case 31:
+      return bubbleProperties(workInProgress), null;
     case 13:
       newProps = workInProgress.memoizedState;
       if (
@@ -8124,6 +8118,16 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
               lanes = root;
               try {
                 trackHostMutation();
+              } catch (error) {
+                captureCommitPhaseError(lanes, lanes.return, error);
+              }
+            }
+          } else if (18 === root.tag) {
+            if (null === current) {
+              lanes = root;
+              try {
+                var instance$jscomp$0 = lanes.stateNode;
+                instance ? shim$2(instance$jscomp$0) : shim$2(lanes.stateNode);
               } catch (error) {
                 captureCommitPhaseError(lanes, lanes.return, error);
               }
@@ -10961,24 +10965,24 @@ var slice = Array.prototype.slice,
     };
     return Text;
   })(React.Component);
-var internals$jscomp$inline_1580 = {
+var internals$jscomp$inline_1586 = {
   bundleType: 0,
-  version: "19.2.0-www-modern-ce578f9c-20250417",
+  version: "19.2.0-www-modern-17f88c80-20250422",
   rendererPackageName: "react-art",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.2.0-www-modern-ce578f9c-20250417"
+  reconcilerVersion: "19.2.0-www-modern-17f88c80-20250422"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1581 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1587 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1581.isDisabled &&
-    hook$jscomp$inline_1581.supportsFiber
+    !hook$jscomp$inline_1587.isDisabled &&
+    hook$jscomp$inline_1587.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1581.inject(
-        internals$jscomp$inline_1580
+      (rendererID = hook$jscomp$inline_1587.inject(
+        internals$jscomp$inline_1586
       )),
-        (injectedHook = hook$jscomp$inline_1581);
+        (injectedHook = hook$jscomp$inline_1587);
     } catch (err) {}
 }
 var Path = Mode$1.Path;
@@ -10992,4 +10996,4 @@ exports.RadialGradient = RadialGradient;
 exports.Shape = TYPES.SHAPE;
 exports.Surface = Surface;
 exports.Text = Text;
-exports.version = "19.2.0-www-modern-ce578f9c-20250417";
+exports.version = "19.2.0-www-modern-17f88c80-20250422";

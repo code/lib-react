@@ -1047,6 +1047,8 @@ module.exports = function ($$$config) {
         case 3:
           rootOrSingletonContext = !0;
           return;
+        case 31:
+          return;
         default:
           hydrationParentFiber = hydrationParentFiber.return;
       }
@@ -1079,14 +1081,16 @@ module.exports = function ($$$config) {
         getNextHydratableInstanceAfterSuspenseInstance(fiber);
     } else
       nextHydratableInstance =
-        supportsSingletons && 27 === tag
-          ? getNextHydratableSiblingAfterSingleton(
-              fiber.type,
-              nextHydratableInstance
-            )
-          : hydrationParentFiber
-            ? getNextHydratableSibling(fiber.stateNode)
-            : null;
+        31 === tag
+          ? getNextHydratableInstanceAfterActivityInstance(fiber.stateNode)
+          : supportsSingletons && 27 === tag
+            ? getNextHydratableSiblingAfterSingleton(
+                fiber.type,
+                nextHydratableInstance
+              )
+            : hydrationParentFiber
+              ? getNextHydratableSibling(fiber.stateNode)
+              : null;
     return !0;
   }
   function resetHydrationState() {
@@ -2836,18 +2840,11 @@ module.exports = function ($$$config) {
         : push(suspenseHandlerStackCursor, suspenseHandlerStackCursor.current);
   }
   function pushOffscreenSuspenseHandler(fiber) {
-    if (22 === fiber.tag) {
-      if (
-        (push(suspenseStackCursor, suspenseStackCursor.current),
+    22 === fiber.tag
+      ? (push(suspenseStackCursor, suspenseStackCursor.current),
         push(suspenseHandlerStackCursor, fiber),
-        null === shellBoundary)
-      ) {
-        var current = fiber.alternate;
-        null !== current &&
-          null !== current.memoizedState &&
-          (shellBoundary = fiber);
-      }
-    } else reuseSuspenseHandlerOnStack(fiber);
+        null === shellBoundary && (shellBoundary = fiber))
+      : reuseSuspenseHandlerOnStack(fiber);
   }
   function reuseSuspenseHandlerOnStack() {
     push(suspenseStackCursor, suspenseStackCursor.current);
@@ -6294,26 +6291,38 @@ module.exports = function ($$$config) {
           workInProgress.child
         );
       case 31:
-        return (
-          (props = workInProgress.pendingProps),
-          (renderLanes = workInProgress.mode),
-          (props = { mode: props.mode, children: props.children }),
-          null === current
-            ? ((renderLanes = mountWorkInProgressOffscreenFiber(
-                props,
-                renderLanes
-              )),
-              (renderLanes.ref = workInProgress.ref),
-              (workInProgress.child = renderLanes),
-              (renderLanes.return = workInProgress),
-              (workInProgress = renderLanes))
-            : ((renderLanes = createWorkInProgress(current.child, props)),
-              (renderLanes.ref = workInProgress.ref),
-              (workInProgress.child = renderLanes),
-              (renderLanes.return = workInProgress),
-              (workInProgress = renderLanes)),
-          workInProgress
-        );
+        props = workInProgress.pendingProps;
+        renderLanes = workInProgress.mode;
+        props = { mode: props.mode, children: props.children };
+        if (null === current) {
+          if (
+            isHydrating &&
+            ((current = nextHydratableInstance)
+              ? ((current = canHydrateActivityInstance(
+                  current,
+                  rootOrSingletonContext
+                )),
+                null !== current &&
+                  ((workInProgress.stateNode = current),
+                  (hydrationParentFiber = workInProgress),
+                  (nextHydratableInstance =
+                    getFirstHydratableChildWithinActivityInstance(current))))
+              : (current = null),
+            null === current)
+          )
+            throw throwOnHydrationMismatch(workInProgress);
+          renderLanes = mountWorkInProgressOffscreenFiber(props, renderLanes);
+          renderLanes.ref = workInProgress.ref;
+          workInProgress.child = renderLanes;
+          renderLanes.return = workInProgress;
+          workInProgress = renderLanes;
+        } else
+          (renderLanes = createWorkInProgress(current.child, props)),
+            (renderLanes.ref = workInProgress.ref),
+            (workInProgress.child = renderLanes),
+            (renderLanes.return = workInProgress),
+            (workInProgress = renderLanes);
+        return workInProgress;
       case 22:
         return updateOffscreenComponent(
           current,
@@ -6843,7 +6852,6 @@ module.exports = function ($$$config) {
     var newProps = workInProgress.pendingProps;
     popTreeContext(workInProgress);
     switch (workInProgress.tag) {
-      case 31:
       case 16:
       case 15:
       case 0:
@@ -7073,6 +7081,12 @@ module.exports = function ($$$config) {
         }
         bubbleProperties(workInProgress);
         return null;
+      case 31:
+        return (
+          null === current && popHydrationState(workInProgress),
+          bubbleProperties(workInProgress),
+          null
+        );
       case 13:
         newProps = workInProgress.memoizedState;
         if (
@@ -9348,6 +9362,18 @@ module.exports = function ($$$config) {
                       ? hideTextInstance(instance)
                       : unhideTextInstance(instance, lanes.memoizedProps);
                     trackHostMutation();
+                  } catch (error) {
+                    captureCommitPhaseError(lanes, lanes.return, error);
+                  }
+                }
+              } else if (18 === root.tag) {
+                if (null === current) {
+                  lanes = root;
+                  try {
+                    var instance$jscomp$0 = lanes.stateNode;
+                    suspenseCallback
+                      ? hideDehydratedBoundary(instance$jscomp$0)
+                      : unhideDehydratedBoundary(lanes.stateNode);
                   } catch (error) {
                     captureCommitPhaseError(lanes, lanes.return, error);
                   }
@@ -12780,23 +12806,34 @@ module.exports = function ($$$config) {
     getFirstHydratableChild = $$$config.getFirstHydratableChild,
     getFirstHydratableChildWithinContainer =
       $$$config.getFirstHydratableChildWithinContainer,
+    getFirstHydratableChildWithinActivityInstance =
+      $$$config.getFirstHydratableChildWithinActivityInstance,
     getFirstHydratableChildWithinSuspenseInstance =
       $$$config.getFirstHydratableChildWithinSuspenseInstance,
     getFirstHydratableChildWithinSingleton =
       $$$config.getFirstHydratableChildWithinSingleton,
     canHydrateInstance = $$$config.canHydrateInstance,
     canHydrateTextInstance = $$$config.canHydrateTextInstance,
+    canHydrateActivityInstance = $$$config.canHydrateActivityInstance,
     canHydrateSuspenseInstance = $$$config.canHydrateSuspenseInstance,
     hydrateInstance = $$$config.hydrateInstance,
-    hydrateTextInstance = $$$config.hydrateTextInstance,
-    hydrateSuspenseInstance = $$$config.hydrateSuspenseInstance,
+    hydrateTextInstance = $$$config.hydrateTextInstance;
+  $$$config.hydrateActivityInstance;
+  var hydrateSuspenseInstance = $$$config.hydrateSuspenseInstance,
+    getNextHydratableInstanceAfterActivityInstance =
+      $$$config.getNextHydratableInstanceAfterActivityInstance,
     getNextHydratableInstanceAfterSuspenseInstance =
       $$$config.getNextHydratableInstanceAfterSuspenseInstance,
-    commitHydratedContainer = $$$config.commitHydratedContainer,
-    commitHydratedSuspenseInstance = $$$config.commitHydratedSuspenseInstance,
-    clearSuspenseBoundary = $$$config.clearSuspenseBoundary,
-    clearSuspenseBoundaryFromContainer =
+    commitHydratedContainer = $$$config.commitHydratedContainer;
+  $$$config.commitHydratedActivityInstance;
+  var commitHydratedSuspenseInstance = $$$config.commitHydratedSuspenseInstance;
+  $$$config.clearActivityBoundary;
+  var clearSuspenseBoundary = $$$config.clearSuspenseBoundary;
+  $$$config.clearActivityBoundaryFromContainer;
+  var clearSuspenseBoundaryFromContainer =
       $$$config.clearSuspenseBoundaryFromContainer,
+    hideDehydratedBoundary = $$$config.hideDehydratedBoundary,
+    unhideDehydratedBoundary = $$$config.unhideDehydratedBoundary,
     shouldDeleteUnhydratedTailInstances =
       $$$config.shouldDeleteUnhydratedTailInstances;
   $$$config.diffHydratedPropsForDevWarnings;
@@ -13822,7 +13859,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.2.0-www-classic-ce578f9c-20250417"
+      reconcilerVersion: "19.2.0-www-classic-17f88c80-20250422"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);

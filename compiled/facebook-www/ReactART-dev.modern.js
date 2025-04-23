@@ -1318,6 +1318,8 @@ __DEV__ &&
           return fiber.type;
         case 16:
           return "Lazy";
+        case 31:
+          return "Activity";
         case 13:
           return "Suspense";
         case 19:
@@ -4445,18 +4447,11 @@ __DEV__ &&
             );
     }
     function pushOffscreenSuspenseHandler(fiber) {
-      if (22 === fiber.tag) {
-        if (
-          (push(suspenseStackCursor, suspenseStackCursor.current, fiber),
+      22 === fiber.tag
+        ? (push(suspenseStackCursor, suspenseStackCursor.current, fiber),
           push(suspenseHandlerStackCursor, fiber, fiber),
-          null === shellBoundary)
-        ) {
-          var current = fiber.alternate;
-          null !== current &&
-            null !== current.memoizedState &&
-            (shellBoundary = fiber);
-        }
-      } else reuseSuspenseHandlerOnStack(fiber);
+          null === shellBoundary && (shellBoundary = fiber))
+        : reuseSuspenseHandlerOnStack(fiber);
     }
     function reuseSuspenseHandlerOnStack(fiber) {
       push(suspenseStackCursor, suspenseStackCursor.current, fiber);
@@ -9189,7 +9184,6 @@ __DEV__ &&
     function completeWork(current, workInProgress, renderLanes) {
       var newProps = workInProgress.pendingProps;
       switch (workInProgress.tag) {
-        case 31:
         case 16:
         case 15:
         case 0:
@@ -9331,6 +9325,8 @@ __DEV__ &&
           }
           bubbleProperties(workInProgress);
           return null;
+        case 31:
+          return bubbleProperties(workInProgress), null;
         case 13:
           newProps = workInProgress.memoizedState;
           if (
@@ -11737,6 +11733,26 @@ __DEV__ &&
                           lanes.memoizedProps
                         );
                     trackHostMutation();
+                  } catch (error) {
+                    captureCommitPhaseError(lanes, lanes.return, error);
+                  }
+                }
+              } else if (18 === root.tag) {
+                if (null === current) {
+                  lanes = root;
+                  try {
+                    var instance$jscomp$0 = lanes.stateNode;
+                    suspenseCallback
+                      ? runWithFiberInDEV(
+                          lanes,
+                          hideDehydratedBoundary,
+                          instance$jscomp$0
+                        )
+                      : runWithFiberInDEV(
+                          lanes,
+                          unhideDehydratedBoundary,
+                          lanes.stateNode
+                        );
                   } catch (error) {
                     captureCommitPhaseError(lanes, lanes.return, error);
                   }
@@ -16193,6 +16209,8 @@ __DEV__ &&
       registerSuspenseInstanceRetry = shim$2,
       clearSuspenseBoundary = shim$2,
       clearSuspenseBoundaryFromContainer = shim$2,
+      hideDehydratedBoundary = shim$2,
+      unhideDehydratedBoundary = shim$2,
       prepareScopeUpdate = shim$1,
       getInstanceFromScope = shim$1,
       preloadResource = shim,
@@ -18330,10 +18348,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.2.0-www-modern-ce578f9c-20250417",
+        version: "19.2.0-www-modern-17f88c80-20250422",
         rendererPackageName: "react-art",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.2.0-www-modern-ce578f9c-20250417"
+        reconcilerVersion: "19.2.0-www-modern-17f88c80-20250422"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -18367,7 +18385,7 @@ __DEV__ &&
     exports.Shape = Shape;
     exports.Surface = Surface;
     exports.Text = Text;
-    exports.version = "19.2.0-www-modern-ce578f9c-20250417";
+    exports.version = "19.2.0-www-modern-17f88c80-20250422";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&
