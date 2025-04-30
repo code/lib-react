@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<692b0056c27fb8495e61537b77520b77>>
+ * @generated SignedSource<<b334d41cba9f1262ff441c4cf1f20237>>
  */
 
 /*
@@ -5599,10 +5599,11 @@ function ensureFormComponentIsStateful(formFiber) {
   return existingStateHook;
 }
 function requestFormReset$1(formFiber) {
-  var resetStateQueue = ensureFormComponentIsStateful(formFiber).next.queue;
+  var stateHook = ensureFormComponentIsStateful(formFiber);
+  null === stateHook.next && (stateHook = formFiber.alternate.memoizedState);
   dispatchSetStateInternal(
     formFiber,
-    resetStateQueue,
+    stateHook.next.queue,
     {},
     requestUpdateLane(formFiber)
   );
@@ -17043,14 +17044,14 @@ ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function (target) {
 };
 var isomorphicReactPackageVersion$jscomp$inline_1941 = React.version;
 if (
-  "19.2.0-native-fb-0038c501-20250429" !==
+  "19.2.0-native-fb-18212ca9-20250429" !==
   isomorphicReactPackageVersion$jscomp$inline_1941
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_1941,
-      "19.2.0-native-fb-0038c501-20250429"
+      "19.2.0-native-fb-18212ca9-20250429"
     )
   );
 ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
@@ -17072,10 +17073,10 @@ ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
 };
 var internals$jscomp$inline_1948 = {
   bundleType: 0,
-  version: "19.2.0-native-fb-0038c501-20250429",
+  version: "19.2.0-native-fb-18212ca9-20250429",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.2.0-native-fb-0038c501-20250429",
+  reconcilerVersion: "19.2.0-native-fb-18212ca9-20250429",
   getLaneLabelMap: function () {
     for (
       var map = new Map(), lane = 1, index$304 = 0;
@@ -17194,4 +17195,4 @@ exports.hydrateRoot = function (container, initialChildren, options) {
   listenToAllSupportedEvents(container);
   return new ReactDOMHydrationRoot(initialChildren);
 };
-exports.version = "19.2.0-native-fb-0038c501-20250429";
+exports.version = "19.2.0-native-fb-18212ca9-20250429";
