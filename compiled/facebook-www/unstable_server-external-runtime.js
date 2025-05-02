@@ -41,7 +41,9 @@
               ($RS(dataset.sid, dataset.pid), node_.remove());
     }
   }
+  var $RT;
   var $RM = new Map();
+  var $RB = [];
   var $RX = function (
     suspenseBoundaryID,
     errorDigest,
@@ -60,19 +62,18 @@
       errorComponentStack && (suspenseIdNode.cstck = errorComponentStack),
       suspenseBoundaryID._reactRetry && suspenseBoundaryID._reactRetry());
   };
-  var $RC = function (suspenseBoundaryID, contentID, errorDigest) {
-    if ((contentID = document.getElementById(contentID))) {
-      contentID.parentNode.removeChild(contentID);
-      var suspenseIdNode = document.getElementById(suspenseBoundaryID);
-      if (suspenseIdNode) {
-        suspenseBoundaryID = suspenseIdNode.previousSibling;
-        if (errorDigest)
-          (suspenseBoundaryID.data = "$!"),
-            suspenseIdNode.setAttribute("data-dgst", errorDigest);
-        else {
-          errorDigest = suspenseBoundaryID.parentNode;
-          suspenseIdNode = suspenseBoundaryID.nextSibling;
-          var depth = 0;
+  var $RC = function (suspenseBoundaryID, contentID) {
+    function revealCompletedBoundaries() {
+      $RT = performance.now();
+      var batch = $RB;
+      $RB = [];
+      for (var i = 0; i < batch.length; i += 2) {
+        var suspenseIdNode = batch[i],
+          contentNode = batch[i + 1],
+          parentInstance = suspenseIdNode.parentNode;
+        if (parentInstance) {
+          var suspenseNode = suspenseIdNode.previousSibling,
+            depth = 0;
           do {
             if (suspenseIdNode && 8 === suspenseIdNode.nodeType) {
               var data = suspenseIdNode.data;
@@ -82,21 +83,33 @@
               else
                 ("$" !== data &&
                   "$?" !== data &&
+                  "$~" !== data &&
                   "$!" !== data &&
                   "&" !== data) ||
                   depth++;
             }
             data = suspenseIdNode.nextSibling;
-            errorDigest.removeChild(suspenseIdNode);
+            parentInstance.removeChild(suspenseIdNode);
             suspenseIdNode = data;
           } while (suspenseIdNode);
-          for (; contentID.firstChild; )
-            errorDigest.insertBefore(contentID.firstChild, suspenseIdNode);
-          suspenseBoundaryID.data = "$";
+          for (; contentNode.firstChild; )
+            parentInstance.insertBefore(contentNode.firstChild, suspenseIdNode);
+          suspenseNode.data = "$";
+          suspenseNode._reactRetry && suspenseNode._reactRetry();
         }
-        suspenseBoundaryID._reactRetry && suspenseBoundaryID._reactRetry();
       }
     }
+    if ((contentID = document.getElementById(contentID)))
+      if (
+        (contentID.parentNode.removeChild(contentID),
+        (suspenseBoundaryID = document.getElementById(suspenseBoundaryID)))
+      )
+        (suspenseBoundaryID.previousSibling.data = "$~"),
+          $RB.push(suspenseBoundaryID, contentID),
+          2 === $RB.length &&
+            ((suspenseBoundaryID =
+              ("number" !== typeof $RT ? 0 : $RT) + 300 - performance.now()),
+            setTimeout(revealCompletedBoundaries, suspenseBoundaryID));
   };
   var $RR = function (suspenseBoundaryID, contentID, stylesheetDescriptors) {
     function cleanupWith(cb) {
@@ -120,15 +133,15 @@
         ? styleTagsToHoist.push(node)
         : ("LINK" === node.tagName && $RM.set(node.getAttribute("href"), node),
           precedences.set(node.dataset.precedence, (lastResource = node)));
-    node = 0;
-    nodes = [];
+    nodes = 0;
+    node = [];
     var precedence, resourceEl;
     for (i$0 = !0; ; ) {
       if (i$0) {
-        var stylesheetDescriptor = stylesheetDescriptors[node++];
+        var stylesheetDescriptor = stylesheetDescriptors[nodes++];
         if (!stylesheetDescriptor) {
           i$0 = !1;
-          node = 0;
+          nodes = 0;
           continue;
         }
         var avoidInsert = !1,
@@ -155,10 +168,10 @@
           $RM.set(href, resourceEl);
         }
         href = resourceEl.getAttribute("media");
-        !attr || (href && !window.matchMedia(href).matches) || nodes.push(attr);
+        !attr || (href && !window.matchMedia(href).matches) || node.push(attr);
         if (avoidInsert) continue;
       } else {
-        resourceEl = styleTagsToHoist[node++];
+        resourceEl = styleTagsToHoist[nodes++];
         if (!resourceEl) break;
         precedence = resourceEl.getAttribute("data-precedence");
         resourceEl.removeAttribute("media");
@@ -174,9 +187,11 @@
         : ((avoidInsert = thisDocument.head),
           avoidInsert.insertBefore(resourceEl, avoidInsert.firstChild));
     }
-    Promise.all(nodes).then(
-      $RC.bind(null, suspenseBoundaryID, contentID, ""),
-      $RC.bind(null, suspenseBoundaryID, contentID, "Resource failed to load")
+    if ((stylesheetDescriptors = document.getElementById(suspenseBoundaryID)))
+      stylesheetDescriptors.previousSibling.data = "$~";
+    Promise.all(node).then(
+      $RC.bind(null, suspenseBoundaryID, contentID),
+      $RX.bind(null, suspenseBoundaryID, "CSS failed to load")
     );
   };
   var $RS = function (containerID, placeholderID) {
@@ -228,6 +243,14 @@
       }
     });
   })();
+  var entries = performance.getEntriesByType
+    ? performance.getEntriesByType("paint")
+    : [];
+  0 < entries.length
+    ? ($RT = entries[0].startTime)
+    : requestAnimationFrame(function () {
+        $RT = performance.now();
+      });
   if (null != document.body)
     "loading" === document.readyState &&
       installFizzInstrObserver(document.body),
