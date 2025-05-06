@@ -10530,7 +10530,13 @@ __DEV__ &&
             }
             nextResource = getHostContext();
             if (popHydrationState(workInProgress))
-              prepareToHydrateHostInstance(workInProgress, nextResource);
+              prepareToHydrateHostInstance(workInProgress, nextResource),
+                finalizeHydratedChildren(
+                  workInProgress.stateNode,
+                  type,
+                  newProps,
+                  nextResource
+                ) && (workInProgress.flags |= 64);
             else {
               var _rootContainerInstance = requiredContext(
                 rootInstanceStackCursor.current
@@ -12658,7 +12664,29 @@ __DEV__ &&
         case 26:
         case 5:
           recursivelyTraverseLayoutEffects(finishedRoot, finishedWork);
-          null === current && flags & 4 && commitHostMount(finishedWork);
+          if (null === current)
+            if (flags & 4) commitHostMount(finishedWork);
+            else if (flags & 64) {
+              finishedRoot = finishedWork.type;
+              current = finishedWork.memoizedProps;
+              prevProps = finishedWork.stateNode;
+              try {
+                runWithFiberInDEV(
+                  finishedWork,
+                  commitHydratedInstance,
+                  prevProps,
+                  finishedRoot,
+                  current,
+                  finishedWork
+                );
+              } catch (error) {
+                captureCommitPhaseError(
+                  finishedWork,
+                  finishedWork.return,
+                  error
+                );
+              }
+            }
           flags & 512 && safelyAttachRef(finishedWork, finishedWork.return);
           break;
         case 12:
@@ -12695,11 +12723,11 @@ __DEV__ &&
             null !== finishedRoot &&
               ((finishedRoot = finishedRoot.dehydrated),
               null !== finishedRoot &&
-                ((current = retryDehydratedSuspenseBoundary.bind(
+                ((flags = retryDehydratedSuspenseBoundary.bind(
                   null,
                   finishedWork
                 )),
-                registerSuspenseInstanceRetry(finishedRoot, current))));
+                registerSuspenseInstanceRetry(finishedRoot, flags))));
           break;
         case 22:
           flags =
@@ -17675,6 +17703,7 @@ __DEV__ &&
           : (nestedUpdateCount = 0);
         enableComponentPerformanceTrack &&
           (completedRenderEndTime || finalizeRender(lanes, commitEndTime));
+        supportsHydration && flushHydrationEvents();
         flushSyncWorkAcrossRoots_impl(0, !1);
         enableSchedulingProfiler && markCommitStopped();
         if (enableTransitionTracing) {
@@ -19091,9 +19120,12 @@ __DEV__ &&
         $$$config.getNextHydratableInstanceAfterActivityInstance,
       getNextHydratableInstanceAfterSuspenseInstance =
         $$$config.getNextHydratableInstanceAfterSuspenseInstance,
+      commitHydratedInstance = $$$config.commitHydratedInstance,
       commitHydratedContainer = $$$config.commitHydratedContainer,
       commitHydratedActivityInstance = $$$config.commitHydratedActivityInstance,
-      commitHydratedSuspenseInstance = $$$config.commitHydratedSuspenseInstance;
+      commitHydratedSuspenseInstance = $$$config.commitHydratedSuspenseInstance,
+      finalizeHydratedChildren = $$$config.finalizeHydratedChildren,
+      flushHydrationEvents = $$$config.flushHydrationEvents;
     $$$config.clearActivityBoundary;
     var clearSuspenseBoundary = $$$config.clearSuspenseBoundary;
     $$$config.clearActivityBoundaryFromContainer;
@@ -21626,7 +21658,7 @@ __DEV__ &&
         version: rendererVersion,
         rendererPackageName: rendererPackageName,
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.2.0-www-modern-edf550b6-20250505"
+        reconcilerVersion: "19.2.0-www-modern-54a50729-20250506"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
