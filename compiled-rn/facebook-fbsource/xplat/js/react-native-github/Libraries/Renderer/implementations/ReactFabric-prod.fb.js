@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<7dc4da8f6fd3d47c72f68978b8d1acc6>>
+ * @generated SignedSource<<74b1167b8b761324868d481a2f15891f>>
  */
 
 "use strict";
@@ -2068,14 +2068,39 @@ function findCurrentHostFiberImpl(node) {
   }
   return null;
 }
-function traverseFragmentInstanceChildren(child, fn, a, b, c) {
+function traverseVisibleHostChildren(child, searchWithinHosts, fn, a, b, c) {
   for (; null !== child; ) {
     if (5 === child.tag) {
-      if (fn(child.stateNode, a, b, c)) break;
-    } else
-      (22 === child.tag && null !== child.memoizedState) ||
-        traverseFragmentInstanceChildren(child.child, fn, a, b, c);
+      if (
+        fn(child, a, b, c) ||
+        (searchWithinHosts &&
+          traverseVisibleHostChildren(
+            child.child,
+            searchWithinHosts,
+            fn,
+            a,
+            b,
+            c
+          ))
+      )
+        return !0;
+    } else if (
+      (22 !== child.tag || null === child.memoizedState) &&
+      traverseVisibleHostChildren(child.child, searchWithinHosts, fn, a, b, c)
+    )
+      return !0;
     child = child.sibling;
+  }
+  return !1;
+}
+function getInstanceFromHostFiber(fiber) {
+  switch (fiber.tag) {
+    case 5:
+      return fiber.stateNode;
+    case 3:
+      return fiber.stateNode.containerInfo;
+    default:
+      throw Error("Expected to find a host node. This is a bug in React.");
   }
 }
 var valueStack = [],
@@ -2175,7 +2200,11 @@ function invalidateContextProvider(workInProgress, type, didChange) {
     : pop(didPerformWorkStackCursor);
   push(didPerformWorkStackCursor, didChange);
 }
-var CapturedStacks = new WeakMap();
+function is(x, y) {
+  return (x === y && (0 !== x || 1 / x === 1 / y)) || (x !== x && y !== y);
+}
+var objectIs = "function" === typeof Object.is ? Object.is : is,
+  CapturedStacks = new WeakMap();
 function createCapturedValueAtFiber(value, source) {
   if ("object" === typeof value && null !== value) {
     var existing = CapturedStacks.get(value);
@@ -2237,11 +2266,7 @@ function upgradeHydrationErrorsToRecoverable() {
     (hydrationErrors = null));
   return queuedErrors;
 }
-function is(x, y) {
-  return (x === y && (0 !== x || 1 / x === 1 / y)) || (x !== x && y !== y);
-}
-var objectIs = "function" === typeof Object.is ? Object.is : is,
-  valueCursor = createCursor(null),
+var valueCursor = createCursor(null),
   currentlyRenderingFiber$1 = null,
   lastContextDependency = null;
 function pushProvider(providerFiber, context, nextValue) {
@@ -11087,38 +11112,42 @@ function FragmentInstance(fragmentFiber) {
 FragmentInstance.prototype.observeUsing = function (observer) {
   null === this._observers && (this._observers = new Set());
   this._observers.add(observer);
-  traverseFragmentInstanceChildren(
+  traverseVisibleHostChildren(
     this._fragmentFiber.child,
+    !1,
     observeChild,
     observer,
     void 0,
     void 0
   );
 };
-function observeChild(instance, observer) {
-  instance = getPublicInstance(instance);
-  if (null == instance)
+function observeChild(child, observer) {
+  child = getInstanceFromHostFiber(child);
+  child = getPublicInstance(child);
+  if (null == child)
     throw Error("Expected to find a host node. This is a bug in React.");
-  observer.observe(instance);
+  observer.observe(child);
   return !1;
 }
 FragmentInstance.prototype.unobserveUsing = function (observer) {
   null !== this._observers &&
     this._observers.has(observer) &&
     (this._observers.delete(observer),
-    traverseFragmentInstanceChildren(
+    traverseVisibleHostChildren(
       this._fragmentFiber.child,
+      !1,
       unobserveChild,
       observer,
       void 0,
       void 0
     ));
 };
-function unobserveChild(instance, observer) {
-  instance = getPublicInstance(instance);
-  if (null == instance)
+function unobserveChild(child, observer) {
+  child = getInstanceFromHostFiber(child);
+  child = getPublicInstance(child);
+  if (null == child)
     throw Error("Expected to find a host node. This is a bug in React.");
-  observer.unobserve(instance);
+  observer.unobserve(child);
   return !1;
 }
 function commitNewChildToFragmentInstance(child, fragmentInstance) {
@@ -11211,10 +11240,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1254 = {
     bundleType: 0,
-    version: "19.2.0-native-fb-54a50729-20250506",
+    version: "19.2.0-native-fb-e5a8de81-20250506",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.2.0-native-fb-54a50729-20250506"
+    reconcilerVersion: "19.2.0-native-fb-e5a8de81-20250506"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1254.rendererConfig = extraDevToolsConfig);
