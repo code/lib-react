@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<1dfbbc281cdb9105ccf9e5f8fad9a839>>
+ * @generated SignedSource<<1a9aec9829125056d0bef363442e92c6>>
  */
 
 /*
@@ -1597,14 +1597,11 @@ __DEV__ &&
         ("checkbox" === type || "radio" === type)
       );
     }
-    function trackValueOnNode(node) {
-      var valueField = isCheckable(node) ? "checked" : "value",
-        descriptor = Object.getOwnPropertyDescriptor(
-          node.constructor.prototype,
-          valueField
-        );
-      checkFormFieldValueStringCoercion(node[valueField]);
-      var currentValue = "" + node[valueField];
+    function trackValueOnNode(node, valueField, currentValue) {
+      var descriptor = Object.getOwnPropertyDescriptor(
+        node.constructor.prototype,
+        valueField
+      );
       if (
         !node.hasOwnProperty(valueField) &&
         "undefined" !== typeof descriptor &&
@@ -1643,7 +1640,24 @@ __DEV__ &&
       }
     }
     function track(node) {
-      node._valueTracker || (node._valueTracker = trackValueOnNode(node));
+      if (!node._valueTracker) {
+        var valueField = isCheckable(node) ? "checked" : "value";
+        node._valueTracker = trackValueOnNode(
+          node,
+          valueField,
+          "" + node[valueField]
+        );
+      }
+    }
+    function trackHydrated(node, initialValue, initialChecked) {
+      if (node._valueTracker) return !1;
+      if (isCheckable(node)) {
+        var valueField = "checked";
+        initialValue = "" + initialChecked;
+      } else valueField = "value";
+      initialChecked = "" + node[valueField];
+      node._valueTracker = trackValueOnNode(node, valueField, initialValue);
+      return initialChecked !== initialValue;
     }
     function updateValueIfChanged(node) {
       if (!node) return !1;
@@ -1744,48 +1758,6 @@ __DEV__ &&
         ? (checkAttributeStringCoercion(name, "name"),
           (element.name = "" + getToStringValue(name)))
         : element.removeAttribute("name");
-    }
-    function initInput(
-      element,
-      value,
-      defaultValue,
-      checked,
-      defaultChecked,
-      type,
-      name,
-      isHydrating
-    ) {
-      null != type &&
-        "function" !== typeof type &&
-        "symbol" !== typeof type &&
-        "boolean" !== typeof type &&
-        (checkAttributeStringCoercion(type, "type"), (element.type = type));
-      if (null != value || null != defaultValue) {
-        if (
-          !(
-            ("submit" !== type && "reset" !== type) ||
-            (void 0 !== value && null !== value)
-          )
-        )
-          return;
-        defaultValue =
-          null != defaultValue ? "" + getToStringValue(defaultValue) : "";
-        value = null != value ? "" + getToStringValue(value) : defaultValue;
-        isHydrating || value === element.value || (element.value = value);
-        element.defaultValue = value;
-      }
-      checked = null != checked ? checked : defaultChecked;
-      checked =
-        "function" !== typeof checked &&
-        "symbol" !== typeof checked &&
-        !!checked;
-      element.checked = isHydrating ? element.checked : !!checked;
-      element.defaultChecked = !!checked;
-      null != name &&
-        "function" !== typeof name &&
-        "symbol" !== typeof name &&
-        "boolean" !== typeof name &&
-        (checkAttributeStringCoercion(name, "name"), (element.name = name));
     }
     function setDefaultValue(node, type, value) {
       ("number" === type && getActiveElement(node.ownerDocument) === node) ||
@@ -1904,31 +1876,6 @@ __DEV__ &&
       }
       element.defaultValue =
         null != defaultValue ? "" + getToStringValue(defaultValue) : "";
-    }
-    function initTextarea(element, value, defaultValue, children) {
-      if (null == value) {
-        if (null != children) {
-          if (null != defaultValue)
-            throw Error(
-              "If you supply `defaultValue` on a <textarea>, do not pass children."
-            );
-          if (isArrayImpl(children)) {
-            if (1 < children.length)
-              throw Error("<textarea> can only have at most one child.");
-            children = children[0];
-          }
-          defaultValue = children;
-        }
-        null == defaultValue && (defaultValue = "");
-        value = defaultValue;
-      }
-      defaultValue = getToStringValue(value);
-      element.defaultValue = defaultValue;
-      children = element.textContent;
-      children === defaultValue &&
-        "" !== children &&
-        null !== children &&
-        (element.value = children);
     }
     function findNotableNode(node, indent) {
       return void 0 === node.serverProps &&
@@ -4701,17 +4648,6 @@ __DEV__ &&
           checkControlledValueProps("input", props);
           listenToNonDelegatedEvent("invalid", didHydrate);
           validateInputProps(didHydrate, props);
-          initInput(
-            didHydrate,
-            props.value,
-            props.defaultValue,
-            props.checked,
-            props.defaultChecked,
-            props.type,
-            props.name,
-            !0
-          );
-          track(didHydrate);
           break;
         case "option":
           validateOptionProps(didHydrate, props);
@@ -4724,14 +4660,7 @@ __DEV__ &&
         case "textarea":
           checkControlledValueProps("textarea", props),
             listenToNonDelegatedEvent("invalid", didHydrate),
-            validateTextareaProps(didHydrate, props),
-            initTextarea(
-              didHydrate,
-              props.value,
-              props.defaultValue,
-              props.children
-            ),
-            track(didHydrate);
+            validateTextareaProps(didHydrate, props);
       }
       type = props.children;
       ("string" !== typeof type &&
@@ -10033,24 +9962,24 @@ __DEV__ &&
       return current;
     }
     function updateSuspenseComponent(current, workInProgress, renderLanes) {
-      var JSCompiler_object_inline_digest_2565;
-      var JSCompiler_object_inline_stack_2566 = workInProgress.pendingProps;
+      var JSCompiler_object_inline_digest_2645;
+      var JSCompiler_object_inline_stack_2646 = workInProgress.pendingProps;
       shouldSuspendImpl(workInProgress) && (workInProgress.flags |= 128);
-      var JSCompiler_object_inline_message_2564 = !1;
+      var JSCompiler_object_inline_message_2644 = !1;
       var didSuspend = 0 !== (workInProgress.flags & 128);
-      (JSCompiler_object_inline_digest_2565 = didSuspend) ||
-        (JSCompiler_object_inline_digest_2565 =
+      (JSCompiler_object_inline_digest_2645 = didSuspend) ||
+        (JSCompiler_object_inline_digest_2645 =
           null !== current && null === current.memoizedState
             ? !1
             : 0 !== (suspenseStackCursor.current & ForceSuspenseFallback));
-      JSCompiler_object_inline_digest_2565 &&
-        ((JSCompiler_object_inline_message_2564 = !0),
+      JSCompiler_object_inline_digest_2645 &&
+        ((JSCompiler_object_inline_message_2644 = !0),
         (workInProgress.flags &= -129));
-      JSCompiler_object_inline_digest_2565 = 0 !== (workInProgress.flags & 32);
+      JSCompiler_object_inline_digest_2645 = 0 !== (workInProgress.flags & 32);
       workInProgress.flags &= -33;
       if (null === current) {
         if (isHydrating) {
-          JSCompiler_object_inline_message_2564
+          JSCompiler_object_inline_message_2644
             ? pushPrimaryTreeSuspenseHandler(workInProgress)
             : reuseSuspenseHandlerOnStack(workInProgress);
           (renderLanes = nextHydratableInstance)
@@ -10063,18 +9992,18 @@ __DEV__ &&
                   ? current
                   : null),
               null !== current &&
-                ((JSCompiler_object_inline_digest_2565 = {
+                ((JSCompiler_object_inline_digest_2645 = {
                   dehydrated: current,
                   treeContext: getSuspendedTreeContext(),
                   retryLane: 536870912,
                   hydrationErrors: null
                 }),
                 (workInProgress.memoizedState =
-                  JSCompiler_object_inline_digest_2565),
-                (JSCompiler_object_inline_digest_2565 =
+                  JSCompiler_object_inline_digest_2645),
+                (JSCompiler_object_inline_digest_2645 =
                   createFiberFromDehydratedFragment(current)),
-                (JSCompiler_object_inline_digest_2565.return = workInProgress),
-                (workInProgress.child = JSCompiler_object_inline_digest_2565),
+                (JSCompiler_object_inline_digest_2645.return = workInProgress),
+                (workInProgress.child = JSCompiler_object_inline_digest_2645),
                 (hydrationParentFiber = workInProgress),
                 (nextHydratableInstance = null)))
             : (current = null);
@@ -10088,12 +10017,12 @@ __DEV__ &&
             : (workInProgress.lanes = 536870912);
           return null;
         }
-        var nextPrimaryChildren = JSCompiler_object_inline_stack_2566.children,
-          nextFallbackChildren = JSCompiler_object_inline_stack_2566.fallback;
-        if (JSCompiler_object_inline_message_2564)
+        var nextPrimaryChildren = JSCompiler_object_inline_stack_2646.children,
+          nextFallbackChildren = JSCompiler_object_inline_stack_2646.fallback;
+        if (JSCompiler_object_inline_message_2644)
           return (
             reuseSuspenseHandlerOnStack(workInProgress),
-            (JSCompiler_object_inline_stack_2566 =
+            (JSCompiler_object_inline_stack_2646 =
               mountSuspenseFallbackChildren(
                 workInProgress,
                 nextPrimaryChildren,
@@ -10105,19 +10034,19 @@ __DEV__ &&
               mountSuspenseOffscreenState(renderLanes)),
             (nextPrimaryChildren.childLanes = getRemainingWorkInPrimaryTree(
               current,
-              JSCompiler_object_inline_digest_2565,
+              JSCompiler_object_inline_digest_2645,
               renderLanes
             )),
             (workInProgress.memoizedState = SUSPENDED_MARKER),
-            JSCompiler_object_inline_stack_2566
+            JSCompiler_object_inline_stack_2646
           );
         if (
           "number" ===
-          typeof JSCompiler_object_inline_stack_2566.unstable_expectedLoadTime
+          typeof JSCompiler_object_inline_stack_2646.unstable_expectedLoadTime
         )
           return (
             reuseSuspenseHandlerOnStack(workInProgress),
-            (JSCompiler_object_inline_stack_2566 =
+            (JSCompiler_object_inline_stack_2646 =
               mountSuspenseFallbackChildren(
                 workInProgress,
                 nextPrimaryChildren,
@@ -10129,12 +10058,12 @@ __DEV__ &&
               mountSuspenseOffscreenState(renderLanes)),
             (nextPrimaryChildren.childLanes = getRemainingWorkInPrimaryTree(
               current,
-              JSCompiler_object_inline_digest_2565,
+              JSCompiler_object_inline_digest_2645,
               renderLanes
             )),
             (workInProgress.memoizedState = SUSPENDED_MARKER),
             (workInProgress.lanes = 4194304),
-            JSCompiler_object_inline_stack_2566
+            JSCompiler_object_inline_stack_2646
           );
         pushPrimaryTreeSuspenseHandler(workInProgress);
         return mountSuspensePrimaryChildren(
@@ -10144,8 +10073,8 @@ __DEV__ &&
       }
       var prevState = current.memoizedState;
       if (null !== prevState) {
-        var JSCompiler_object_inline_componentStack_2567 = prevState.dehydrated;
-        if (null !== JSCompiler_object_inline_componentStack_2567) {
+        var JSCompiler_object_inline_componentStack_2647 = prevState.dehydrated;
+        if (null !== JSCompiler_object_inline_componentStack_2647) {
           if (didSuspend)
             workInProgress.flags & 256
               ? (pushPrimaryTreeSuspenseHandler(workInProgress),
@@ -10162,13 +10091,13 @@ __DEV__ &&
                   (workInProgress = null))
                 : (reuseSuspenseHandlerOnStack(workInProgress),
                   (nextPrimaryChildren =
-                    JSCompiler_object_inline_stack_2566.fallback),
+                    JSCompiler_object_inline_stack_2646.fallback),
                   (nextFallbackChildren = workInProgress.mode),
-                  (JSCompiler_object_inline_stack_2566 =
+                  (JSCompiler_object_inline_stack_2646 =
                     mountWorkInProgressOffscreenFiber(
                       {
                         mode: "visible",
-                        children: JSCompiler_object_inline_stack_2566.children
+                        children: JSCompiler_object_inline_stack_2646.children
                       },
                       nextFallbackChildren
                     )),
@@ -10179,11 +10108,11 @@ __DEV__ &&
                     null
                   )),
                   (nextPrimaryChildren.flags |= 2),
-                  (JSCompiler_object_inline_stack_2566.return = workInProgress),
+                  (JSCompiler_object_inline_stack_2646.return = workInProgress),
                   (nextPrimaryChildren.return = workInProgress),
-                  (JSCompiler_object_inline_stack_2566.sibling =
+                  (JSCompiler_object_inline_stack_2646.sibling =
                     nextPrimaryChildren),
-                  (workInProgress.child = JSCompiler_object_inline_stack_2566),
+                  (workInProgress.child = JSCompiler_object_inline_stack_2646),
                   (workInProgress.mode & ConcurrentMode) !== NoMode &&
                     reconcileChildFibers(
                       workInProgress,
@@ -10191,13 +10120,13 @@ __DEV__ &&
                       null,
                       renderLanes
                     ),
-                  (JSCompiler_object_inline_stack_2566 = workInProgress.child),
-                  (JSCompiler_object_inline_stack_2566.memoizedState =
+                  (JSCompiler_object_inline_stack_2646 = workInProgress.child),
+                  (JSCompiler_object_inline_stack_2646.memoizedState =
                     mountSuspenseOffscreenState(renderLanes)),
-                  (JSCompiler_object_inline_stack_2566.childLanes =
+                  (JSCompiler_object_inline_stack_2646.childLanes =
                     getRemainingWorkInPrimaryTree(
                       current,
-                      JSCompiler_object_inline_digest_2565,
+                      JSCompiler_object_inline_digest_2645,
                       renderLanes
                     )),
                   (workInProgress.memoizedState = SUSPENDED_MARKER),
@@ -10206,45 +10135,45 @@ __DEV__ &&
             (pushPrimaryTreeSuspenseHandler(workInProgress),
             warnIfHydrating(),
             isSuspenseInstanceFallback(
-              JSCompiler_object_inline_componentStack_2567
+              JSCompiler_object_inline_componentStack_2647
             ))
           ) {
-            JSCompiler_object_inline_digest_2565 =
-              JSCompiler_object_inline_componentStack_2567.nextSibling &&
-              JSCompiler_object_inline_componentStack_2567.nextSibling.dataset;
-            if (JSCompiler_object_inline_digest_2565) {
-              nextPrimaryChildren = JSCompiler_object_inline_digest_2565.dgst;
-              var message = JSCompiler_object_inline_digest_2565.msg;
-              nextFallbackChildren = JSCompiler_object_inline_digest_2565.stck;
-              var componentStack = JSCompiler_object_inline_digest_2565.cstck;
+            JSCompiler_object_inline_digest_2645 =
+              JSCompiler_object_inline_componentStack_2647.nextSibling &&
+              JSCompiler_object_inline_componentStack_2647.nextSibling.dataset;
+            if (JSCompiler_object_inline_digest_2645) {
+              nextPrimaryChildren = JSCompiler_object_inline_digest_2645.dgst;
+              var message = JSCompiler_object_inline_digest_2645.msg;
+              nextFallbackChildren = JSCompiler_object_inline_digest_2645.stck;
+              var componentStack = JSCompiler_object_inline_digest_2645.cstck;
             }
-            JSCompiler_object_inline_message_2564 = message;
-            JSCompiler_object_inline_digest_2565 = nextPrimaryChildren;
-            JSCompiler_object_inline_stack_2566 = nextFallbackChildren;
-            JSCompiler_object_inline_componentStack_2567 = componentStack;
-            nextPrimaryChildren = JSCompiler_object_inline_message_2564;
-            nextFallbackChildren = JSCompiler_object_inline_componentStack_2567;
+            JSCompiler_object_inline_message_2644 = message;
+            JSCompiler_object_inline_digest_2645 = nextPrimaryChildren;
+            JSCompiler_object_inline_stack_2646 = nextFallbackChildren;
+            JSCompiler_object_inline_componentStack_2647 = componentStack;
+            nextPrimaryChildren = JSCompiler_object_inline_message_2644;
+            nextFallbackChildren = JSCompiler_object_inline_componentStack_2647;
             nextPrimaryChildren = nextPrimaryChildren
               ? Error(nextPrimaryChildren)
               : Error(
                   "The server could not finish this Suspense boundary, likely due to an error during server rendering. Switched to client rendering."
                 );
             nextPrimaryChildren.stack =
-              JSCompiler_object_inline_stack_2566 || "";
-            nextPrimaryChildren.digest = JSCompiler_object_inline_digest_2565;
-            JSCompiler_object_inline_digest_2565 =
+              JSCompiler_object_inline_stack_2646 || "";
+            nextPrimaryChildren.digest = JSCompiler_object_inline_digest_2645;
+            JSCompiler_object_inline_digest_2645 =
               void 0 === nextFallbackChildren ? null : nextFallbackChildren;
-            JSCompiler_object_inline_stack_2566 = {
+            JSCompiler_object_inline_stack_2646 = {
               value: nextPrimaryChildren,
               source: null,
-              stack: JSCompiler_object_inline_digest_2565
+              stack: JSCompiler_object_inline_digest_2645
             };
-            "string" === typeof JSCompiler_object_inline_digest_2565 &&
+            "string" === typeof JSCompiler_object_inline_digest_2645 &&
               CapturedStacks.set(
                 nextPrimaryChildren,
-                JSCompiler_object_inline_stack_2566
+                JSCompiler_object_inline_stack_2646
               );
-            queueHydrationError(JSCompiler_object_inline_stack_2566);
+            queueHydrationError(JSCompiler_object_inline_stack_2646);
             workInProgress = retrySuspenseComponentWithoutHydrating(
               current,
               workInProgress,
@@ -10258,35 +10187,35 @@ __DEV__ &&
                 renderLanes,
                 !1
               ),
-            (JSCompiler_object_inline_digest_2565 =
+            (JSCompiler_object_inline_digest_2645 =
               0 !== (renderLanes & current.childLanes)),
-            didReceiveUpdate || JSCompiler_object_inline_digest_2565)
+            didReceiveUpdate || JSCompiler_object_inline_digest_2645)
           ) {
-            JSCompiler_object_inline_digest_2565 = workInProgressRoot;
+            JSCompiler_object_inline_digest_2645 = workInProgressRoot;
             if (
-              null !== JSCompiler_object_inline_digest_2565 &&
-              ((JSCompiler_object_inline_stack_2566 = getBumpedLaneForHydration(
-                JSCompiler_object_inline_digest_2565,
+              null !== JSCompiler_object_inline_digest_2645 &&
+              ((JSCompiler_object_inline_stack_2646 = getBumpedLaneForHydration(
+                JSCompiler_object_inline_digest_2645,
                 renderLanes
               )),
-              0 !== JSCompiler_object_inline_stack_2566 &&
-                JSCompiler_object_inline_stack_2566 !== prevState.retryLane)
+              0 !== JSCompiler_object_inline_stack_2646 &&
+                JSCompiler_object_inline_stack_2646 !== prevState.retryLane)
             )
               throw (
-                ((prevState.retryLane = JSCompiler_object_inline_stack_2566),
+                ((prevState.retryLane = JSCompiler_object_inline_stack_2646),
                 enqueueConcurrentRenderForLane(
                   current,
-                  JSCompiler_object_inline_stack_2566
+                  JSCompiler_object_inline_stack_2646
                 ),
                 scheduleUpdateOnFiber(
-                  JSCompiler_object_inline_digest_2565,
+                  JSCompiler_object_inline_digest_2645,
                   current,
-                  JSCompiler_object_inline_stack_2566
+                  JSCompiler_object_inline_stack_2646
                 ),
                 SelectiveHydrationException)
               );
             isSuspenseInstancePending(
-              JSCompiler_object_inline_componentStack_2567
+              JSCompiler_object_inline_componentStack_2647
             ) || renderDidSuspendDelayIfPossible();
             workInProgress = retrySuspenseComponentWithoutHydrating(
               current,
@@ -10295,14 +10224,14 @@ __DEV__ &&
             );
           } else
             isSuspenseInstancePending(
-              JSCompiler_object_inline_componentStack_2567
+              JSCompiler_object_inline_componentStack_2647
             )
               ? ((workInProgress.flags |= 192),
                 (workInProgress.child = current.child),
                 (workInProgress = null))
               : ((renderLanes = prevState.treeContext),
                 (nextHydratableInstance = getNextHydratable(
-                  JSCompiler_object_inline_componentStack_2567.nextSibling
+                  JSCompiler_object_inline_componentStack_2647.nextSibling
                 )),
                 (hydrationParentFiber = workInProgress),
                 (isHydrating = !0),
@@ -10314,47 +10243,47 @@ __DEV__ &&
                   restoreSuspendedTreeContext(workInProgress, renderLanes),
                 (workInProgress = mountSuspensePrimaryChildren(
                   workInProgress,
-                  JSCompiler_object_inline_stack_2566.children
+                  JSCompiler_object_inline_stack_2646.children
                 )),
                 (workInProgress.flags |= 4096));
           return workInProgress;
         }
       }
-      if (JSCompiler_object_inline_message_2564)
+      if (JSCompiler_object_inline_message_2644)
         return (
           reuseSuspenseHandlerOnStack(workInProgress),
-          (nextPrimaryChildren = JSCompiler_object_inline_stack_2566.fallback),
+          (nextPrimaryChildren = JSCompiler_object_inline_stack_2646.fallback),
           (nextFallbackChildren = workInProgress.mode),
           (componentStack = current.child),
-          (JSCompiler_object_inline_componentStack_2567 =
+          (JSCompiler_object_inline_componentStack_2647 =
             componentStack.sibling),
-          (JSCompiler_object_inline_message_2564 = {
+          (JSCompiler_object_inline_message_2644 = {
             mode: "hidden",
-            children: JSCompiler_object_inline_stack_2566.children
+            children: JSCompiler_object_inline_stack_2646.children
           }),
           (nextFallbackChildren & ConcurrentMode) === NoMode &&
           workInProgress.child !== componentStack
-            ? ((JSCompiler_object_inline_stack_2566 = workInProgress.child),
-              (JSCompiler_object_inline_stack_2566.childLanes = 0),
-              (JSCompiler_object_inline_stack_2566.pendingProps =
-                JSCompiler_object_inline_message_2564),
+            ? ((JSCompiler_object_inline_stack_2646 = workInProgress.child),
+              (JSCompiler_object_inline_stack_2646.childLanes = 0),
+              (JSCompiler_object_inline_stack_2646.pendingProps =
+                JSCompiler_object_inline_message_2644),
               workInProgress.mode & ProfileMode &&
-                ((JSCompiler_object_inline_stack_2566.actualDuration = -0),
-                (JSCompiler_object_inline_stack_2566.actualStartTime = -1.1),
-                (JSCompiler_object_inline_stack_2566.selfBaseDuration =
+                ((JSCompiler_object_inline_stack_2646.actualDuration = -0),
+                (JSCompiler_object_inline_stack_2646.actualStartTime = -1.1),
+                (JSCompiler_object_inline_stack_2646.selfBaseDuration =
                   componentStack.selfBaseDuration),
-                (JSCompiler_object_inline_stack_2566.treeBaseDuration =
+                (JSCompiler_object_inline_stack_2646.treeBaseDuration =
                   componentStack.treeBaseDuration)),
               (workInProgress.deletions = null))
-            : ((JSCompiler_object_inline_stack_2566 = createWorkInProgress(
+            : ((JSCompiler_object_inline_stack_2646 = createWorkInProgress(
                 componentStack,
-                JSCompiler_object_inline_message_2564
+                JSCompiler_object_inline_message_2644
               )),
-              (JSCompiler_object_inline_stack_2566.subtreeFlags =
+              (JSCompiler_object_inline_stack_2646.subtreeFlags =
                 componentStack.subtreeFlags & 65011712)),
-          null !== JSCompiler_object_inline_componentStack_2567
+          null !== JSCompiler_object_inline_componentStack_2647
             ? (nextPrimaryChildren = createWorkInProgress(
-                JSCompiler_object_inline_componentStack_2567,
+                JSCompiler_object_inline_componentStack_2647,
                 nextPrimaryChildren
               ))
             : ((nextPrimaryChildren = createFiberFromFragment(
@@ -10365,24 +10294,24 @@ __DEV__ &&
               )),
               (nextPrimaryChildren.flags |= 2)),
           (nextPrimaryChildren.return = workInProgress),
-          (JSCompiler_object_inline_stack_2566.return = workInProgress),
-          (JSCompiler_object_inline_stack_2566.sibling = nextPrimaryChildren),
-          (workInProgress.child = JSCompiler_object_inline_stack_2566),
-          (JSCompiler_object_inline_stack_2566 = nextPrimaryChildren),
+          (JSCompiler_object_inline_stack_2646.return = workInProgress),
+          (JSCompiler_object_inline_stack_2646.sibling = nextPrimaryChildren),
+          (workInProgress.child = JSCompiler_object_inline_stack_2646),
+          (JSCompiler_object_inline_stack_2646 = nextPrimaryChildren),
           (nextPrimaryChildren = workInProgress.child),
           (nextFallbackChildren = current.child.memoizedState),
           null === nextFallbackChildren
             ? (nextFallbackChildren = mountSuspenseOffscreenState(renderLanes))
             : ((componentStack = nextFallbackChildren.cachePool),
               null !== componentStack
-                ? ((JSCompiler_object_inline_componentStack_2567 =
+                ? ((JSCompiler_object_inline_componentStack_2647 =
                     CacheContext._currentValue),
                   (componentStack =
                     componentStack.parent !==
-                    JSCompiler_object_inline_componentStack_2567
+                    JSCompiler_object_inline_componentStack_2647
                       ? {
-                          parent: JSCompiler_object_inline_componentStack_2567,
-                          pool: JSCompiler_object_inline_componentStack_2567
+                          parent: JSCompiler_object_inline_componentStack_2647,
+                          pool: JSCompiler_object_inline_componentStack_2647
                         }
                       : componentStack))
                 : (componentStack = getSuspendedCache()),
@@ -10393,35 +10322,35 @@ __DEV__ &&
           (nextPrimaryChildren.memoizedState = nextFallbackChildren),
           (nextPrimaryChildren.childLanes = getRemainingWorkInPrimaryTree(
             current,
-            JSCompiler_object_inline_digest_2565,
+            JSCompiler_object_inline_digest_2645,
             renderLanes
           )),
           (workInProgress.memoizedState = SUSPENDED_MARKER),
-          JSCompiler_object_inline_stack_2566
+          JSCompiler_object_inline_stack_2646
         );
       pushPrimaryTreeSuspenseHandler(workInProgress);
-      JSCompiler_object_inline_digest_2565 = current.child;
-      current = JSCompiler_object_inline_digest_2565.sibling;
-      JSCompiler_object_inline_digest_2565 = createWorkInProgress(
-        JSCompiler_object_inline_digest_2565,
+      JSCompiler_object_inline_digest_2645 = current.child;
+      current = JSCompiler_object_inline_digest_2645.sibling;
+      JSCompiler_object_inline_digest_2645 = createWorkInProgress(
+        JSCompiler_object_inline_digest_2645,
         {
           mode: "visible",
-          children: JSCompiler_object_inline_stack_2566.children
+          children: JSCompiler_object_inline_stack_2646.children
         }
       );
       (workInProgress.mode & ConcurrentMode) === NoMode &&
-        (JSCompiler_object_inline_digest_2565.lanes = renderLanes);
-      JSCompiler_object_inline_digest_2565.return = workInProgress;
-      JSCompiler_object_inline_digest_2565.sibling = null;
+        (JSCompiler_object_inline_digest_2645.lanes = renderLanes);
+      JSCompiler_object_inline_digest_2645.return = workInProgress;
+      JSCompiler_object_inline_digest_2645.sibling = null;
       null !== current &&
         ((renderLanes = workInProgress.deletions),
         null === renderLanes
           ? ((workInProgress.deletions = [current]),
             (workInProgress.flags |= 16))
           : renderLanes.push(current));
-      workInProgress.child = JSCompiler_object_inline_digest_2565;
+      workInProgress.child = JSCompiler_object_inline_digest_2645;
       workInProgress.memoizedState = null;
-      return JSCompiler_object_inline_digest_2565;
+      return JSCompiler_object_inline_digest_2645;
     }
     function mountSuspensePrimaryChildren(workInProgress, primaryChildren) {
       primaryChildren = mountWorkInProgressOffscreenFiber(
@@ -12015,9 +11944,20 @@ __DEV__ &&
               return null;
             }
             var _currentHostContext = getHostContext();
-            if (popHydrationState(workInProgress))
+            if (popHydrationState(workInProgress)) {
               prepareToHydrateHostInstance(workInProgress, _currentHostContext);
-            else {
+              a: switch (type) {
+                case "input":
+                case "select":
+                case "textarea":
+                case "img":
+                  newProps = !0;
+                  break a;
+                default:
+                  newProps = !1;
+              }
+              newProps && (workInProgress.flags |= 64);
+            } else {
               nextResource = requiredContext(rootInstanceStackCursor.current);
               validateDOMNesting(type, _currentHostContext.ancestorInfo);
               _currentHostContext = _currentHostContext.context;
@@ -13672,7 +13612,29 @@ __DEV__ &&
         case 26:
         case 5:
           recursivelyTraverseLayoutEffects(finishedRoot, finishedWork);
-          null === current && flags & 4 && commitHostMount(finishedWork);
+          if (null === current)
+            if (flags & 4) commitHostMount(finishedWork);
+            else if (flags & 64) {
+              finishedRoot = finishedWork.type;
+              current = finishedWork.memoizedProps;
+              prevProps = finishedWork.stateNode;
+              try {
+                runWithFiberInDEV(
+                  finishedWork,
+                  commitHydratedInstance,
+                  prevProps,
+                  finishedRoot,
+                  current,
+                  finishedWork
+                );
+              } catch (error) {
+                captureCommitPhaseError(
+                  finishedWork,
+                  finishedWork.return,
+                  error
+                );
+              }
+            }
           flags & 512 && safelyAttachRef(finishedWork, finishedWork.return);
           break;
         case 12:
@@ -16976,6 +16938,41 @@ __DEV__ &&
               ? nestedUpdateCount++
               : ((nestedUpdateCount = 0), (rootWithNestedUpdates = root)))
           : (nestedUpdateCount = 0);
+        if (hasScheduledReplayAttempt) {
+          hasScheduledReplayAttempt = !1;
+          null !== queuedFocus &&
+            attemptReplayContinuousQueuedEvent(queuedFocus) &&
+            (queuedFocus = null);
+          null !== queuedDrag &&
+            attemptReplayContinuousQueuedEvent(queuedDrag) &&
+            (queuedDrag = null);
+          null !== queuedMouse &&
+            attemptReplayContinuousQueuedEvent(queuedMouse) &&
+            (queuedMouse = null);
+          queuedPointers.forEach(attemptReplayContinuousQueuedEventInMap);
+          queuedPointerCaptures.forEach(
+            attemptReplayContinuousQueuedEventInMap
+          );
+          for (root = 0; root < queuedChangeEventTargets.length; root++)
+            (lanes = queuedChangeEventTargets[root]),
+              "INPUT" === lanes.nodeName
+                ? "checkbox" === lanes.type || "radio" === lanes.type
+                  ? (lanes.dispatchEvent(
+                      new ("function" === typeof PointerEvent
+                        ? PointerEvent
+                        : Event)("click", { bubbles: !0 })
+                    ),
+                    lanes.dispatchEvent(new Event("input", { bubbles: !0 })))
+                  : "function" === typeof InputEvent &&
+                    lanes.dispatchEvent(
+                      new InputEvent("input", { bubbles: !0 })
+                    )
+                : "TEXTAREA" === lanes.nodeName &&
+                  "function" === typeof InputEvent &&
+                  lanes.dispatchEvent(new InputEvent("input", { bubbles: !0 })),
+              lanes.dispatchEvent(new Event("change", { bubbles: !0 }));
+          queuedChangeEventTargets.length = 0;
+        }
         flushSyncWorkAcrossRoots_impl(0, !1);
         markCommitStopped();
       }
@@ -19198,8 +19195,7 @@ __DEV__ &&
           listenToNonDelegatedEvent("error", domElement);
           listenToNonDelegatedEvent("load", domElement);
           var hasSrc = !1,
-            hasSrcSet = !1,
-            propKey;
+            hasSrcSet = !1;
           for (propKey in props)
             if (props.hasOwnProperty(propKey)) {
               var propValue = props[propKey];
@@ -19228,9 +19224,10 @@ __DEV__ &&
         case "input":
           checkControlledValueProps("input", props);
           listenToNonDelegatedEvent("invalid", domElement);
-          var defaultValue = (propKey = propValue = hasSrcSet = null),
-            checked = null,
-            defaultChecked = null;
+          var value = (propValue = hasSrcSet = null),
+            defaultValue = null,
+            checked = null;
+          var propKey = null;
           for (hasSrc in props)
             if (props.hasOwnProperty(hasSrc)) {
               var _propValue = props[hasSrc];
@@ -19246,10 +19243,10 @@ __DEV__ &&
                     checked = _propValue;
                     break;
                   case "defaultChecked":
-                    defaultChecked = _propValue;
+                    propKey = _propValue;
                     break;
                   case "value":
-                    propKey = _propValue;
+                    value = _propValue;
                     break;
                   case "defaultValue":
                     defaultValue = _propValue;
@@ -19267,17 +19264,43 @@ __DEV__ &&
                 }
             }
           validateInputProps(domElement, props);
-          initInput(
-            domElement,
-            propKey,
-            defaultValue,
-            checked,
-            defaultChecked,
-            propValue,
-            hasSrcSet,
-            !1
-          );
-          track(domElement);
+          a: {
+            tag = value;
+            hasSrc = defaultValue;
+            props = checked;
+            null != propValue &&
+              "function" !== typeof propValue &&
+              "symbol" !== typeof propValue &&
+              "boolean" !== typeof propValue &&
+              (checkAttributeStringCoercion(propValue, "type"),
+              (domElement.type = propValue));
+            if (null != tag || null != hasSrc) {
+              if (
+                !(
+                  ("submit" !== propValue && "reset" !== propValue) ||
+                  (void 0 !== tag && null !== tag)
+                )
+              ) {
+                track(domElement);
+                break a;
+              }
+              hasSrc = null != hasSrc ? "" + getToStringValue(hasSrc) : "";
+              tag = null != tag ? "" + getToStringValue(tag) : hasSrc;
+              tag !== domElement.value && (domElement.value = tag);
+              domElement.defaultValue = tag;
+            }
+            tag = null != props ? props : propKey;
+            tag = "function" !== typeof tag && "symbol" !== typeof tag && !!tag;
+            domElement.checked = !!tag;
+            domElement.defaultChecked = !!tag;
+            null != hasSrcSet &&
+              "function" !== typeof hasSrcSet &&
+              "symbol" !== typeof hasSrcSet &&
+              "boolean" !== typeof hasSrcSet &&
+              (checkAttributeStringCoercion(hasSrcSet, "name"),
+              (domElement.name = hasSrcSet));
+            track(domElement);
+          }
           return;
         case "select":
           checkControlledValueProps("select", props);
@@ -19286,26 +19309,19 @@ __DEV__ &&
           for (hasSrcSet in props)
             if (
               props.hasOwnProperty(hasSrcSet) &&
-              ((defaultValue = props[hasSrcSet]), null != defaultValue)
+              ((checked = props[hasSrcSet]), null != checked)
             )
               switch (hasSrcSet) {
                 case "value":
-                  propKey = defaultValue;
+                  propKey = checked;
                   break;
                 case "defaultValue":
-                  propValue = defaultValue;
+                  propValue = checked;
                   break;
                 case "multiple":
-                  hasSrc = defaultValue;
+                  hasSrc = checked;
                 default:
-                  setProp(
-                    domElement,
-                    tag,
-                    hasSrcSet,
-                    defaultValue,
-                    props,
-                    null
-                  );
+                  setProp(domElement, tag, hasSrcSet, checked, props, null);
               }
           validateSelectProps(domElement, props);
           tag = propKey;
@@ -19318,50 +19334,67 @@ __DEV__ &&
         case "textarea":
           checkControlledValueProps("textarea", props);
           listenToNonDelegatedEvent("invalid", domElement);
-          propKey = hasSrcSet = hasSrc = null;
+          hasSrcSet = propKey = hasSrc = null;
           for (propValue in props)
             if (
               props.hasOwnProperty(propValue) &&
-              ((defaultValue = props[propValue]), null != defaultValue)
+              ((checked = props[propValue]), null != checked)
             )
               switch (propValue) {
                 case "value":
-                  hasSrc = defaultValue;
+                  hasSrc = checked;
                   break;
                 case "defaultValue":
-                  hasSrcSet = defaultValue;
+                  propKey = checked;
                   break;
                 case "children":
-                  propKey = defaultValue;
+                  hasSrcSet = checked;
                   break;
                 case "dangerouslySetInnerHTML":
-                  if (null != defaultValue)
+                  if (null != checked)
                     throw Error(
                       "`dangerouslySetInnerHTML` does not make sense on <textarea>."
                     );
                   break;
                 default:
-                  setProp(
-                    domElement,
-                    tag,
-                    propValue,
-                    defaultValue,
-                    props,
-                    null
-                  );
+                  setProp(domElement, tag, propValue, checked, props, null);
               }
           validateTextareaProps(domElement, props);
-          initTextarea(domElement, hasSrc, hasSrcSet, propKey);
+          tag = propKey;
+          props = hasSrcSet;
+          if (null == hasSrc) {
+            if (null != props) {
+              if (null != tag)
+                throw Error(
+                  "If you supply `defaultValue` on a <textarea>, do not pass children."
+                );
+              if (isArrayImpl(props)) {
+                if (1 < props.length)
+                  throw Error("<textarea> can only have at most one child.");
+                props = props[0];
+              }
+              tag = props;
+            }
+            null == tag && (tag = "");
+            hasSrc = tag;
+          }
+          tag = getToStringValue(hasSrc);
+          domElement.defaultValue = tag;
+          props = domElement.textContent;
+          props === tag &&
+            "" !== props &&
+            null !== props &&
+            (domElement.value = props);
           track(domElement);
           return;
         case "option":
           validateOptionProps(domElement, props);
-          for (checked in props)
+          for (defaultValue in props)
             if (
-              props.hasOwnProperty(checked) &&
-              ((hasSrc = props[checked]), null != hasSrc)
+              props.hasOwnProperty(defaultValue) &&
+              ((hasSrc = props[defaultValue]), null != hasSrc)
             )
-              switch (checked) {
+              switch (defaultValue) {
                 case "selected":
                   domElement.selected =
                     hasSrc &&
@@ -19369,7 +19402,7 @@ __DEV__ &&
                     "symbol" !== typeof hasSrc;
                   break;
                 default:
-                  setProp(domElement, tag, checked, hasSrc, props, null);
+                  setProp(domElement, tag, defaultValue, hasSrc, props, null);
               }
           return;
         case "dialog":
@@ -19410,12 +19443,12 @@ __DEV__ &&
         case "track":
         case "wbr":
         case "menuitem":
-          for (defaultChecked in props)
+          for (value in props)
             if (
-              props.hasOwnProperty(defaultChecked) &&
-              ((hasSrc = props[defaultChecked]), null != hasSrc)
+              props.hasOwnProperty(value) &&
+              ((hasSrc = props[value]), null != hasSrc)
             )
-              switch (defaultChecked) {
+              switch (value) {
                 case "children":
                 case "dangerouslySetInnerHTML":
                   throw Error(
@@ -19423,7 +19456,7 @@ __DEV__ &&
                       " is a void element tag and must neither have `children` nor use `dangerouslySetInnerHTML`."
                   );
                 default:
-                  setProp(domElement, tag, defaultChecked, hasSrc, props, null);
+                  setProp(domElement, tag, value, hasSrc, props, null);
               }
           return;
         default:
@@ -19443,11 +19476,11 @@ __DEV__ &&
             return;
           }
       }
-      for (defaultValue in props)
-        props.hasOwnProperty(defaultValue) &&
-          ((hasSrc = props[defaultValue]),
+      for (checked in props)
+        props.hasOwnProperty(checked) &&
+          ((hasSrc = props[checked]),
           null != hasSrc &&
-            setProp(domElement, tag, defaultValue, hasSrc, props, null));
+            setProp(domElement, tag, checked, hasSrc, props, null));
     }
     function updateProperties(domElement, tag, lastProps, nextProps) {
       validatePropertiesInDevelopment(tag, nextProps);
@@ -20785,6 +20818,74 @@ __DEV__ &&
           newProps.src
             ? (domElement.src = newProps.src)
             : newProps.srcSet && (domElement.srcset = newProps.srcSet);
+      }
+    }
+    function commitHydratedInstance(domElement, type, props) {
+      switch (type) {
+        case "input":
+          var value = props.value,
+            defaultValue = props.defaultValue;
+          type = props.checked;
+          props = props.defaultChecked;
+          defaultValue =
+            null != defaultValue ? "" + getToStringValue(defaultValue) : "";
+          value = null != value ? "" + getToStringValue(value) : defaultValue;
+          type = null != type ? type : props;
+          domElement.checked = domElement.checked;
+          trackHydrated(
+            domElement,
+            value,
+            "function" !== typeof type && "symbol" !== typeof type && !!type
+          ) &&
+            ("radio" !== domElement.type || domElement.checked) &&
+            queueChangeEvent(domElement);
+          break;
+        case "select":
+          value = props.value;
+          type = domElement.options;
+          defaultValue = null != value ? value : props.defaultValue;
+          value = !1;
+          if (props.multiple) {
+            props = {};
+            if (null != defaultValue)
+              for (var i = 0; i < defaultValue.length; i++)
+                props["$" + defaultValue[i]] = !0;
+            for (defaultValue = 0; defaultValue < type.length; defaultValue++)
+              if (
+                ((i = props.hasOwnProperty("$" + type[defaultValue].value)),
+                type[defaultValue].selected !== i)
+              ) {
+                value = !0;
+                break;
+              }
+          } else
+            for (
+              props =
+                null == defaultValue
+                  ? null
+                  : "" + getToStringValue(defaultValue),
+                defaultValue = 0;
+              defaultValue < type.length;
+              defaultValue++
+            )
+              if (
+                (null != props ||
+                  type[defaultValue].disabled ||
+                  (props = type[defaultValue].value),
+                type[defaultValue].selected !==
+                  (type[defaultValue].value === props))
+              ) {
+                value = !0;
+                break;
+              }
+          value && queueChangeEvent(domElement);
+          break;
+        case "textarea":
+          (type = props.defaultValue),
+            (props = props.value),
+            null == props && (null == type && (type = ""), (props = type)),
+            (type = "" + getToStringValue(props)),
+            trackHydrated(domElement, type, !1) && queueChangeEvent(domElement);
       }
     }
     function commitUpdate(domElement, type, oldProps, newProps) {
@@ -22784,29 +22885,14 @@ __DEV__ &&
     function attemptReplayContinuousQueuedEventInMap(queuedEvent, key, map) {
       attemptReplayContinuousQueuedEvent(queuedEvent) && map.delete(key);
     }
-    function replayUnblockedEvents() {
-      hasScheduledReplayAttempt = !1;
-      null !== queuedFocus &&
-        attemptReplayContinuousQueuedEvent(queuedFocus) &&
-        (queuedFocus = null);
-      null !== queuedDrag &&
-        attemptReplayContinuousQueuedEvent(queuedDrag) &&
-        (queuedDrag = null);
-      null !== queuedMouse &&
-        attemptReplayContinuousQueuedEvent(queuedMouse) &&
-        (queuedMouse = null);
-      queuedPointers.forEach(attemptReplayContinuousQueuedEventInMap);
-      queuedPointerCaptures.forEach(attemptReplayContinuousQueuedEventInMap);
+    function queueChangeEvent(target) {
+      queuedChangeEventTargets.push(target);
+      hasScheduledReplayAttempt || (hasScheduledReplayAttempt = !0);
     }
     function scheduleCallbackIfUnblocked(queuedEvent, unblocked) {
       queuedEvent.blockedOn === unblocked &&
         ((queuedEvent.blockedOn = null),
-        hasScheduledReplayAttempt ||
-          ((hasScheduledReplayAttempt = !0),
-          Scheduler.unstable_scheduleCallback(
-            Scheduler.unstable_NormalPriority,
-            replayUnblockedEvents
-          )));
+        hasScheduledReplayAttempt || (hasScheduledReplayAttempt = !0));
     }
     function scheduleReplayQueueIfNeeded(formReplayingQueue) {
       lastScheduledReplayQueue !== formReplayingQueue &&
@@ -26644,6 +26730,7 @@ __DEV__ &&
       queuedMouse = null,
       queuedPointers = new Map(),
       queuedPointerCaptures = new Map(),
+      queuedChangeEventTargets = [],
       queuedExplicitHydrationTargets = [],
       discreteReplayableEvents =
         "mousedown mouseup touchcancel touchend touchstart auxclick dblclick pointercancel pointerdown pointerup dragend dragstart drop compositionend compositionstart keydown keypress keyup input textInput copy cut paste click change contextmenu reset".split(
@@ -26711,11 +26798,11 @@ __DEV__ &&
     };
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.2.0-native-fb-79586c7e-20250505" !== isomorphicReactPackageVersion)
+      if ("19.2.0-native-fb-54a50729-20250506" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.2.0-native-fb-79586c7e-20250505\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.2.0-native-fb-54a50729-20250506\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -26752,10 +26839,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.2.0-native-fb-79586c7e-20250505",
+          version: "19.2.0-native-fb-54a50729-20250506",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.2.0-native-fb-79586c7e-20250505"
+          reconcilerVersion: "19.2.0-native-fb-54a50729-20250506"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -27215,7 +27302,7 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.2.0-native-fb-79586c7e-20250505";
+    exports.version = "19.2.0-native-fb-54a50729-20250506";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&
