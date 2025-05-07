@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<699e1a8b1b3a017e9b915b9aed043d7c>>
+ * @generated SignedSource<<086b1d1c23d400a0091d5f2335bdf5ca>>
  */
 
 "use strict";
@@ -2094,30 +2094,18 @@ __DEV__ &&
       c
     ) {
       for (; null !== child; ) {
-        if (5 === child.tag) {
-          if (
-            fn(child, a, b, c) ||
-            (searchWithinHosts &&
-              traverseVisibleHostChildren(
-                child.child,
-                searchWithinHosts,
-                fn,
-                a,
-                b,
-                c
-              ))
-          )
-            return !0;
-        } else if (
-          (22 !== child.tag || null === child.memoizedState) &&
-          traverseVisibleHostChildren(
-            child.child,
-            searchWithinHosts,
-            fn,
-            a,
-            b,
-            c
-          )
+        if (
+          (5 === child.tag && fn(child, a, b, c)) ||
+          ((22 !== child.tag || null === child.memoizedState) &&
+            (searchWithinHosts || 5 !== child.tag) &&
+            traverseVisibleHostChildren(
+              child.child,
+              searchWithinHosts,
+              fn,
+              a,
+              b,
+              c
+            ))
         )
           return !0;
         child = child.sibling;
@@ -17529,10 +17517,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.2.0-native-fb-e5a8de81-20250506",
+        version: "19.2.0-native-fb-8a8df5db-20250507",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.2.0-native-fb-e5a8de81-20250506"
+        reconcilerVersion: "19.2.0-native-fb-8a8df5db-20250507"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
