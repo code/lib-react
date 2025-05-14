@@ -1367,6 +1367,7 @@ module.exports = function ($$$config) {
     root.transitionTypes = null;
     return claimed;
   }
+  function noop$1() {}
   function ensureRootIsScheduled(root) {
     root !== lastScheduledRoot &&
       null === root.next &&
@@ -1429,9 +1430,8 @@ module.exports = function ($$$config) {
     mightHavePendingSyncWork = didScheduleMicrotask = !1;
     var syncTransitionLanes = 0;
     0 !== currentEventTransitionLane &&
-      (shouldAttemptEagerTransition() &&
-        (syncTransitionLanes = currentEventTransitionLane),
-      (currentEventTransitionLane = 0));
+      shouldAttemptEagerTransition() &&
+      (syncTransitionLanes = currentEventTransitionLane);
     for (
       var currentTime = now(), prev = null, root = firstScheduledRoot;
       null !== root;
@@ -1451,6 +1451,7 @@ module.exports = function ($$$config) {
     }
     (0 !== pendingEffectsStatus && 5 !== pendingEffectsStatus) ||
       flushSyncWorkAcrossRoots_impl(syncTransitionLanes, !1);
+    0 !== currentEventTransitionLane && (currentEventTransitionLane = 0);
   }
   function scheduleTaskForRootDuringMicrotask(root, currentTime) {
     var pendingLanes = root.pendingLanes,
@@ -1573,8 +1574,11 @@ module.exports = function ($$$config) {
         );
   }
   function requestTransitionLane() {
-    0 === currentEventTransitionLane &&
-      (currentEventTransitionLane = claimNextTransitionLane());
+    if (0 === currentEventTransitionLane) {
+      var actionScopeLane = currentEntangledLane;
+      currentEventTransitionLane =
+        0 !== actionScopeLane ? actionScopeLane : claimNextTransitionLane();
+    }
     return currentEventTransitionLane;
   }
   function entangleAsyncAction(transition, thenable) {
@@ -1694,7 +1698,6 @@ module.exports = function ($$$config) {
     }
     return !0;
   }
-  function noop$1() {}
   function isThenableResolved(thenable) {
     thenable = thenable.status;
     return "fulfilled" === thenable || "rejected" === thenable;
@@ -9417,6 +9420,7 @@ module.exports = function ($$$config) {
         }
         break;
       case 3:
+        enableViewTransition && (viewTransitionMutationContext = !1);
         supportsResources
           ? (prepareToCommitHoistables(),
             (hoistableRoot = currentHoistableRoot),
@@ -9449,6 +9453,7 @@ module.exports = function ($$$config) {
         }
         needsFormReset &&
           ((needsFormReset = !1), recursivelyResetForms(finishedWork));
+        enableViewTransition && (viewTransitionMutationContext = !1);
         break;
       case 4:
         current = pushMutationContext();
@@ -10998,13 +11003,11 @@ module.exports = function ($$$config) {
       ));
   }
   function requestUpdateLane() {
-    if (0 !== (executionContext & 2) && 0 !== workInProgressRootRenderLanes)
-      return workInProgressRootRenderLanes & -workInProgressRootRenderLanes;
-    if (null !== ReactSharedInternals.T) {
-      var actionScopeLane = currentEntangledLane;
-      return 0 !== actionScopeLane ? actionScopeLane : requestTransitionLane();
-    }
-    return resolveUpdatePriority();
+    return 0 !== (executionContext & 2) && 0 !== workInProgressRootRenderLanes
+      ? workInProgressRootRenderLanes & -workInProgressRootRenderLanes
+      : null !== ReactSharedInternals.T
+        ? requestTransitionLane()
+        : resolveUpdatePriority();
   }
   function requestDeferredLane() {
     0 === workInProgressDeferredLane &&
@@ -13100,6 +13103,35 @@ module.exports = function ($$$config) {
     injectedHook = null,
     globalClientIdCounter$1 = 0,
     objectIs = "function" === typeof Object.is ? Object.is : is,
+    reportGlobalError =
+      "function" === typeof reportError
+        ? reportError
+        : function (error) {
+            if (
+              "object" === typeof window &&
+              "function" === typeof window.ErrorEvent
+            ) {
+              var event = new window.ErrorEvent("error", {
+                bubbles: !0,
+                cancelable: !0,
+                message:
+                  "object" === typeof error &&
+                  null !== error &&
+                  "string" === typeof error.message
+                    ? String(error.message)
+                    : String(error),
+                error: error
+              });
+              if (!window.dispatchEvent(event)) return;
+            } else if (
+              "object" === typeof process &&
+              "function" === typeof process.emit
+            ) {
+              process.emit("uncaughtException", error);
+              return;
+            }
+            console.error(error);
+          },
     prefix,
     suffix,
     reentry = !1,
@@ -13606,35 +13638,6 @@ module.exports = function ($$$config) {
           entangleTransitions(callback, inst, lane));
       }
     },
-    reportGlobalError =
-      "function" === typeof reportError
-        ? reportError
-        : function (error) {
-            if (
-              "object" === typeof window &&
-              "function" === typeof window.ErrorEvent
-            ) {
-              var event = new window.ErrorEvent("error", {
-                bubbles: !0,
-                cancelable: !0,
-                message:
-                  "object" === typeof error &&
-                  null !== error &&
-                  "string" === typeof error.message
-                    ? String(error.message)
-                    : String(error),
-                error: error
-              });
-              if (!window.dispatchEvent(event)) return;
-            } else if (
-              "object" === typeof process &&
-              "function" === typeof process.emit
-            ) {
-              process.emit("uncaughtException", error);
-              return;
-            }
-            console.error(error);
-          },
     markerInstanceStack = createCursor(null),
     SelectiveHydrationException = Error(formatProdErrorMessage(461)),
     didReceiveUpdate = !1,
@@ -14084,7 +14087,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.2.0-www-classic-3820740a-20250509"
+      reconcilerVersion: "19.2.0-www-classic-3a5b326d-20250513"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);
