@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<bbe6c60cd0dcb5112aa935f7d1e2fbdf>>
+ * @generated SignedSource<<329a6434b4896b840e077142feb5d01a>>
  */
 
 "use strict";
@@ -10608,7 +10608,72 @@ __DEV__ &&
         captureCommitPhaseError(finishedWork, finishedWork.return, error);
       }
     }
-    function commitPlacement() {}
+    function commitPlacement(finishedWork) {
+      for (
+        var parentFragmentInstances = null, parentFiber = finishedWork.return;
+        null !== parentFiber;
+
+      ) {
+        if (
+          enableFragmentRefs &&
+          parentFiber &&
+          7 === parentFiber.tag &&
+          null !== parentFiber.stateNode
+        ) {
+          var fragmentInstance = parentFiber.stateNode;
+          null === parentFragmentInstances
+            ? (parentFragmentInstances = [fragmentInstance])
+            : parentFragmentInstances.push(fragmentInstance);
+        }
+        if (
+          5 === parentFiber.tag ||
+          3 === parentFiber.tag ||
+          4 === parentFiber.tag
+        )
+          break;
+        parentFiber = parentFiber.return;
+      }
+      enableFragmentRefs &&
+        commitImmutablePlacementNodeToFragmentInstances(
+          finishedWork,
+          parentFragmentInstances
+        );
+    }
+    function commitImmutablePlacementNodeToFragmentInstances(
+      finishedWork,
+      parentFragmentInstances
+    ) {
+      if (enableFragmentRefs)
+        if (5 === finishedWork.tag) {
+          if (
+            5 === finishedWork.tag &&
+            null === finishedWork.alternate &&
+            null !== parentFragmentInstances
+          )
+            for (var i = 0; i < parentFragmentInstances.length; i++)
+              commitNewChildToFragmentInstance(
+                finishedWork.stateNode,
+                parentFragmentInstances[i]
+              );
+        } else if (
+          4 !== finishedWork.tag &&
+          ((finishedWork = finishedWork.child), null !== finishedWork)
+        )
+          for (
+            commitImmutablePlacementNodeToFragmentInstances(
+              finishedWork,
+              parentFragmentInstances
+            ),
+              finishedWork = finishedWork.sibling;
+            null !== finishedWork;
+
+          )
+            commitImmutablePlacementNodeToFragmentInstances(
+              finishedWork,
+              parentFragmentInstances
+            ),
+              (finishedWork = finishedWork.sibling);
+    }
     function commitHostPortalContainerChildren(
       portal,
       finishedWork,
@@ -14631,11 +14696,15 @@ __DEV__ &&
       observer.unobserve(child);
       return !1;
     }
-    function commitNewChildToFragmentInstance(child, fragmentInstance) {
-      null !== fragmentInstance._observers &&
+    function commitNewChildToFragmentInstance(childInstance, fragmentInstance) {
+      var publicInstance = getPublicInstance(childInstance);
+      if (null !== fragmentInstance._observers) {
+        if (null == publicInstance)
+          throw Error("Expected to find a host node. This is a bug in React.");
         fragmentInstance._observers.forEach(function (observer) {
-          observeChild(child, observer);
+          observer.observe(publicInstance);
         });
+      }
     }
     function nativeOnUncaughtError(error, errorInfo) {
       !1 !==
@@ -17503,10 +17572,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.2.0-native-fb-d38c7e10-20250520",
+        version: "19.2.0-native-fb-459a2c42-20250521",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.2.0-native-fb-d38c7e10-20250520"
+        reconcilerVersion: "19.2.0-native-fb-459a2c42-20250521"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
