@@ -12,7 +12,7 @@
  * @lightSyntaxTransform
  * @preventMunge
  * @oncall react_core
- * @generated SignedSource<<c302138ab1d122c4373df15409127816>>
+ * @generated SignedSource<<2e502a771e8aac9be021cd0c1a5dfd48>>
  */
 
 'use strict';
@@ -29032,7 +29032,8 @@ class HIRBuilder {
     get environment() {
         return __classPrivateFieldGet(this, _HIRBuilder_env, "f");
     }
-    constructor(env, parentFunction, bindings = null, context = null) {
+    constructor(env, options) {
+        var _a, _b, _c;
         _HIRBuilder_instances.add(this);
         _HIRBuilder_completed.set(this, new Map());
         _HIRBuilder_current.set(this, void 0);
@@ -29045,11 +29046,10 @@ class HIRBuilder {
         this.errors = new CompilerError();
         this.fbtDepth = 0;
         __classPrivateFieldSet(this, _HIRBuilder_env, env, "f");
-        __classPrivateFieldSet(this, _HIRBuilder_bindings, bindings !== null && bindings !== void 0 ? bindings : new Map(), "f");
-        this.parentFunction = parentFunction;
-        __classPrivateFieldSet(this, _HIRBuilder_context, context !== null && context !== void 0 ? context : [], "f");
+        __classPrivateFieldSet(this, _HIRBuilder_bindings, (_a = options === null || options === void 0 ? void 0 : options.bindings) !== null && _a !== void 0 ? _a : new Map(), "f");
+        __classPrivateFieldSet(this, _HIRBuilder_context, (_b = options === null || options === void 0 ? void 0 : options.context) !== null && _b !== void 0 ? _b : [], "f");
         __classPrivateFieldSet(this, _HIRBuilder_entry, makeBlockId(env.nextBlockId), "f");
-        __classPrivateFieldSet(this, _HIRBuilder_current, newBlock(__classPrivateFieldGet(this, _HIRBuilder_entry, "f"), 'block'), "f");
+        __classPrivateFieldSet(this, _HIRBuilder_current, newBlock(__classPrivateFieldGet(this, _HIRBuilder_entry, "f"), (_c = options === null || options === void 0 ? void 0 : options.entryBlockKind) !== null && _c !== void 0 ? _c : 'block'), "f");
     }
     currentBlockKind() {
         return __classPrivateFieldGet(this, _HIRBuilder_current, "f").kind;
@@ -29087,7 +29087,7 @@ class HIRBuilder {
         if (babelBinding == null) {
             return { kind: 'Global', name: originalName };
         }
-        const outerBinding = this.parentFunction.scope.parent.getBinding(originalName);
+        const outerBinding = __classPrivateFieldGet(this, _HIRBuilder_env, "f").parentFunction.scope.parent.getBinding(originalName);
         if (babelBinding === outerBinding) {
             const path = babelBinding.path;
             if (path.isImportDefaultSpecifier()) {
@@ -29137,7 +29137,7 @@ class HIRBuilder {
     isContextIdentifier(path) {
         const binding = __classPrivateFieldGet(this, _HIRBuilder_instances, "m", _HIRBuilder_resolveBabelBinding).call(this, path);
         if (binding) {
-            const outerBinding = this.parentFunction.scope.parent.getBinding(path.node.name);
+            const outerBinding = __classPrivateFieldGet(this, _HIRBuilder_env, "f").parentFunction.scope.parent.getBinding(path.node.name);
             if (binding === outerBinding) {
                 return false;
             }
@@ -29226,6 +29226,7 @@ class HIRBuilder {
             const nextId = __classPrivateFieldGet(this, _HIRBuilder_env, "f").nextBlockId;
             __classPrivateFieldSet(this, _HIRBuilder_current, newBlock(nextId, nextBlockKind), "f");
         }
+        return blockId;
     }
     terminateWithContinuation(terminal, continuation) {
         const { id: blockId, kind, instructions } = __classPrivateFieldGet(this, _HIRBuilder_current, "f");
@@ -29431,6 +29432,11 @@ function getReversePostorderedBlocks(func) {
             return;
         }
         const block = func.blocks.get(blockId);
+        CompilerError.invariant(block != null, {
+            reason: '[HIRBuilder] Unexpected null block',
+            description: `expected block ${blockId} to exist`,
+            loc: GeneratedSource,
+        });
         const successors = [...eachTerminalSuccessor(block.terminal)].reverse();
         const fallthrough = terminalFallthrough(block.terminal);
         if (fallthrough != null) {
@@ -30370,9 +30376,12 @@ const DefaultNonmutatingHook = addHook(BUILTIN_SHAPES, {
     returnValueKind: ValueKind.Frozen,
 }, 'DefaultNonmutatingHook');
 
-function lower$1(func, env, bindings = null, capturedRefs = [], parent = null) {
+function lower$1(func, env, bindings = null, capturedRefs = []) {
     var _a, _b, _c;
-    const builder = new HIRBuilder(env, parent !== null && parent !== void 0 ? parent : func, bindings, capturedRefs);
+    const builder = new HIRBuilder(env, {
+        bindings,
+        context: capturedRefs,
+    });
     const context = [];
     for (const ref of capturedRefs !== null && capturedRefs !== void 0 ? capturedRefs : []) {
         context.push({
@@ -30491,7 +30500,7 @@ function lower$1(func, env, bindings = null, capturedRefs = [], parent = null) {
     return Ok({
         id,
         params,
-        fnType: parent == null ? env.fnType : 'Other',
+        fnType: bindings == null ? env.fnType : 'Other',
         returnTypeAnnotation: null,
         returnType: makeType(),
         body: builder.build(),
@@ -33164,9 +33173,12 @@ function lowerFunctionToValue(builder, expr) {
     };
 }
 function lowerFunction(builder, expr) {
-    const componentScope = builder.parentFunction.scope;
+    const componentScope = builder.environment.parentFunction.scope;
     const capturedContext = gatherCapturedContext(expr, componentScope);
-    const lowering = lower$1(expr, builder.environment, builder.bindings, [...builder.context, ...capturedContext], builder.parentFunction);
+    const lowering = lower$1(expr, builder.environment, builder.bindings, [
+        ...builder.context,
+        ...capturedContext,
+    ]);
     let loweredFunc;
     if (lowering.isErr()) {
         lowering
@@ -38577,7 +38589,7 @@ const EnvironmentConfigSchema = zod.z.object({
     lowerContextAccess: ExternalFunctionSchema.nullable().default(null),
 });
 class Environment {
-    constructor(scope, fnType, compilerMode, config, contextIdentifiers, logger, filename, code, programContext) {
+    constructor(scope, fnType, compilerMode, config, contextIdentifiers, parentFunction, logger, filename, code, programContext) {
         _Environment_instances.add(this);
         _Environment_globals.set(this, void 0);
         _Environment_shapes.set(this, void 0);
@@ -38634,6 +38646,7 @@ class Environment {
             const reanimatedModuleType = getReanimatedModuleType(__classPrivateFieldGet(this, _Environment_shapes, "f"));
             __classPrivateFieldGet(this, _Environment_moduleTypes, "f").set(REANIMATED_MODULE_NAME, reanimatedModuleType);
         }
+        this.parentFunction = parentFunction;
         __classPrivateFieldSet(this, _Environment_contextIdentifiers, contextIdentifiers, "f");
         __classPrivateFieldSet(this, _Environment_hoistedIdentifiers, new Set(), "f");
     }
@@ -45318,6 +45331,7 @@ function canMergeScopes(current, next) {
     }
     if (areEqualDependencies(new Set([...current.scope.declarations.values()].map(declaration => ({
         identifier: declaration.identifier,
+        reactive: true,
         path: [],
     }))), next.scope.dependencies) ||
         (next.scope.dependencies.size !== 0 &&
@@ -49508,6 +49522,27 @@ function inferReactivePlaces(fn) {
             }
         }
     } while (reactiveIdentifiers.snapshot());
+    function propagateReactivityToInnerFunctions(fn, isOutermost) {
+        for (const [, block] of fn.body.blocks) {
+            for (const instr of block.instructions) {
+                if (!isOutermost) {
+                    for (const operand of eachInstructionOperand(instr)) {
+                        reactiveIdentifiers.isReactive(operand);
+                    }
+                }
+                if (instr.value.kind === 'ObjectMethod' ||
+                    instr.value.kind === 'FunctionExpression') {
+                    propagateReactivityToInnerFunctions(instr.value.loweredFunc.func, false);
+                }
+            }
+            if (!isOutermost) {
+                for (const operand of eachTerminalOperand(block.terminal)) {
+                    reactiveIdentifiers.isReactive(operand);
+                }
+            }
+        }
+    }
+    propagateReactivityToInnerFunctions(fn, true);
 }
 function postDominatorFrontier(fn, postDominators, targetId) {
     const visited = new Set();
@@ -49754,7 +49789,7 @@ class PropertyPathRegistry {
     constructor() {
         this.roots = new Map();
     }
-    getOrCreateIdentifier(identifier) {
+    getOrCreateIdentifier(identifier, reactive) {
         let rootNode = this.roots.get(identifier.id);
         if (rootNode === undefined) {
             rootNode = {
@@ -49763,12 +49798,19 @@ class PropertyPathRegistry {
                 optionalProperties: new Map(),
                 fullPath: {
                     identifier,
+                    reactive,
                     path: [],
                 },
                 hasOptional: false,
                 parent: null,
             };
             this.roots.set(identifier.id, rootNode);
+        }
+        else {
+            CompilerError.invariant(reactive === rootNode.fullPath.reactive, {
+                reason: '[HoistablePropertyLoads] Found inconsistencies in `reactive` flag when deduping identifier reads within the same scope',
+                loc: identifier.loc,
+            });
         }
         return rootNode;
     }
@@ -49782,6 +49824,7 @@ class PropertyPathRegistry {
                 parent: parent,
                 fullPath: {
                     identifier: parent.fullPath.identifier,
+                    reactive: parent.fullPath.reactive,
                     path: parent.fullPath.path.concat(entry),
                 },
                 hasOptional: parent.hasOptional || entry.optional,
@@ -49791,7 +49834,7 @@ class PropertyPathRegistry {
         return child;
     }
     getOrCreateProperty(n) {
-        let currNode = this.getOrCreateIdentifier(n.identifier);
+        let currNode = this.getOrCreateIdentifier(n.identifier, n.reactive);
         if (n.path.length === 0) {
             return currNode;
         }
@@ -49807,6 +49850,7 @@ function getMaybeNonNullInInstruction(instr, context) {
     if (instr.kind === 'PropertyLoad') {
         path = (_a = context.temporaries.get(instr.object.identifier.id)) !== null && _a !== void 0 ? _a : {
             identifier: instr.object.identifier,
+            reactive: instr.object.reactive,
             path: [],
         };
     }
@@ -49838,7 +49882,7 @@ function collectNonNullsInBlocks(fn, context) {
         fn.params.length > 0 &&
         fn.params[0].kind === 'Identifier') {
         const identifier = fn.params[0].identifier;
-        knownNonNullIdentifiers.add(context.registry.getOrCreateIdentifier(identifier));
+        knownNonNullIdentifiers.add(context.registry.getOrCreateIdentifier(identifier, true));
     }
     const nodes = new Map();
     for (const [_, block] of fn.body.blocks) {
@@ -49958,8 +50002,8 @@ function reduceMaybeOptionalChains(nodes, registry) {
     do {
         changed = false;
         for (const original of optionalChainNodes) {
-            let { identifier, path: origPath } = original.fullPath;
-            let currNode = registry.getOrCreateIdentifier(identifier);
+            let { identifier, path: origPath, reactive } = original.fullPath;
+            let currNode = registry.getOrCreateIdentifier(identifier, reactive);
             for (let i = 0; i < origPath.length; i++) {
                 const entry = origPath[i];
                 const nextEntry = entry.optional && nodes.has(currNode)
@@ -50170,6 +50214,7 @@ function traverseOptionalBlock(optional, context, outerAlternate) {
         });
         baseObject = {
             identifier: maybeTest.instructions[0].value.place.identifier,
+            reactive: maybeTest.instructions[0].value.place.reactive,
             path,
         };
         test = maybeTest.terminal;
@@ -50216,6 +50261,7 @@ function traverseOptionalBlock(optional, context, outerAlternate) {
     });
     const load = {
         identifier: baseObject.identifier,
+        reactive: baseObject.reactive,
         path: [
             ...baseObject.path,
             {
@@ -50237,8 +50283,8 @@ class ReactiveScopeDependencyTreeHIR {
         var _b;
         _ReactiveScopeDependencyTreeHIR_hoistableObjects.set(this, new Map());
         _ReactiveScopeDependencyTreeHIR_deps.set(this, new Map());
-        for (const { path, identifier } of hoistableObjects) {
-            let currNode = __classPrivateFieldGet(_a, _a, "m", _ReactiveScopeDependencyTreeHIR_getOrCreateRoot).call(_a, identifier, __classPrivateFieldGet(this, _ReactiveScopeDependencyTreeHIR_hoistableObjects, "f"), path.length > 0 && path[0].optional ? 'Optional' : 'NonNull');
+        for (const { path, identifier, reactive } of hoistableObjects) {
+            let currNode = __classPrivateFieldGet(_a, _a, "m", _ReactiveScopeDependencyTreeHIR_getOrCreateRoot).call(_a, identifier, reactive, __classPrivateFieldGet(this, _ReactiveScopeDependencyTreeHIR_hoistableObjects, "f"), path.length > 0 && path[0].optional ? 'Optional' : 'NonNull');
             for (let i = 0; i < path.length; i++) {
                 const prevAccessType = (_b = currNode.properties.get(path[i].property)) === null || _b === void 0 ? void 0 : _b.accessType;
                 const accessType = i + 1 < path.length && path[i + 1].optional ? 'Optional' : 'NonNull';
@@ -50259,8 +50305,8 @@ class ReactiveScopeDependencyTreeHIR {
         }
     }
     addDependency(dep) {
-        const { identifier, path } = dep;
-        let depCursor = __classPrivateFieldGet(_a, _a, "m", _ReactiveScopeDependencyTreeHIR_getOrCreateRoot).call(_a, identifier, __classPrivateFieldGet(this, _ReactiveScopeDependencyTreeHIR_deps, "f"), PropertyAccessType.UnconditionalAccess);
+        const { identifier, reactive, path } = dep;
+        let depCursor = __classPrivateFieldGet(_a, _a, "m", _ReactiveScopeDependencyTreeHIR_getOrCreateRoot).call(_a, identifier, reactive, __classPrivateFieldGet(this, _ReactiveScopeDependencyTreeHIR_deps, "f"), PropertyAccessType.UnconditionalAccess);
         let hoistableCursor = __classPrivateFieldGet(this, _ReactiveScopeDependencyTreeHIR_hoistableObjects, "f").get(identifier);
         for (const entry of path) {
             let nextHoistableCursor;
@@ -50295,7 +50341,7 @@ class ReactiveScopeDependencyTreeHIR {
     deriveMinimalDependencies() {
         const results = new Set();
         for (const [rootId, rootNode] of __classPrivateFieldGet(this, _ReactiveScopeDependencyTreeHIR_deps, "f").entries()) {
-            collectMinimalDependenciesInSubtree(rootNode, rootId, [], results);
+            collectMinimalDependenciesInSubtree(rootNode, rootNode.reactive, rootId, [], results);
         }
         return results;
     }
@@ -50317,14 +50363,22 @@ class ReactiveScopeDependencyTreeHIR {
         return buf.length > 2 ? buf.join('\n') : buf.join('');
     }
 }
-_a = ReactiveScopeDependencyTreeHIR, _ReactiveScopeDependencyTreeHIR_hoistableObjects = new WeakMap(), _ReactiveScopeDependencyTreeHIR_deps = new WeakMap(), _ReactiveScopeDependencyTreeHIR_getOrCreateRoot = function _ReactiveScopeDependencyTreeHIR_getOrCreateRoot(identifier, roots, defaultAccessType) {
+_a = ReactiveScopeDependencyTreeHIR, _ReactiveScopeDependencyTreeHIR_hoistableObjects = new WeakMap(), _ReactiveScopeDependencyTreeHIR_deps = new WeakMap(), _ReactiveScopeDependencyTreeHIR_getOrCreateRoot = function _ReactiveScopeDependencyTreeHIR_getOrCreateRoot(identifier, reactive, roots, defaultAccessType) {
     let rootNode = roots.get(identifier);
     if (rootNode === undefined) {
         rootNode = {
             properties: new Map(),
+            reactive,
             accessType: defaultAccessType,
         };
         roots.set(identifier, rootNode);
+    }
+    else {
+        CompilerError.invariant(reactive === rootNode.reactive, {
+            reason: '[DeriveMinimalDependenciesHIR] Conflicting reactive root flag',
+            description: `Identifier ${printIdentifier(identifier)}`,
+            loc: GeneratedSource,
+        });
     }
     return rootNode;
 }, _ReactiveScopeDependencyTreeHIR_debugImpl = function _ReactiveScopeDependencyTreeHIR_debugImpl(buf, node, depth = 0) {
@@ -50368,13 +50422,13 @@ function merge$1(access1, access2) {
         }
     }
 }
-function collectMinimalDependenciesInSubtree(node, rootIdentifier, path, results) {
+function collectMinimalDependenciesInSubtree(node, reactive, rootIdentifier, path, results) {
     if (isDependency(node.accessType)) {
-        results.add({ identifier: rootIdentifier, path });
+        results.add({ identifier: rootIdentifier, reactive, path });
     }
     else {
         for (const [childName, childNode] of node.properties) {
-            collectMinimalDependenciesInSubtree(childNode, rootIdentifier, [
+            collectMinimalDependenciesInSubtree(childNode, reactive, rootIdentifier, [
                 ...path,
                 {
                     property: childName,
@@ -50516,6 +50570,7 @@ function collectTemporariesSidemapImpl(fn, usedOutsideDeclaringScope, temporarie
                     fn.context.some(context => context.identifier.id === value.place.identifier.id)) {
                     temporaries.set(lvalue.identifier.id, {
                         identifier: value.place.identifier,
+                        reactive: value.place.reactive,
                         path: [],
                     });
                 }
@@ -50533,12 +50588,14 @@ function getProperty(object, propertyName, optional, temporaries) {
     if (resolvedDependency == null) {
         property = {
             identifier: object.identifier,
+            reactive: object.reactive,
             path: [{ property: propertyName, optional }],
         };
     }
     else {
         property = {
             identifier: resolvedDependency.identifier,
+            reactive: resolvedDependency.reactive,
             path: [...resolvedDependency.path, { property: propertyName, optional }],
         };
     }
@@ -50603,6 +50660,7 @@ class DependencyCollectionContext {
         var _a;
         this.visitDependency((_a = __classPrivateFieldGet(this, _DependencyCollectionContext_temporaries, "f").get(place.identifier.id)) !== null && _a !== void 0 ? _a : {
             identifier: place.identifier,
+            reactive: place.reactive,
             path: [],
         });
     }
@@ -50630,6 +50688,7 @@ class DependencyCollectionContext {
             ((_a = maybeDependency.path.at(0)) === null || _a === void 0 ? void 0 : _a.property) === 'current') {
             maybeDependency = {
                 identifier: maybeDependency.identifier,
+                reactive: maybeDependency.reactive,
                 path: [],
             };
         }
@@ -50641,7 +50700,11 @@ class DependencyCollectionContext {
         const currentScope = this.currentScope.value;
         if (currentScope != null &&
             !Iterable_some(currentScope.reassignments, identifier => identifier.declarationId === place.identifier.declarationId) &&
-            __classPrivateFieldGet(this, _DependencyCollectionContext_instances, "m", _DependencyCollectionContext_checkValidDependency).call(this, { identifier: place.identifier, path: [] })) {
+            __classPrivateFieldGet(this, _DependencyCollectionContext_instances, "m", _DependencyCollectionContext_checkValidDependency).call(this, {
+                identifier: place.identifier,
+                reactive: place.reactive,
+                path: [],
+            })) {
             currentScope.reassignments.add(place.identifier);
         }
     }
@@ -50809,9 +50872,204 @@ function collectDependencies(fn, usedOutsideDeclaringScope, temporaries, process
     return context.deps;
 }
 
+function buildDependencyInstructions(dep, env) {
+    const builder = new HIRBuilder(env, {
+        entryBlockKind: 'value',
+    });
+    let dependencyValue;
+    if (dep.path.every(path => !path.optional)) {
+        dependencyValue = writeNonOptionalDependency(dep, env, builder);
+    }
+    else {
+        dependencyValue = writeOptionalDependency(dep, builder, null);
+    }
+    const exitBlockId = builder.terminate({
+        kind: 'unsupported',
+        loc: GeneratedSource,
+        id: makeInstructionId(0),
+    }, null);
+    return {
+        place: {
+            kind: 'Identifier',
+            identifier: dependencyValue,
+            effect: Effect.Freeze,
+            reactive: dep.reactive,
+            loc: GeneratedSource,
+        },
+        value: builder.build(),
+        exitBlockId,
+    };
+}
+function writeNonOptionalDependency(dep, env, builder) {
+    const loc = dep.identifier.loc;
+    let curr = makeTemporaryIdentifier(env.nextIdentifierId, loc);
+    builder.push({
+        lvalue: {
+            identifier: curr,
+            kind: 'Identifier',
+            effect: Effect.Mutate,
+            reactive: dep.reactive,
+            loc,
+        },
+        value: {
+            kind: 'LoadLocal',
+            place: {
+                identifier: dep.identifier,
+                kind: 'Identifier',
+                effect: Effect.Freeze,
+                reactive: dep.reactive,
+                loc,
+            },
+            loc,
+        },
+        id: makeInstructionId(1),
+        loc: loc,
+    });
+    for (const path of dep.path) {
+        const next = makeTemporaryIdentifier(env.nextIdentifierId, loc);
+        builder.push({
+            lvalue: {
+                identifier: next,
+                kind: 'Identifier',
+                effect: Effect.Mutate,
+                reactive: dep.reactive,
+                loc,
+            },
+            value: {
+                kind: 'PropertyLoad',
+                object: {
+                    identifier: curr,
+                    kind: 'Identifier',
+                    effect: Effect.Freeze,
+                    reactive: dep.reactive,
+                    loc,
+                },
+                property: path.property,
+                loc,
+            },
+            id: makeInstructionId(1),
+            loc: loc,
+        });
+        curr = next;
+    }
+    return curr;
+}
+function writeOptionalDependency(dep, builder, parentAlternate) {
+    const env = builder.environment;
+    const dependencyValue = {
+        kind: 'Identifier',
+        identifier: makeTemporaryIdentifier(env.nextIdentifierId, GeneratedSource),
+        effect: Effect.Mutate,
+        reactive: dep.reactive,
+        loc: GeneratedSource,
+    };
+    const continuationBlock = builder.reserve(builder.currentBlockKind());
+    let alternate;
+    if (parentAlternate != null) {
+        alternate = parentAlternate;
+    }
+    else {
+        alternate = builder.enter('value', () => {
+            const temp = lowerValueToTemporary(builder, {
+                kind: 'Primitive',
+                value: undefined,
+                loc: GeneratedSource,
+            });
+            lowerValueToTemporary(builder, {
+                kind: 'StoreLocal',
+                lvalue: { kind: InstructionKind.Const, place: Object.assign({}, dependencyValue) },
+                value: Object.assign({}, temp),
+                type: null,
+                loc: GeneratedSource,
+            });
+            return {
+                kind: 'goto',
+                variant: GotoVariant.Break,
+                block: continuationBlock.id,
+                id: makeInstructionId(0),
+                loc: GeneratedSource,
+            };
+        });
+    }
+    const consequent = builder.reserve('value');
+    let testIdentifier = null;
+    const testBlock = builder.enter('value', () => {
+        const testDependency = Object.assign(Object.assign({}, dep), { path: dep.path.slice(0, dep.path.length - 1) });
+        const firstOptional = dep.path.findIndex(path => path.optional);
+        CompilerError.invariant(firstOptional !== -1, {
+            reason: '[ScopeDependencyUtils] Internal invariant broken: expected optional path',
+            loc: dep.identifier.loc,
+            description: null,
+            suggestions: null,
+        });
+        if (firstOptional === dep.path.length - 1) {
+            testIdentifier = writeNonOptionalDependency(testDependency, env, builder);
+        }
+        else {
+            testIdentifier = writeOptionalDependency(testDependency, builder, alternate);
+        }
+        return {
+            kind: 'branch',
+            test: {
+                identifier: testIdentifier,
+                effect: Effect.Freeze,
+                kind: 'Identifier',
+                loc: GeneratedSource,
+                reactive: dep.reactive,
+            },
+            consequent: consequent.id,
+            alternate,
+            id: makeInstructionId(0),
+            loc: GeneratedSource,
+            fallthrough: continuationBlock.id,
+        };
+    });
+    builder.enterReserved(consequent, () => {
+        CompilerError.invariant(testIdentifier !== null, {
+            reason: 'Satisfy type checker',
+            description: null,
+            loc: null,
+            suggestions: null,
+        });
+        lowerValueToTemporary(builder, {
+            kind: 'StoreLocal',
+            lvalue: { kind: InstructionKind.Const, place: Object.assign({}, dependencyValue) },
+            value: lowerValueToTemporary(builder, {
+                kind: 'PropertyLoad',
+                object: {
+                    identifier: testIdentifier,
+                    kind: 'Identifier',
+                    effect: Effect.Freeze,
+                    reactive: dep.reactive,
+                    loc: GeneratedSource,
+                },
+                property: dep.path.at(-1).property,
+                loc: GeneratedSource,
+            }),
+            type: null,
+            loc: GeneratedSource,
+        });
+        return {
+            kind: 'goto',
+            variant: GotoVariant.Break,
+            block: continuationBlock.id,
+            id: makeInstructionId(0),
+            loc: GeneratedSource,
+        };
+    });
+    builder.terminateWithContinuation({
+        kind: 'optional',
+        optional: dep.path.at(-1).optional,
+        test: testBlock,
+        fallthrough: continuationBlock.id,
+        id: makeInstructionId(0),
+        loc: GeneratedSource,
+    }, continuationBlock);
+    return dependencyValue.identifier;
+}
+
 function inferEffectDependencies(fn) {
     var _a, _b;
-    let hasRewrite = false;
     const fnExpressions = new Map();
     const autodepFnConfigs = new Map();
     for (const effectTarget of fn.env.config.inferEffectDependencies) {
@@ -50823,6 +51081,7 @@ function inferEffectDependencies(fn) {
     const scopeInfos = new Map();
     const loadGlobals = new Set();
     const reactiveIds = inferReactiveIdentifiers(fn);
+    const rewriteBlocks = [];
     for (const [, block] of fn.body.blocks) {
         if (block.terminal.kind === 'scope') {
             const scopeBlock = fn.body.blocks.get(block.terminal.block);
@@ -50832,7 +51091,7 @@ function inferEffectDependencies(fn) {
                 scopeInfos.set(block.terminal.scope.id, block.terminal.scope.dependencies);
             }
         }
-        const rewriteInstrs = new Map();
+        const rewriteInstrs = [];
         for (const instr of block.instructions) {
             const { value, lvalue } = instr;
             if (value.kind === 'FunctionExpression') {
@@ -50877,7 +51136,6 @@ function inferEffectDependencies(fn) {
                 if (value.args.length === autodepFnLoads.get(callee.identifier.id) &&
                     value.args[0].kind === 'Identifier') {
                     const effectDeps = [];
-                    const newInstructions = [];
                     const deps = {
                         kind: 'ArrayExpression',
                         elements: effectDeps,
@@ -50898,15 +51156,21 @@ function inferEffectDependencies(fn) {
                             minimalDeps = inferMinimalDependencies(fnExpr);
                         }
                         const usedDeps = [];
-                        for (const dep of minimalDeps) {
-                            if (((isUseRefType(dep.identifier) ||
-                                isSetStateType(dep.identifier)) &&
-                                !reactiveIds.has(dep.identifier.id)) ||
-                                isFireFunctionType(dep.identifier)) {
+                        for (const maybeDep of minimalDeps) {
+                            if (((isUseRefType(maybeDep.identifier) ||
+                                isSetStateType(maybeDep.identifier)) &&
+                                !reactiveIds.has(maybeDep.identifier.id)) ||
+                                isFireFunctionType(maybeDep.identifier)) {
                                 continue;
                             }
-                            const { place, instructions } = writeDependencyToInstructions(dep, reactiveIds.has(dep.identifier.id), fn.env, fnExpr.loc);
-                            newInstructions.push(...instructions);
+                            const dep = truncateDepAtCurrent(maybeDep);
+                            const { place, value, exitBlockId } = buildDependencyInstructions(dep, fn.env);
+                            rewriteInstrs.push({
+                                kind: 'block',
+                                location: instr.id,
+                                value,
+                                exitBlockId: exitBlockId,
+                            });
                             effectDeps.push(place);
                             usedDeps.push(dep);
                         }
@@ -50924,25 +51188,31 @@ function inferEffectDependencies(fn) {
                                 decorations,
                             });
                         }
-                        newInstructions.push({
-                            id: makeInstructionId(0),
-                            loc: GeneratedSource,
-                            lvalue: Object.assign(Object.assign({}, depsPlace), { effect: Effect.Mutate }),
-                            value: deps,
+                        rewriteInstrs.push({
+                            kind: 'instr',
+                            location: instr.id,
+                            value: {
+                                id: makeInstructionId(0),
+                                loc: GeneratedSource,
+                                lvalue: Object.assign(Object.assign({}, depsPlace), { effect: Effect.Mutate }),
+                                value: deps,
+                            },
                         });
                         value.args.push(Object.assign(Object.assign({}, depsPlace), { effect: Effect.Freeze }));
-                        rewriteInstrs.set(instr.id, newInstructions);
                         fn.env.inferredEffectLocations.add(callee.loc);
                     }
                     else if (loadGlobals.has(value.args[0].identifier.id)) {
-                        newInstructions.push({
-                            id: makeInstructionId(0),
-                            loc: GeneratedSource,
-                            lvalue: Object.assign(Object.assign({}, depsPlace), { effect: Effect.Mutate }),
-                            value: deps,
+                        rewriteInstrs.push({
+                            kind: 'instr',
+                            location: instr.id,
+                            value: {
+                                id: makeInstructionId(0),
+                                loc: GeneratedSource,
+                                lvalue: Object.assign(Object.assign({}, depsPlace), { effect: Effect.Mutate }),
+                                value: deps,
+                            },
                         });
                         value.args.push(Object.assign(Object.assign({}, depsPlace), { effect: Effect.Freeze }));
-                        rewriteInstrs.set(instr.id, newInstructions);
                         fn.env.inferredEffectLocations.add(callee.loc);
                     }
                 }
@@ -50966,71 +51236,77 @@ function inferEffectDependencies(fn) {
                 }
             }
         }
-        if (rewriteInstrs.size > 0) {
-            hasRewrite = true;
-            const newInstrs = [];
-            for (const instr of block.instructions) {
-                const newInstr = rewriteInstrs.get(instr.id);
-                if (newInstr != null) {
-                    newInstrs.push(...newInstr, instr);
-                }
-                else {
-                    newInstrs.push(instr);
-                }
-            }
-            block.instructions = newInstrs;
-        }
+        rewriteSplices(block, rewriteInstrs, rewriteBlocks);
     }
-    if (hasRewrite) {
+    if (rewriteBlocks.length > 0) {
+        for (const block of rewriteBlocks) {
+            fn.body.blocks.set(block.id, block);
+        }
+        reversePostorderBlocks(fn.body);
+        markPredecessors(fn.body);
         markInstructionIds(fn.body);
         fixScopeAndIdentifierRanges(fn.body);
         fn.env.hasInferredEffect = true;
     }
 }
-function writeDependencyToInstructions(dep, reactive, env, loc) {
-    const instructions = [];
-    let currValue = createTemporaryPlace(env, GeneratedSource);
-    currValue.reactive = reactive;
-    instructions.push({
-        id: makeInstructionId(0),
-        loc: GeneratedSource,
-        lvalue: Object.assign(Object.assign({}, currValue), { effect: Effect.Mutate }),
-        value: {
-            kind: 'LoadLocal',
-            place: {
-                kind: 'Identifier',
-                identifier: dep.identifier,
-                effect: Effect.Capture,
-                reactive,
-                loc: loc,
-            },
-            loc: loc,
-        },
-    });
-    for (const path of dep.path) {
-        if (path.optional) {
-            break;
-        }
-        if (path.property === 'current') {
-            break;
-        }
-        const nextValue = createTemporaryPlace(env, GeneratedSource);
-        nextValue.reactive = reactive;
-        instructions.push({
-            id: makeInstructionId(0),
-            loc: GeneratedSource,
-            lvalue: Object.assign(Object.assign({}, nextValue), { effect: Effect.Mutate }),
-            value: {
-                kind: 'PropertyLoad',
-                object: Object.assign(Object.assign({}, currValue), { effect: Effect.Capture }),
-                property: path.property,
-                loc: loc,
-            },
-        });
-        currValue = nextValue;
+function truncateDepAtCurrent(dep) {
+    const idx = dep.path.findIndex(path => path.property === 'current');
+    if (idx === -1) {
+        return dep;
     }
-    currValue.effect = Effect.Freeze;
-    return { place: currValue, instructions };
+    else {
+        return Object.assign(Object.assign({}, dep), { path: dep.path.slice(0, idx) });
+    }
+}
+function rewriteSplices(originalBlock, splices, rewriteBlocks) {
+    if (splices.length === 0) {
+        return;
+    }
+    const originalInstrs = originalBlock.instructions;
+    let currBlock = Object.assign(Object.assign({}, originalBlock), { instructions: [] });
+    rewriteBlocks.push(currBlock);
+    let cursor = 0;
+    for (const rewrite of splices) {
+        while (originalInstrs[cursor].id < rewrite.location) {
+            CompilerError.invariant(originalInstrs[cursor].id < originalInstrs[cursor + 1].id, {
+                reason: '[InferEffectDependencies] Internal invariant broken: expected block instructions to be sorted',
+                loc: originalInstrs[cursor].loc,
+            });
+            currBlock.instructions.push(originalInstrs[cursor]);
+            cursor++;
+        }
+        CompilerError.invariant(originalInstrs[cursor].id === rewrite.location, {
+            reason: '[InferEffectDependencies] Internal invariant broken: splice location not found',
+            loc: originalInstrs[cursor].loc,
+        });
+        if (rewrite.kind === 'instr') {
+            currBlock.instructions.push(rewrite.value);
+        }
+        else {
+            const { entry, blocks } = rewrite.value;
+            const entryBlock = blocks.get(entry);
+            currBlock.instructions.push(...entryBlock.instructions);
+            if (blocks.size > 1) {
+                CompilerError.invariant(terminalFallthrough(entryBlock.terminal) === rewrite.exitBlockId, {
+                    reason: '[InferEffectDependencies] Internal invariant broken: expected entry block to have a fallthrough',
+                    loc: entryBlock.terminal.loc,
+                });
+                const originalTerminal = currBlock.terminal;
+                currBlock.terminal = entryBlock.terminal;
+                for (const [id, block] of blocks) {
+                    if (id === entry) {
+                        continue;
+                    }
+                    if (id === rewrite.exitBlockId) {
+                        block.terminal = originalTerminal;
+                        currBlock = block;
+                    }
+                    rewriteBlocks.push(block);
+                }
+            }
+        }
+    }
+    currBlock.instructions.push(...originalInstrs.slice(cursor));
 }
 function inferReactiveIdentifiers(fn) {
     const reactiveIds = new Set();
@@ -55493,7 +55769,7 @@ function validateNoFreezingKnownMutableFunctions(fn) {
 function run(func, config, fnType, mode, programContext, logger, filename, code) {
     var _a, _b;
     const contextIdentifiers = findContextIdentifiers(func);
-    const env = new Environment(func.scope, fnType, mode, config, contextIdentifiers, logger, filename, code, programContext);
+    const env = new Environment(func.scope, fnType, mode, config, contextIdentifiers, func, logger, filename, code, programContext);
     (_b = (_a = env.logger) === null || _a === void 0 ? void 0 : _a.debugLogIRs) === null || _b === void 0 ? void 0 : _b.call(_a, {
         kind: 'debug',
         name: 'EnvironmentConfig',
