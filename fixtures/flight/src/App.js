@@ -33,22 +33,28 @@ function Foo({children}) {
   return <div>{children}</div>;
 }
 
+async function delay(text, ms) {
+  return new Promise(resolve => setTimeout(() => resolve(text), ms));
+}
+
 async function Bar({children}) {
-  await new Promise(resolve => setTimeout(() => resolve('deferred text'), 10));
+  await delay('deferred text', 10);
   return <div>{children}</div>;
 }
 
 async function ThirdPartyComponent() {
-  return new Promise(resolve =>
-    setTimeout(() => resolve('hello from a 3rd party'), 30)
-  );
+  return delay('hello from a 3rd party', 30);
 }
 
 // Using Web streams for tee'ing convenience here.
 let cachedThirdPartyReadableWeb;
 
-function fetchThirdParty(Component) {
-  if (cachedThirdPartyReadableWeb) {
+// We create the Component outside of AsyncLocalStorage so that it has no owner.
+// That way it gets the owner from the call to createFromNodeStream.
+const thirdPartyComponent = <ThirdPartyComponent />;
+
+function fetchThirdParty(noCache) {
+  if (cachedThirdPartyReadableWeb && !noCache) {
     const [readableWeb1, readableWeb2] = cachedThirdPartyReadableWeb.tee();
     cachedThirdPartyReadableWeb = readableWeb1;
 
@@ -59,7 +65,7 @@ function fetchThirdParty(Component) {
   }
 
   const stream = renderToPipeableStream(
-    <ThirdPartyComponent />,
+    thirdPartyComponent,
     {},
     {environmentName: 'third-party'}
   );
@@ -79,16 +85,16 @@ function fetchThirdParty(Component) {
   return result;
 }
 
-async function ServerComponent() {
-  await new Promise(resolve => setTimeout(() => resolve('deferred text'), 50));
-  return await fetchThirdParty();
+async function ServerComponent({noCache}) {
+  await delay('deferred text', 50);
+  return await fetchThirdParty(noCache);
 }
 
-export default async function App({prerender}) {
+export default async function App({prerender, noCache}) {
   const res = await fetch('http://localhost:3001/todos');
   const todos = await res.json();
 
-  const dedupedChild = <ServerComponent />;
+  const dedupedChild = <ServerComponent noCache={noCache} />;
   const message = getServerState();
   return (
     <html lang="en">
