@@ -38,7 +38,6 @@ export const enableUseEffectEventHook = false;
 export const favorSafetyOverHydrationPerf = true;
 export const enableLegacyFBSupport = false;
 export const enableMoveBefore = false;
-export const enableRenderableContext = false;
 export const enableHiddenSubtreeInsertionEffectCleanup = true;
 
 export const enableRetryLaneExpiration = false;
@@ -70,7 +69,7 @@ export const disableDefaultPropsExceptForClasses = true;
 export const renameElementSymbol = false;
 
 export const enableObjectFiber = false;
-export const enableEagerAlternateStateNodeCleanup = false;
+export const enableEagerAlternateStateNodeCleanup = true;
 
 export const enableHydrationLaneScheduling = true;
 
