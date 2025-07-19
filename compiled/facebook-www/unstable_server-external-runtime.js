@@ -107,6 +107,7 @@
             appearingElement
           );
         }
+      var suspenseyImages = [];
       for (
         appearingElements = 0;
         appearingElements < batch.length;
@@ -160,7 +161,8 @@
               appearingElement = appearingElement.nextSibling;
             }
             for (
-              var enterElement = batch[appearingElements + 1].firstElementChild;
+              var contentNode$3 = batch[appearingElements + 1],
+                enterElement = contentNode$3.firstElementChild;
               enterElement;
 
             )
@@ -188,6 +190,10 @@
               1 === appearingElement.nodeType &&
               "none" !== appearingElement.getAttribute("vt-update")
             );
+            var appearingImages = contentNode$3.querySelectorAll(
+              'img[src]:not([loading="lazy"])'
+            );
+            suspenseyImages.push.apply(suspenseyImages, appearingImages);
           }
         }
       }
@@ -195,22 +201,69 @@
         var transition = (document.__reactViewTransition =
           document.startViewTransition({
             update: function () {
-              revealBoundaries(batch, document.documentElement.clientHeight);
+              revealBoundaries(batch);
+              for (
+                var blockingPromises = [
+                    document.documentElement.clientHeight,
+                    document.fonts.ready
+                  ],
+                  $jscomp$loop$7 = {},
+                  i$4 = 0;
+                i$4 < suspenseyImages.length;
+                $jscomp$loop$7 = {
+                  $jscomp$loop$prop$suspenseyImage$8:
+                    $jscomp$loop$7.$jscomp$loop$prop$suspenseyImage$8
+                },
+                  i$4++
+              )
+                if (
+                  (($jscomp$loop$7.$jscomp$loop$prop$suspenseyImage$8 =
+                    suspenseyImages[i$4]),
+                  !$jscomp$loop$7.$jscomp$loop$prop$suspenseyImage$8.complete)
+                ) {
+                  var rect =
+                    $jscomp$loop$7.$jscomp$loop$prop$suspenseyImage$8.getBoundingClientRect();
+                  0 < rect.bottom &&
+                    0 < rect.right &&
+                    rect.top < window.innerHeight &&
+                    rect.left < window.innerWidth &&
+                    ((rect = new Promise(
+                      (function ($jscomp$loop$7) {
+                        return function (resolve) {
+                          $jscomp$loop$7.$jscomp$loop$prop$suspenseyImage$8.addEventListener(
+                            "load",
+                            resolve
+                          );
+                          $jscomp$loop$7.$jscomp$loop$prop$suspenseyImage$8.addEventListener(
+                            "error",
+                            resolve
+                          );
+                        };
+                      })($jscomp$loop$7)
+                    )),
+                    blockingPromises.push(rect));
+                }
               return Promise.race([
-                document.fonts.ready,
+                Promise.all(blockingPromises),
                 new Promise(function (resolve) {
-                  return setTimeout(resolve, 500);
+                  var currentTime = performance.now();
+                  setTimeout(
+                    resolve,
+                    2300 > currentTime && 2e3 < currentTime
+                      ? 2300 - currentTime
+                      : 500
+                  );
                 })
               ]);
             },
             types: []
           }));
         transition.ready.finally(function () {
-          for (var i$4 = restoreQueue.length - 3; 0 <= i$4; i$4 -= 3) {
-            var element = restoreQueue[i$4],
+          for (var i$5 = restoreQueue.length - 3; 0 <= i$5; i$5 -= 3) {
+            var element = restoreQueue[i$5],
               elementStyle = element.style;
-            elementStyle.viewTransitionName = restoreQueue[i$4 + 1];
-            elementStyle.viewTransitionClass = restoreQueue[i$4 + 1];
+            elementStyle.viewTransitionName = restoreQueue[i$5 + 1];
+            elementStyle.viewTransitionClass = restoreQueue[i$5 + 1];
             "" === element.getAttribute("style") &&
               element.removeAttribute("style");
           }
@@ -228,8 +281,10 @@
     $RT = performance.now();
     for (var i = 0; i < batch.length; i += 2) {
       var suspenseIdNode = batch[i],
-        contentNode = batch[i + 1],
-        parentInstance = suspenseIdNode.parentNode;
+        contentNode = batch[i + 1];
+      null !== contentNode.parentNode &&
+        contentNode.parentNode.removeChild(contentNode);
+      var parentInstance = suspenseIdNode.parentNode;
       if (parentInstance) {
         var suspenseNode = suspenseIdNode.previousSibling,
           depth = 0;
@@ -261,16 +316,18 @@
   });
   var $RC = function (suspenseBoundaryID, contentID) {
     if ((contentID = document.getElementById(contentID)))
-      if (
-        (contentID.parentNode.removeChild(contentID),
-        (suspenseBoundaryID = document.getElementById(suspenseBoundaryID)))
-      )
-        (suspenseBoundaryID.previousSibling.data = "$~"),
+      (suspenseBoundaryID = document.getElementById(suspenseBoundaryID))
+        ? ((suspenseBoundaryID.previousSibling.data = "$~"),
           $RB.push(suspenseBoundaryID, contentID),
           2 === $RB.length &&
-            ((suspenseBoundaryID =
-              ("number" !== typeof $RT ? 0 : $RT) + 300 - performance.now()),
-            setTimeout($RV.bind(null, $RB), suspenseBoundaryID));
+            ((suspenseBoundaryID = "number" !== typeof $RT ? 0 : $RT),
+            (contentID = performance.now()),
+            (suspenseBoundaryID =
+              2300 > contentID && 2e3 < contentID
+                ? 2300 - contentID
+                : suspenseBoundaryID + 300 - contentID),
+            setTimeout($RV.bind(null, $RB), suspenseBoundaryID)))
+        : contentID.parentNode.removeChild(contentID);
   };
   var $RR = function (suspenseBoundaryID, contentID, stylesheetDescriptors) {
     function cleanupWith(cb) {
@@ -286,8 +343,8 @@
           "link[data-precedence],style[data-precedence]"
         ),
         styleTagsToHoist = [],
-        i$5 = 0;
-      (node = nodes[i$5++]);
+        i$6 = 0;
+      (node = nodes[i$6++]);
 
     )
       "not all" === node.getAttribute("media")
@@ -297,11 +354,11 @@
     nodes = 0;
     node = [];
     var precedence, resourceEl;
-    for (i$5 = !0; ; ) {
-      if (i$5) {
+    for (i$6 = !0; ; ) {
+      if (i$6) {
         var stylesheetDescriptor = stylesheetDescriptors[nodes++];
         if (!stylesheetDescriptor) {
-          i$5 = !1;
+          i$6 = !1;
           nodes = 0;
           continue;
         }
