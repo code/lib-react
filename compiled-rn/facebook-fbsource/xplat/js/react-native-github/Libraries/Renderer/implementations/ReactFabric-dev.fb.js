@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<625e55c74316d708af9bc3a958a25f1a>>
+ * @generated SignedSource<<cd1c537659775c08a6ce8a7533bf1160>>
  */
 
 "use strict";
@@ -12721,6 +12721,7 @@ __DEV__ &&
         prevEffectErrors = pushComponentEffectErrors(),
         prevDeepEquality = alreadyWarnedForDeepEquality;
       enableComponentPerformanceTrack &&
+        includeWorkInProgressEffects &&
         0 !== (finishedWork.mode & 2) &&
         0 < finishedWork.actualStartTime &&
         0 !== (finishedWork.flags & 1) &&
@@ -19236,10 +19237,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.2.0-native-fb-fe813143-20250715",
+        version: "19.2.0-native-fb-dffacc7b-20250717",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.2.0-native-fb-fe813143-20250715"
+        reconcilerVersion: "19.2.0-native-fb-dffacc7b-20250717"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
