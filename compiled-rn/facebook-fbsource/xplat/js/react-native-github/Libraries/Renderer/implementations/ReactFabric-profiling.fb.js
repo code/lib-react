@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<f95c590f811b39852db4295e06f8fbba>>
+ * @generated SignedSource<<0c4537f2c8398e238a4552d3c0e00b07>>
  */
 
 "use strict";
@@ -10140,6 +10140,7 @@ function reconnectPassiveEffects(
     prevEffectDuration = pushComponentEffectDuration(),
     prevEffectErrors = pushComponentEffectErrors();
   enableComponentPerformanceTrack &&
+    includeWorkInProgressEffects &&
     0 !== (finishedWork.mode & 2) &&
     0 < finishedWork.actualStartTime &&
     0 !== (finishedWork.flags & 1) &&
@@ -12959,10 +12960,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1473 = {
     bundleType: 0,
-    version: "19.2.0-native-fb-d85ec5f5-20250716",
+    version: "19.2.0-native-fb-9fec565a-20250716",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.2.0-native-fb-d85ec5f5-20250716"
+    reconcilerVersion: "19.2.0-native-fb-9fec565a-20250716"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1473.rendererConfig = extraDevToolsConfig);
