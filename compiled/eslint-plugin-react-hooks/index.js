@@ -30111,7 +30111,7 @@ const EnvironmentConfigSchema = zod.z.object({
     inferEffectDependencies: zod.z
         .nullable(zod.z.array(zod.z.object({
         function: ExternalFunctionSchema,
-        autodepsIndex: zod.z.number().min(1, 'autodepsIndex must be > 0'),
+        numRequiredArgs: zod.z.number().min(1, 'numRequiredArgs must be > 0'),
     })))
         .default(null),
     inlineJsxTransform: ReactElementSymbolSchema.nullable().default(null),
@@ -45178,7 +45178,7 @@ function inferEffectDependencies(fn) {
     const autodepFnConfigs = new Map();
     for (const effectTarget of fn.env.config.inferEffectDependencies) {
         const moduleTargets = getOrInsertWith(autodepFnConfigs, effectTarget.function.source, () => new Map());
-        moduleTargets.set(effectTarget.function.importSpecifierName, effectTarget.autodepsIndex);
+        moduleTargets.set(effectTarget.function.importSpecifierName, effectTarget.numRequiredArgs);
     }
     const autodepFnLoads = new Map();
     const autodepModuleLoads = new Map();
@@ -45240,10 +45240,8 @@ function inferEffectDependencies(fn) {
                 const autodepsArgIndex = value.args.findIndex(arg => arg.kind === 'Identifier' &&
                     arg.identifier.type.kind === 'Object' &&
                     arg.identifier.type.shapeId === BuiltInAutodepsId);
-                const autodepsArgExpectedIndex = autodepFnLoads.get(callee.identifier.id);
-                if (value.args.length > 0 &&
-                    autodepsArgExpectedIndex != null &&
-                    autodepsArgIndex === autodepsArgExpectedIndex &&
+                if (value.args.length > 1 &&
+                    autodepsArgIndex > 0 &&
                     autodepFnLoads.has(callee.identifier.id) &&
                     value.args[0].kind === 'Identifier') {
                     const effectDeps = [];
@@ -51592,30 +51590,7 @@ function throwInvalidReact(options, { logger, filename }) {
     });
     CompilerError.throw(detail);
 }
-function isAutodepsSigil(arg) {
-    if (arg.isIdentifier() && arg.node.name === 'AUTODEPS') {
-        const binding = arg.scope.getBinding(arg.node.name);
-        if (binding && binding.path.isImportSpecifier()) {
-            const importSpecifier = binding.path.node;
-            if (importSpecifier.imported.type === 'Identifier') {
-                return importSpecifier.imported.name === 'AUTODEPS';
-            }
-        }
-        return false;
-    }
-    if (arg.isMemberExpression() && !arg.node.computed) {
-        const object = arg.get('object');
-        const property = arg.get('property');
-        if (object.isIdentifier() &&
-            object.node.name === 'React' &&
-            property.isIdentifier() &&
-            property.node.name === 'AUTODEPS') {
-            return true;
-        }
-    }
-    return false;
-}
-function assertValidEffectImportReference(autodepsIndex, paths, context) {
+function assertValidEffectImportReference(numArgs, paths, context) {
     var _a;
     for (const path of paths) {
         const parent = path.parentPath;
@@ -51624,8 +51599,7 @@ function assertValidEffectImportReference(autodepsIndex, paths, context) {
             const maybeCalleeLoc = path.node.loc;
             const hasInferredEffect = maybeCalleeLoc != null &&
                 context.inferredEffectLocations.has(maybeCalleeLoc);
-            const hasAutodepsArg = args.some(isAutodepsSigil);
-            if (hasAutodepsArg && !hasInferredEffect) {
+            if (args.length === numArgs && !hasInferredEffect) {
                 const maybeErrorDiagnostic = matchCompilerDiagnostic(path, context.transformErrors);
                 throwInvalidReact({
                     reason: '[InferEffectDependencies] React Compiler is unable to infer dependencies of this effect. ' +
@@ -51663,9 +51637,9 @@ function validateNoUntransformedReferences(path, filename, logger, env, compileR
         }
     }
     if (env.inferEffectDependencies) {
-        for (const { function: { source, importSpecifierName }, autodepsIndex, } of env.inferEffectDependencies) {
+        for (const { function: { source, importSpecifierName }, numRequiredArgs, } of env.inferEffectDependencies) {
             const module = getOrInsertWith(moduleLoadChecks, source, () => new Map());
-            module.set(importSpecifierName, assertValidEffectImportReference.bind(null, autodepsIndex));
+            module.set(importSpecifierName, assertValidEffectImportReference.bind(null, numRequiredArgs));
         }
     }
     if (moduleLoadChecks.size > 0) {
