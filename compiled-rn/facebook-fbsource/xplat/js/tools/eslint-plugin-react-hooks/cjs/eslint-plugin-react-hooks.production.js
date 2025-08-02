@@ -6,7 +6,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
- * @generated SignedSource<<c88a6a770787194081d071fd5592ec9c>>
+ * @generated SignedSource<<9333c1881d2e38e7a657bf98d1f5f416>>
  */
 
 'use strict';
@@ -18670,7 +18670,7 @@ function printTerminal(terminal) {
             break;
         }
         case 'return': {
-            value = `[${terminal.id}] Return${terminal.value != null ? ' ' + printPlace(terminal.value) : ''}`;
+            value = `[${terminal.id}] Return ${terminal.returnVariant}${terminal.value != null ? ' ' + printPlace(terminal.value) : ''}`;
             if (terminal.effects != null) {
                 value += `\n    ${terminal.effects.map(printAliasingEffect).join('\n    ')}`;
             }
@@ -20019,6 +20019,7 @@ function mapTerminalSuccessors(terminal, fn) {
         case 'return': {
             return {
                 kind: 'return',
+                returnVariant: terminal.returnVariant,
                 loc: terminal.loc,
                 value: terminal.value,
                 id: makeInstructionId(0),
@@ -22058,6 +22059,7 @@ addObject(BUILTIN_SHAPES, BuiltInUseRefId, [
 addObject(BUILTIN_SHAPES, BuiltInRefValueId, [
     ['*', { kind: 'Object', shapeId: BuiltInRefValueId }],
 ]);
+addObject(BUILTIN_SHAPES, ReanimatedSharedValueId, []);
 addFunction(BUILTIN_SHAPES, [], {
     positionalParams: [],
     restParam: Effect.ConditionallyMutate,
@@ -22382,6 +22384,7 @@ function lower$1(func, env, bindings = null, capturedRefs = new Map()) {
         const fallthrough = builder.reserve('block');
         const terminal = {
             kind: 'return',
+            returnVariant: 'Implicit',
             loc: GeneratedSource,
             value: lowerExpressionToTemporary(builder, body),
             id: makeInstructionId(0),
@@ -22409,6 +22412,7 @@ function lower$1(func, env, bindings = null, capturedRefs = new Map()) {
     }
     builder.terminate({
         kind: 'return',
+        returnVariant: 'Void',
         loc: GeneratedSource,
         value: lowerValueToTemporary(builder, {
             kind: 'Primitive',
@@ -22476,6 +22480,7 @@ function lowerStatement(builder, stmtPath, label = null) {
             }
             const terminal = {
                 kind: 'return',
+                returnVariant: 'Explicit',
                 loc: (_c = stmt.node.loc) !== null && _c !== void 0 ? _c : GeneratedSource,
                 value,
                 id: makeInstructionId(0),
@@ -30508,8 +30513,9 @@ const EnvironmentConfigSchema = zod.z.object({
     enableChangeDetectionForDebugging: ExternalFunctionSchema.nullable().default(null),
     enableCustomTypeDefinitionForReanimated: zod.z.boolean().default(false),
     hookPattern: zod.z.string().nullable().default(null),
-    enableTreatRefLikeIdentifiersAsRefs: zod.z.boolean().default(false),
+    enableTreatRefLikeIdentifiersAsRefs: zod.z.boolean().default(true),
     lowerContextAccess: ExternalFunctionSchema.nullable().default(null),
+    validateNoVoidUseMemo: zod.z.boolean().default(false),
 });
 class Environment {
     constructor(scope, fnType, compilerMode, config, contextIdentifiers, parentFunction, logger, filename, code, programContext) {
@@ -43627,43 +43633,69 @@ function getManualMemoizationReplacement(fn, loc, kind) {
         };
     }
 }
-function extractManualMemoizationArgs(instr, kind, sidemap) {
+function extractManualMemoizationArgs(instr, kind, sidemap, errors) {
     const [fnPlace, depsListPlace] = instr.value.args;
     if (fnPlace == null) {
-        CompilerError.throwInvalidReact({
-            reason: `Expected a callback function to be passed to ${kind}`,
-            loc: instr.value.loc,
+        errors.pushDiagnostic(CompilerDiagnostic.create({
+            severity: ErrorSeverity.InvalidReact,
+            category: `Expected a callback function to be passed to ${kind}`,
+            description: `Expected a callback function to be passed to ${kind}`,
             suggestions: null,
-        });
+        }).withDetail({
+            kind: 'error',
+            loc: instr.value.loc,
+            message: `Expected a callback function to be passed to ${kind}`,
+        }));
+        return { fnPlace: null, depsList: null };
     }
     if (fnPlace.kind === 'Spread' || (depsListPlace === null || depsListPlace === void 0 ? void 0 : depsListPlace.kind) === 'Spread') {
-        CompilerError.throwInvalidReact({
-            reason: `Unexpected spread argument to ${kind}`,
-            loc: instr.value.loc,
+        errors.pushDiagnostic(CompilerDiagnostic.create({
+            severity: ErrorSeverity.InvalidReact,
+            category: `Unexpected spread argument to ${kind}`,
+            description: `Unexpected spread argument to ${kind}`,
             suggestions: null,
-        });
+        }).withDetail({
+            kind: 'error',
+            loc: instr.value.loc,
+            message: `Unexpected spread argument to ${kind}`,
+        }));
+        return { fnPlace: null, depsList: null };
     }
     let depsList = null;
     if (depsListPlace != null) {
         const maybeDepsList = sidemap.maybeDepsLists.get(depsListPlace.identifier.id);
         if (maybeDepsList == null) {
-            CompilerError.throwInvalidReact({
-                reason: `Expected the dependency list for ${kind} to be an array literal`,
+            errors.pushDiagnostic(CompilerDiagnostic.create({
+                severity: ErrorSeverity.InvalidReact,
+                category: `Expected the dependency list for ${kind} to be an array literal`,
+                description: `Expected the dependency list for ${kind} to be an array literal`,
                 suggestions: null,
+            }).withDetail({
+                kind: 'error',
                 loc: depsListPlace.loc,
-            });
+                message: `Expected the dependency list for ${kind} to be an array literal`,
+            }));
+            return { fnPlace, depsList: null };
         }
-        depsList = maybeDepsList.map(dep => {
+        depsList = [];
+        for (const dep of maybeDepsList) {
             const maybeDep = sidemap.maybeDeps.get(dep.identifier.id);
             if (maybeDep == null) {
-                CompilerError.throwInvalidReact({
-                    reason: `Expected the dependency list to be an array of simple expressions (e.g. \`x\`, \`x.y.z\`, \`x?.y?.z\`)`,
+                errors.pushDiagnostic(CompilerDiagnostic.create({
+                    severity: ErrorSeverity.InvalidReact,
+                    category: `Expected the dependency list to be an array of simple expressions (e.g. \`x\`, \`x.y.z\`, \`x?.y?.z\`)`,
+                    description: `Expected the dependency list to be an array of simple expressions (e.g. \`x\`, \`x.y.z\`, \`x?.y?.z\`)`,
                     suggestions: null,
+                }).withDetail({
+                    kind: 'error',
                     loc: dep.loc,
-                });
+                    message: `Expected the dependency list to be an array of simple expressions (e.g. \`x\`, \`x.y.z\`, \`x?.y?.z\`)`,
+                }));
             }
-            return maybeDep;
-        });
+            else {
+                depsList.push(maybeDep);
+            }
+        }
     }
     return {
         fnPlace,
@@ -43671,6 +43703,8 @@ function extractManualMemoizationArgs(instr, kind, sidemap) {
     };
 }
 function dropManualMemoization(func) {
+    var _a;
+    const errors = new CompilerError();
     const isValidationEnabled = func.env.config.validatePreserveExistingMemoizationGuarantees ||
         func.env.config.validateNoSetStateInRender ||
         func.env.config.enablePreserveExistingMemoizationGuarantees;
@@ -43695,15 +43729,44 @@ function dropManualMemoization(func) {
                     : instr.value.property.identifier.id;
                 const manualMemo = sidemap.manualMemos.get(id);
                 if (manualMemo != null) {
-                    const { fnPlace, depsList } = extractManualMemoizationArgs(instr, manualMemo.kind, sidemap);
+                    const { fnPlace, depsList } = extractManualMemoizationArgs(instr, manualMemo.kind, sidemap, errors);
+                    if (fnPlace == null) {
+                        continue;
+                    }
+                    if (func.env.config.validateNoVoidUseMemo &&
+                        manualMemo.kind === 'useMemo') {
+                        const funcToCheck = (_a = sidemap.functions.get(fnPlace.identifier.id)) === null || _a === void 0 ? void 0 : _a.value;
+                        if (funcToCheck !== undefined && funcToCheck.loweredFunc.func) {
+                            if (!hasNonVoidReturn(funcToCheck.loweredFunc.func)) {
+                                errors.pushDiagnostic(CompilerDiagnostic.create({
+                                    severity: ErrorSeverity.InvalidReact,
+                                    category: 'useMemo() callbacks must return a value',
+                                    description: `This ${manualMemo.loadInstr.value.kind === 'PropertyLoad'
+                                        ? 'React.useMemo'
+                                        : 'useMemo'} callback doesn't return a value. useMemo is for computing and caching values, not for arbitrary side effects.`,
+                                    suggestions: null,
+                                }).withDetail({
+                                    kind: 'error',
+                                    loc: instr.value.loc,
+                                    message: 'useMemo() callbacks must return a value',
+                                }));
+                            }
+                        }
+                    }
                     instr.value = getManualMemoizationReplacement(fnPlace, instr.value.loc, manualMemo.kind);
                     if (isValidationEnabled) {
                         if (!sidemap.functions.has(fnPlace.identifier.id)) {
-                            CompilerError.throwInvalidReact({
-                                reason: `Expected the first argument to be an inline function expression`,
+                            errors.pushDiagnostic(CompilerDiagnostic.create({
+                                severity: ErrorSeverity.InvalidReact,
+                                category: `Expected the first argument to be an inline function expression`,
+                                description: `Expected the first argument to be an inline function expression`,
                                 suggestions: [],
+                            }).withDetail({
+                                kind: 'error',
                                 loc: fnPlace.loc,
-                            });
+                                message: `Expected the first argument to be an inline function expression`,
+                            }));
+                            continue;
                         }
                         const memoDecl = manualMemo.kind === 'useMemo'
                             ? instr.lvalue
@@ -43750,6 +43813,7 @@ function dropManualMemoization(func) {
             markInstructionIds(func.body);
         }
     }
+    return errors.asResult();
 }
 function findOptionalPlaces(fn) {
     const optionals = new Set();
@@ -43793,6 +43857,17 @@ function findOptionalPlaces(fn) {
     }
     return optionals;
 }
+function hasNonVoidReturn(func) {
+    for (const [, block] of func.body.blocks) {
+        if (block.terminal.kind === 'return') {
+            if (block.terminal.returnVariant === 'Explicit' ||
+                block.terminal.returnVariant === 'Implicit') {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
 class StableSidemap {
     constructor(env) {
@@ -43815,12 +43890,6 @@ class StableSidemap {
                             isStable: false,
                         });
                     }
-                }
-                else if (this.env.config.enableTreatRefLikeIdentifiersAsRefs &&
-                    isUseRefType(lvalue.identifier)) {
-                    this.map.set(lvalue.identifier.id, {
-                        isStable: true,
-                    });
                 }
                 break;
             }
@@ -45000,7 +45069,7 @@ function makeOrMergeProperty(node, property, accessType) {
 var _DependencyCollectionContext_instances, _DependencyCollectionContext_declarations, _DependencyCollectionContext_reassignments, _DependencyCollectionContext_scopes, _DependencyCollectionContext_dependencies, _DependencyCollectionContext_temporaries, _DependencyCollectionContext_temporariesUsedOutsideScope, _DependencyCollectionContext_processedInstrsInOptional, _DependencyCollectionContext_innerFnContext, _DependencyCollectionContext_checkValidDependency, _DependencyCollectionContext_isScopeActive;
 function propagateScopeDependenciesHIR(fn) {
     const usedOutsideDeclaringScope = findTemporariesUsedOutsideDeclaringScope(fn);
-    const temporaries = collectTemporariesSidemap(fn, usedOutsideDeclaringScope);
+    const temporaries = collectTemporariesSidemap$1(fn, usedOutsideDeclaringScope);
     const { temporariesReadInOptional, processedInstrsInOptional, hoistableObjects, } = collectOptionalChainSidemap(fn);
     const hoistablePropertyLoads = keyByScopeId(fn, collectHoistablePropertyLoads(fn, temporaries, hoistableObjects));
     const scopeDeps = collectDependencies(fn, usedOutsideDeclaringScope, new Map([...temporaries, ...temporariesReadInOptional]), processedInstrsInOptional);
@@ -45071,7 +45140,7 @@ function findTemporariesUsedOutsideDeclaringScope(fn) {
     }
     return usedOutsideDeclaringScope;
 }
-function collectTemporariesSidemap(fn, usedOutsideDeclaringScope) {
+function collectTemporariesSidemap$1(fn, usedOutsideDeclaringScope) {
     const temporaries = new Map();
     collectTemporariesSidemapImpl(fn, usedOutsideDeclaringScope, temporaries, null);
     return temporaries;
@@ -45896,7 +45965,7 @@ function collectDepUsages(deps, fnExpr) {
 }
 function inferMinimalDependencies(fnInstr) {
     const fn = fnInstr.value.loweredFunc.func;
-    const temporaries = collectTemporariesSidemap(fn, new Set());
+    const temporaries = collectTemporariesSidemap$1(fn, new Set());
     const { hoistableObjects, processedInstrsInOptional, temporariesReadInOptional, } = collectOptionalChainSidemap(fn);
     const hoistablePropertyLoads = collectHoistablePropertyLoadsInInnerFn(fnInstr, temporaries, hoistableObjects);
     const hoistableToFnEntry = hoistablePropertyLoads.get(fn.body.entry);
@@ -47064,6 +47133,18 @@ function* generateInstructionTypes(env, names, instr) {
         }
         case 'JsxExpression':
         case 'JsxFragment': {
+            if (env.config.enableTreatRefLikeIdentifiersAsRefs) {
+                if (value.kind === 'JsxExpression') {
+                    for (const prop of value.props) {
+                        if (prop.kind === 'JsxAttribute' && prop.name === 'ref') {
+                            yield equation(prop.place.identifier.type, {
+                                kind: 'Object',
+                                shapeId: BuiltInUseRefId,
+                            });
+                        }
+                    }
+                }
+            }
             yield equation(left, { kind: 'Object', shapeId: BuiltInJsxId });
             break;
         }
@@ -47078,7 +47159,18 @@ function* generateInstructionTypes(env, names, instr) {
             yield equation(left, returnType);
             break;
         }
-        case 'PropertyStore':
+        case 'PropertyStore': {
+            yield equation(makeType(), {
+                kind: 'Property',
+                objectType: value.object.identifier.type,
+                objectName: getName(names, value.object.identifier.id),
+                propertyName: {
+                    kind: 'literal',
+                    value: value.property,
+                },
+            });
+            break;
+        }
         case 'DeclareLocal':
         case 'RegExpLiteral':
         case 'MetaProperty':
@@ -47839,7 +47931,7 @@ function validateNoCapitalizedCalls(fn) {
     return errors.asResult();
 }
 
-var _Env_changed;
+var _Env_changed, _Env_data, _Env_temporaries;
 function makeRefId(id) {
     CompilerError.invariant(id >= 0 && Number.isInteger(id), {
         reason: 'Expected identifier id to be a non-negative integer',
@@ -47853,10 +47945,18 @@ let _refId = 0;
 function nextRefId() {
     return makeRefId(_refId++);
 }
-class Env extends Map {
+class Env {
     constructor() {
-        super(...arguments);
         _Env_changed.set(this, false);
+        _Env_data.set(this, new Map());
+        _Env_temporaries.set(this, new Map());
+    }
+    lookup(place) {
+        var _a;
+        return (_a = __classPrivateFieldGet(this, _Env_temporaries, "f").get(place.identifier.id)) !== null && _a !== void 0 ? _a : place;
+    }
+    define(place, value) {
+        __classPrivateFieldGet(this, _Env_temporaries, "f").set(place.identifier.id, value);
     }
     resetChanged() {
         __classPrivateFieldSet(this, _Env_changed, false, "f");
@@ -47864,20 +47964,64 @@ class Env extends Map {
     hasChanged() {
         return __classPrivateFieldGet(this, _Env_changed, "f");
     }
+    get(key) {
+        var _a, _b;
+        const operandId = (_b = (_a = __classPrivateFieldGet(this, _Env_temporaries, "f").get(key)) === null || _a === void 0 ? void 0 : _a.identifier.id) !== null && _b !== void 0 ? _b : key;
+        return __classPrivateFieldGet(this, _Env_data, "f").get(operandId);
+    }
     set(key, value) {
-        const cur = this.get(key);
+        var _a, _b;
+        const operandId = (_b = (_a = __classPrivateFieldGet(this, _Env_temporaries, "f").get(key)) === null || _a === void 0 ? void 0 : _a.identifier.id) !== null && _b !== void 0 ? _b : key;
+        const cur = __classPrivateFieldGet(this, _Env_data, "f").get(operandId);
         const widenedValue = joinRefAccessTypes(value, cur !== null && cur !== void 0 ? cur : { kind: 'None' });
         if (!(cur == null && widenedValue.kind === 'None') &&
             (cur == null || !tyEqual(cur, widenedValue))) {
             __classPrivateFieldSet(this, _Env_changed, true, "f");
         }
-        return super.set(key, widenedValue);
+        __classPrivateFieldGet(this, _Env_data, "f").set(operandId, widenedValue);
+        return this;
     }
 }
-_Env_changed = new WeakMap();
+_Env_changed = new WeakMap(), _Env_data = new WeakMap(), _Env_temporaries = new WeakMap();
 function validateNoRefAccessInRender(fn) {
     const env = new Env();
+    collectTemporariesSidemap(fn, env);
     return validateNoRefAccessInRenderImpl(fn, env).map(_ => undefined);
+}
+function collectTemporariesSidemap(fn, env) {
+    for (const block of fn.body.blocks.values()) {
+        for (const instr of block.instructions) {
+            const { lvalue, value } = instr;
+            switch (value.kind) {
+                case 'LoadLocal': {
+                    const temp = env.lookup(value.place);
+                    if (temp != null) {
+                        env.define(lvalue, temp);
+                    }
+                    break;
+                }
+                case 'StoreLocal': {
+                    const temp = env.lookup(value.value);
+                    if (temp != null) {
+                        env.define(lvalue, temp);
+                        env.define(value.lvalue.place, temp);
+                    }
+                    break;
+                }
+                case 'PropertyLoad': {
+                    if (isUseRefType(value.object.identifier) &&
+                        value.property === 'current') {
+                        continue;
+                    }
+                    const temp = env.lookup(value.object);
+                    if (temp != null) {
+                        env.define(lvalue, temp);
+                    }
+                    break;
+                }
+            }
+        }
+    }
 }
 function refTypeOfType(place) {
     if (isRefValueType(place.identifier)) {
@@ -48022,12 +48166,26 @@ function validateNoRefAccessInRenderImpl(fn, env) {
         const type = refTypeOfType(place);
         env.set(place.identifier.id, type);
     }
+    const interpolatedAsJsx = new Set();
+    for (const block of fn.body.blocks.values()) {
+        for (const instr of block.instructions) {
+            const { value } = instr;
+            if (value.kind === 'JsxExpression' || value.kind === 'JsxFragment') {
+                if (value.children != null) {
+                    for (const child of value.children) {
+                        interpolatedAsJsx.add(child.identifier.id);
+                    }
+                }
+            }
+        }
+    }
     for (let i = 0; (i == 0 || env.hasChanged()) && i < 10; i++) {
         env.resetChanged();
         returnValues = [];
-        const safeBlocks = new Map();
+        const safeBlocks = [];
         const errors = new CompilerError();
         for (const [, block] of fn.body.blocks) {
+            retainWhere(safeBlocks, entry => entry.block !== block.id);
             for (const phi of block.phis) {
                 env.set(phi.place.identifier.id, joinRefAccessTypes(...Array(...phi.operands.values()).map(operand => { var _a; return (_a = env.get(operand.identifier.id)) !== null && _a !== void 0 ? _a : { kind: 'None' }; })));
             }
@@ -48116,27 +48274,37 @@ function validateNoRefAccessInRenderImpl(fn, env) {
                         const hookKind = getHookKindForType(fn.env, callee.identifier.type);
                         let returnType = { kind: 'None' };
                         const fnType = env.get(callee.identifier.id);
+                        let didError = false;
                         if ((fnType === null || fnType === void 0 ? void 0 : fnType.kind) === 'Structure' && fnType.fn !== null) {
                             returnType = fnType.fn.returnType;
                             if (fnType.fn.readRefEffect) {
-                                errors.push({
+                                didError = true;
+                                errors.pushDiagnostic(CompilerDiagnostic.create({
                                     severity: ErrorSeverity.InvalidReact,
-                                    reason: 'This function accesses a ref value (the `current` property), which may not be accessed during render. (https://react.dev/reference/react/useRef)',
+                                    category: 'Cannot access refs during render',
+                                    description: ERROR_DESCRIPTION,
+                                }).withDetail({
+                                    kind: 'error',
                                     loc: callee.loc,
-                                    description: callee.identifier.name !== null &&
-                                        callee.identifier.name.kind === 'named'
-                                        ? `Function \`${callee.identifier.name.value}\` accesses a ref`
-                                        : null,
-                                    suggestions: null,
-                                });
+                                    message: `This function accesses a ref value`,
+                                }));
                             }
                         }
-                        for (const operand of eachInstructionValueOperand(instr.value)) {
-                            if (hookKind != null) {
-                                validateNoDirectRefValueAccess(errors, operand, env);
-                            }
-                            else {
-                                validateNoRefAccess(errors, env, operand, operand.loc);
+                        if (!didError) {
+                            const isRefLValue = isUseRefType(instr.lvalue.identifier);
+                            for (const operand of eachInstructionValueOperand(instr.value)) {
+                                if (isRefLValue ||
+                                    (hookKind != null &&
+                                        hookKind !== 'useState' &&
+                                        hookKind !== 'useReducer')) {
+                                    validateNoDirectRefValueAccess(errors, operand, env);
+                                }
+                                else if (interpolatedAsJsx.has(instr.lvalue.identifier.id)) {
+                                    validateNoRefValueAccess(errors, env, operand);
+                                }
+                                else {
+                                    validateNoRefPassedToFunction(errors, env, operand, operand.loc);
+                                }
                             }
                         }
                         env.set(instr.lvalue.identifier.id, returnType);
@@ -48168,22 +48336,34 @@ function validateNoRefAccessInRenderImpl(fn, env) {
                     case 'PropertyStore':
                     case 'ComputedDelete':
                     case 'ComputedStore': {
-                        const safe = safeBlocks.get(block.id);
                         const target = env.get(instr.value.object.identifier.id);
+                        let safe = null;
                         if (instr.value.kind === 'PropertyStore' &&
-                            safe != null &&
-                            (target === null || target === void 0 ? void 0 : target.kind) === 'Ref' &&
-                            target.refId === safe) {
-                            safeBlocks.delete(block.id);
+                            target != null &&
+                            target.kind === 'Ref') {
+                            safe = safeBlocks.find(entry => entry.ref === target.refId);
+                        }
+                        if (safe != null) {
+                            retainWhere(safeBlocks, entry => entry !== safe);
                         }
                         else {
-                            validateNoRefAccess(errors, env, instr.value.object, instr.loc);
+                            validateNoRefUpdate(errors, env, instr.value.object, instr.loc);
                         }
-                        for (const operand of eachInstructionValueOperand(instr.value)) {
-                            if (operand === instr.value.object) {
-                                continue;
+                        if (instr.value.kind === 'ComputedDelete' ||
+                            instr.value.kind === 'ComputedStore') {
+                            validateNoRefValueAccess(errors, env, instr.value.property);
+                        }
+                        if (instr.value.kind === 'ComputedStore' ||
+                            instr.value.kind === 'PropertyStore') {
+                            validateNoDirectRefValueAccess(errors, instr.value.value, env);
+                            const type = env.get(instr.value.value.identifier.id);
+                            if (type != null && type.kind === 'Structure') {
+                                let objectType = type;
+                                if (target != null) {
+                                    objectType = joinRefAccessTypes(objectType, target);
+                                }
+                                env.set(instr.value.object.identifier.id, objectType);
                             }
-                            validateNoRefValueAccess(errors, env, operand);
                         }
                         break;
                     }
@@ -48244,8 +48424,9 @@ function validateNoRefAccessInRenderImpl(fn, env) {
             }
             if (block.terminal.kind === 'if') {
                 const test = env.get(block.terminal.test.identifier.id);
-                if ((test === null || test === void 0 ? void 0 : test.kind) === 'Guard') {
-                    safeBlocks.set(block.terminal.consequent, test.refId);
+                if ((test === null || test === void 0 ? void 0 : test.kind) === 'Guard' &&
+                    safeBlocks.find(entry => entry.ref === test.refId) == null) {
+                    safeBlocks.push({ block: block.terminal.fallthrough, ref: test.refId });
                 }
             }
             for (const operand of eachTerminalOperand(block.terminal)) {
@@ -48281,16 +48462,15 @@ function destructure(type) {
 function guardCheck(errors, operand, env) {
     var _a;
     if (((_a = env.get(operand.identifier.id)) === null || _a === void 0 ? void 0 : _a.kind) === 'Guard') {
-        errors.push({
+        errors.pushDiagnostic(CompilerDiagnostic.create({
             severity: ErrorSeverity.InvalidReact,
-            reason: 'Ref values (the `current` property) may not be accessed during render. (https://react.dev/reference/react/useRef)',
+            category: 'Cannot access refs during render',
+            description: ERROR_DESCRIPTION,
+        }).withDetail({
+            kind: 'error',
             loc: operand.loc,
-            description: operand.identifier.name !== null &&
-                operand.identifier.name.kind === 'named'
-                ? `Cannot access ref value \`${operand.identifier.name.value}\``
-                : null,
-            suggestions: null,
-        });
+            message: `Cannot access ref value during render`,
+        }));
     }
 }
 function validateNoRefValueAccess(errors, env, operand) {
@@ -48298,52 +48478,67 @@ function validateNoRefValueAccess(errors, env, operand) {
     const type = destructure(env.get(operand.identifier.id));
     if ((type === null || type === void 0 ? void 0 : type.kind) === 'RefValue' ||
         ((type === null || type === void 0 ? void 0 : type.kind) === 'Structure' && ((_a = type.fn) === null || _a === void 0 ? void 0 : _a.readRefEffect))) {
-        errors.push({
+        errors.pushDiagnostic(CompilerDiagnostic.create({
             severity: ErrorSeverity.InvalidReact,
-            reason: 'Ref values (the `current` property) may not be accessed during render. (https://react.dev/reference/react/useRef)',
+            category: 'Cannot access refs during render',
+            description: ERROR_DESCRIPTION,
+        }).withDetail({
+            kind: 'error',
             loc: (type.kind === 'RefValue' && type.loc) || operand.loc,
-            description: operand.identifier.name !== null &&
-                operand.identifier.name.kind === 'named'
-                ? `Cannot access ref value \`${operand.identifier.name.value}\``
-                : null,
-            suggestions: null,
-        });
+            message: `Cannot access ref value during render`,
+        }));
     }
 }
-function validateNoRefAccess(errors, env, operand, loc) {
+function validateNoRefPassedToFunction(errors, env, operand, loc) {
     var _a;
     const type = destructure(env.get(operand.identifier.id));
     if ((type === null || type === void 0 ? void 0 : type.kind) === 'Ref' ||
         (type === null || type === void 0 ? void 0 : type.kind) === 'RefValue' ||
         ((type === null || type === void 0 ? void 0 : type.kind) === 'Structure' && ((_a = type.fn) === null || _a === void 0 ? void 0 : _a.readRefEffect))) {
-        errors.push({
+        errors.pushDiagnostic(CompilerDiagnostic.create({
             severity: ErrorSeverity.InvalidReact,
-            reason: 'Ref values (the `current` property) may not be accessed during render. (https://react.dev/reference/react/useRef)',
+            category: 'Cannot access refs during render',
+            description: ERROR_DESCRIPTION,
+        }).withDetail({
+            kind: 'error',
             loc: (type.kind === 'RefValue' && type.loc) || loc,
-            description: operand.identifier.name !== null &&
-                operand.identifier.name.kind === 'named'
-                ? `Cannot access ref value \`${operand.identifier.name.value}\``
-                : null,
-            suggestions: null,
-        });
+            message: `Passing a ref to a function may read its value during render`,
+        }));
+    }
+}
+function validateNoRefUpdate(errors, env, operand, loc) {
+    const type = destructure(env.get(operand.identifier.id));
+    if ((type === null || type === void 0 ? void 0 : type.kind) === 'Ref' || (type === null || type === void 0 ? void 0 : type.kind) === 'RefValue') {
+        errors.pushDiagnostic(CompilerDiagnostic.create({
+            severity: ErrorSeverity.InvalidReact,
+            category: 'Cannot access refs during render',
+            description: ERROR_DESCRIPTION,
+        }).withDetail({
+            kind: 'error',
+            loc: (type.kind === 'RefValue' && type.loc) || loc,
+            message: `Cannot update ref during render`,
+        }));
     }
 }
 function validateNoDirectRefValueAccess(errors, operand, env) {
     var _a;
     const type = destructure(env.get(operand.identifier.id));
     if ((type === null || type === void 0 ? void 0 : type.kind) === 'RefValue') {
-        errors.push({
+        errors.pushDiagnostic(CompilerDiagnostic.create({
             severity: ErrorSeverity.InvalidReact,
-            reason: 'Ref values (the `current` property) may not be accessed during render. (https://react.dev/reference/react/useRef)',
+            category: 'Cannot access refs during render',
+            description: ERROR_DESCRIPTION,
+        }).withDetail({
+            kind: 'error',
             loc: (_a = type.loc) !== null && _a !== void 0 ? _a : operand.loc,
-            description: operand.identifier.name !== null &&
-                operand.identifier.name.kind === 'named'
-                ? `Cannot access ref value \`${operand.identifier.name.value}\``
-                : null,
-            suggestions: null,
-        });
+            message: `Cannot access ref value during render`,
+        }));
     }
 }
+const ERROR_DESCRIPTION = 'React refs are values that are not needed for rendering. Refs should only be accessed ' +
+    'outside of render, such as in event handlers or effects. ' +
+    'Accessing a ref value (the `current` property) during render can cause your component ' +
+    'not to update as expected (https://react.dev/reference/react/useRef)';
 
 function validateNoSetStateInRender(fn) {
     const unconditionalSetStateFunctions = new Set();
@@ -49236,6 +49431,7 @@ function emitSelectorFn(env, keys) {
         terminal: {
             id: makeInstructionId(0),
             kind: 'return',
+            returnVariant: 'Explicit',
             loc: GeneratedSource,
             value: arrayInstr.lvalue,
             effects: null,
@@ -49667,6 +49863,7 @@ function emitOutlinedFn(env, jsx, oldProps, globals) {
         terminal: {
             id: makeInstructionId(0),
             kind: 'return',
+            returnVariant: 'Explicit',
             loc: GeneratedSource,
             value: instructions.at(-1).lvalue,
             effects: null,
@@ -50487,7 +50684,7 @@ function runWithEnvironment(func, env) {
         !env.config.enablePreserveExistingManualUseMemo &&
         !env.config.disableMemoizationForDebugging &&
         !env.config.enableChangeDetectionForDebugging) {
-        dropManualMemoization(hir);
+        dropManualMemoization(hir).unwrap();
         log({ kind: 'hir', name: 'DropManualMemoization', value: hir });
     }
     inlineImmediatelyInvokedFunctionExpressions(hir);
@@ -52430,13 +52627,14 @@ const COMPILER_OPTIONS = {
     panicThreshold: 'none',
     flowSuppressions: false,
     environment: validateEnvironmentConfig({
-        validateRefAccessDuringRender: false,
+        validateRefAccessDuringRender: true,
         validateNoSetStateInRender: true,
         validateNoSetStateInEffects: true,
         validateNoJSXInTryStatements: true,
         validateNoImpureFunctionsInRender: true,
         validateStaticComponents: true,
         validateNoFreezingKnownMutableFunctions: true,
+        validateNoVoidUseMemo: true,
     }),
 };
 const rule$1 = {
@@ -55498,6 +55696,15 @@ function isInsideDoWhileLoop(node) {
     }
     return false;
 }
+function isInsideTryCatch(node) {
+    while (node) {
+        if (node.type === 'TryStatement' || node.type === 'CatchClause') {
+            return true;
+        }
+        node = node.parent;
+    }
+    return false;
+}
 function isUseEffectEventIdentifier(node) {
     {
         return node.type === 'Identifier' && node.name === 'useEffectEvent';
@@ -55700,6 +55907,12 @@ const rule = {
                     for (const hook of reactHooks) {
                         if (hasFlowSuppression(hook, 'react-rule-hook')) {
                             continue;
+                        }
+                        if (isUseIdentifier(hook) && isInsideTryCatch(hook)) {
+                            context.report({
+                                node: hook,
+                                message: `React Hook "${getSourceCode().getText(hook)}" cannot be called in a try/catch block.`,
+                            });
                         }
                         if ((cycled || isInsideDoWhileLoop(hook)) &&
                             !isUseIdentifier(hook)) {
