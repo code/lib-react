@@ -18684,7 +18684,7 @@ function printTerminal(terminal) {
             break;
         }
         case 'return': {
-            value = `[${terminal.id}] Return${terminal.value != null ? ' ' + printPlace(terminal.value) : ''}`;
+            value = `[${terminal.id}] Return ${terminal.returnVariant}${terminal.value != null ? ' ' + printPlace(terminal.value) : ''}`;
             if (terminal.effects != null) {
                 value += `\n    ${terminal.effects.map(printAliasingEffect).join('\n    ')}`;
             }
@@ -20033,6 +20033,7 @@ function mapTerminalSuccessors(terminal, fn) {
         case 'return': {
             return {
                 kind: 'return',
+                returnVariant: terminal.returnVariant,
                 loc: terminal.loc,
                 value: terminal.value,
                 id: makeInstructionId(0),
@@ -22396,6 +22397,7 @@ function lower$1(func, env, bindings = null, capturedRefs = new Map()) {
         const fallthrough = builder.reserve('block');
         const terminal = {
             kind: 'return',
+            returnVariant: 'Implicit',
             loc: GeneratedSource,
             value: lowerExpressionToTemporary(builder, body),
             id: makeInstructionId(0),
@@ -22423,6 +22425,7 @@ function lower$1(func, env, bindings = null, capturedRefs = new Map()) {
     }
     builder.terminate({
         kind: 'return',
+        returnVariant: 'Void',
         loc: GeneratedSource,
         value: lowerValueToTemporary(builder, {
             kind: 'Primitive',
@@ -22490,6 +22493,7 @@ function lowerStatement(builder, stmtPath, label = null) {
             }
             const terminal = {
                 kind: 'return',
+                returnVariant: 'Explicit',
                 loc: (_c = stmt.node.loc) !== null && _c !== void 0 ? _c : GeneratedSource,
                 value,
                 id: makeInstructionId(0),
@@ -30730,6 +30734,7 @@ const EnvironmentConfigSchema = zod.z.object({
     hookPattern: zod.z.string().nullable().default(null),
     enableTreatRefLikeIdentifiersAsRefs: zod.z.boolean().default(false),
     lowerContextAccess: ExternalFunctionSchema.nullable().default(null),
+    validateNoVoidUseMemo: zod.z.boolean().default(false),
 });
 class Environment {
     constructor(scope, fnType, compilerMode, config, contextIdentifiers, parentFunction, logger, filename, code, programContext) {
@@ -43847,43 +43852,69 @@ function getManualMemoizationReplacement(fn, loc, kind) {
         };
     }
 }
-function extractManualMemoizationArgs(instr, kind, sidemap) {
+function extractManualMemoizationArgs(instr, kind, sidemap, errors) {
     const [fnPlace, depsListPlace] = instr.value.args;
     if (fnPlace == null) {
-        CompilerError.throwInvalidReact({
-            reason: `Expected a callback function to be passed to ${kind}`,
-            loc: instr.value.loc,
+        errors.pushDiagnostic(CompilerDiagnostic.create({
+            severity: ErrorSeverity.InvalidReact,
+            category: `Expected a callback function to be passed to ${kind}`,
+            description: `Expected a callback function to be passed to ${kind}`,
             suggestions: null,
-        });
+        }).withDetail({
+            kind: 'error',
+            loc: instr.value.loc,
+            message: `Expected a callback function to be passed to ${kind}`,
+        }));
+        return { fnPlace: null, depsList: null };
     }
     if (fnPlace.kind === 'Spread' || (depsListPlace === null || depsListPlace === void 0 ? void 0 : depsListPlace.kind) === 'Spread') {
-        CompilerError.throwInvalidReact({
-            reason: `Unexpected spread argument to ${kind}`,
-            loc: instr.value.loc,
+        errors.pushDiagnostic(CompilerDiagnostic.create({
+            severity: ErrorSeverity.InvalidReact,
+            category: `Unexpected spread argument to ${kind}`,
+            description: `Unexpected spread argument to ${kind}`,
             suggestions: null,
-        });
+        }).withDetail({
+            kind: 'error',
+            loc: instr.value.loc,
+            message: `Unexpected spread argument to ${kind}`,
+        }));
+        return { fnPlace: null, depsList: null };
     }
     let depsList = null;
     if (depsListPlace != null) {
         const maybeDepsList = sidemap.maybeDepsLists.get(depsListPlace.identifier.id);
         if (maybeDepsList == null) {
-            CompilerError.throwInvalidReact({
-                reason: `Expected the dependency list for ${kind} to be an array literal`,
+            errors.pushDiagnostic(CompilerDiagnostic.create({
+                severity: ErrorSeverity.InvalidReact,
+                category: `Expected the dependency list for ${kind} to be an array literal`,
+                description: `Expected the dependency list for ${kind} to be an array literal`,
                 suggestions: null,
+            }).withDetail({
+                kind: 'error',
                 loc: depsListPlace.loc,
-            });
+                message: `Expected the dependency list for ${kind} to be an array literal`,
+            }));
+            return { fnPlace, depsList: null };
         }
-        depsList = maybeDepsList.map(dep => {
+        depsList = [];
+        for (const dep of maybeDepsList) {
             const maybeDep = sidemap.maybeDeps.get(dep.identifier.id);
             if (maybeDep == null) {
-                CompilerError.throwInvalidReact({
-                    reason: `Expected the dependency list to be an array of simple expressions (e.g. \`x\`, \`x.y.z\`, \`x?.y?.z\`)`,
+                errors.pushDiagnostic(CompilerDiagnostic.create({
+                    severity: ErrorSeverity.InvalidReact,
+                    category: `Expected the dependency list to be an array of simple expressions (e.g. \`x\`, \`x.y.z\`, \`x?.y?.z\`)`,
+                    description: `Expected the dependency list to be an array of simple expressions (e.g. \`x\`, \`x.y.z\`, \`x?.y?.z\`)`,
                     suggestions: null,
+                }).withDetail({
+                    kind: 'error',
                     loc: dep.loc,
-                });
+                    message: `Expected the dependency list to be an array of simple expressions (e.g. \`x\`, \`x.y.z\`, \`x?.y?.z\`)`,
+                }));
             }
-            return maybeDep;
-        });
+            else {
+                depsList.push(maybeDep);
+            }
+        }
     }
     return {
         fnPlace,
@@ -43891,6 +43922,8 @@ function extractManualMemoizationArgs(instr, kind, sidemap) {
     };
 }
 function dropManualMemoization(func) {
+    var _a;
+    const errors = new CompilerError();
     const isValidationEnabled = func.env.config.validatePreserveExistingMemoizationGuarantees ||
         func.env.config.validateNoSetStateInRender ||
         func.env.config.enablePreserveExistingMemoizationGuarantees;
@@ -43915,15 +43948,44 @@ function dropManualMemoization(func) {
                     : instr.value.property.identifier.id;
                 const manualMemo = sidemap.manualMemos.get(id);
                 if (manualMemo != null) {
-                    const { fnPlace, depsList } = extractManualMemoizationArgs(instr, manualMemo.kind, sidemap);
+                    const { fnPlace, depsList } = extractManualMemoizationArgs(instr, manualMemo.kind, sidemap, errors);
+                    if (fnPlace == null) {
+                        continue;
+                    }
+                    if (func.env.config.validateNoVoidUseMemo &&
+                        manualMemo.kind === 'useMemo') {
+                        const funcToCheck = (_a = sidemap.functions.get(fnPlace.identifier.id)) === null || _a === void 0 ? void 0 : _a.value;
+                        if (funcToCheck !== undefined && funcToCheck.loweredFunc.func) {
+                            if (!hasNonVoidReturn(funcToCheck.loweredFunc.func)) {
+                                errors.pushDiagnostic(CompilerDiagnostic.create({
+                                    severity: ErrorSeverity.InvalidReact,
+                                    category: 'useMemo() callbacks must return a value',
+                                    description: `This ${manualMemo.loadInstr.value.kind === 'PropertyLoad'
+                                        ? 'React.useMemo'
+                                        : 'useMemo'} callback doesn't return a value. useMemo is for computing and caching values, not for arbitrary side effects.`,
+                                    suggestions: null,
+                                }).withDetail({
+                                    kind: 'error',
+                                    loc: instr.value.loc,
+                                    message: 'useMemo() callbacks must return a value',
+                                }));
+                            }
+                        }
+                    }
                     instr.value = getManualMemoizationReplacement(fnPlace, instr.value.loc, manualMemo.kind);
                     if (isValidationEnabled) {
                         if (!sidemap.functions.has(fnPlace.identifier.id)) {
-                            CompilerError.throwInvalidReact({
-                                reason: `Expected the first argument to be an inline function expression`,
+                            errors.pushDiagnostic(CompilerDiagnostic.create({
+                                severity: ErrorSeverity.InvalidReact,
+                                category: `Expected the first argument to be an inline function expression`,
+                                description: `Expected the first argument to be an inline function expression`,
                                 suggestions: [],
+                            }).withDetail({
+                                kind: 'error',
                                 loc: fnPlace.loc,
-                            });
+                                message: `Expected the first argument to be an inline function expression`,
+                            }));
+                            continue;
                         }
                         const memoDecl = manualMemo.kind === 'useMemo'
                             ? instr.lvalue
@@ -43970,6 +44032,7 @@ function dropManualMemoization(func) {
             markInstructionIds(func.body);
         }
     }
+    return errors.asResult();
 }
 function findOptionalPlaces(fn) {
     const optionals = new Set();
@@ -44012,6 +44075,17 @@ function findOptionalPlaces(fn) {
         }
     }
     return optionals;
+}
+function hasNonVoidReturn(func) {
+    for (const [, block] of func.body.blocks) {
+        if (block.terminal.kind === 'return') {
+            if (block.terminal.returnVariant === 'Explicit' ||
+                block.terminal.returnVariant === 'Implicit') {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 class StableSidemap {
@@ -49456,6 +49530,7 @@ function emitSelectorFn(env, keys) {
         terminal: {
             id: makeInstructionId(0),
             kind: 'return',
+            returnVariant: 'Explicit',
             loc: GeneratedSource,
             value: arrayInstr.lvalue,
             effects: null,
@@ -49887,6 +49962,7 @@ function emitOutlinedFn(env, jsx, oldProps, globals) {
         terminal: {
             id: makeInstructionId(0),
             kind: 'return',
+            returnVariant: 'Explicit',
             loc: GeneratedSource,
             value: instructions.at(-1).lvalue,
             effects: null,
@@ -50707,7 +50783,7 @@ function runWithEnvironment(func, env) {
         !env.config.enablePreserveExistingManualUseMemo &&
         !env.config.disableMemoizationForDebugging &&
         !env.config.enableChangeDetectionForDebugging) {
-        dropManualMemoization(hir);
+        dropManualMemoization(hir).unwrap();
         log({ kind: 'hir', name: 'DropManualMemoization', value: hir });
     }
     inlineImmediatelyInvokedFunctionExpressions(hir);
@@ -52657,6 +52733,7 @@ const COMPILER_OPTIONS = {
         validateNoImpureFunctionsInRender: true,
         validateStaticComponents: true,
         validateNoFreezingKnownMutableFunctions: true,
+        validateNoVoidUseMemo: true,
     }),
 };
 const rule$1 = {
