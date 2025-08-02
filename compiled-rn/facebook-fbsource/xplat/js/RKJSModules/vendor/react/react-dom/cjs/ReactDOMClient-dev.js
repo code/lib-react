@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<42ef8a049424e4bef4dbcce34a553c51>>
+ * @generated SignedSource<<5cd64a5e0eb5f90f0f9f0ede78d1d1f2>>
  */
 
 /*
@@ -6044,19 +6044,6 @@ __DEV__ &&
           throw SuspenseException;
       }
     }
-    function resolveLazy(lazyType) {
-      try {
-        return callLazyInitInDEV(lazyType);
-      } catch (x) {
-        if (null !== x && "object" === typeof x && "function" === typeof x.then)
-          throw (
-            ((suspendedThenable = x),
-            (needsToResetSuspendedThenableDEV = !0),
-            SuspenseException)
-          );
-        throw x;
-      }
-    }
     function getSuspendedThenable() {
       if (null === suspendedThenable)
         throw Error(
@@ -6272,7 +6259,7 @@ __DEV__ &&
             ("object" === typeof elementType &&
               null !== elementType &&
               elementType.$$typeof === REACT_LAZY_TYPE &&
-              resolveLazy(elementType) === current.type))
+              callLazyInitInDEV(elementType) === current.type))
         )
           return (
             (current = useFiber(current, element.props)),
@@ -6373,7 +6360,7 @@ __DEV__ &&
               );
             case REACT_LAZY_TYPE:
               var _prevDebugInfo = pushDebugInfo(newChild._debugInfo);
-              newChild = resolveLazy(newChild);
+              newChild = callLazyInitInDEV(newChild);
               returnFiber = createChild(returnFiber, newChild, lanes);
               currentDebugInfo = _prevDebugInfo;
               return returnFiber;
@@ -6449,7 +6436,7 @@ __DEV__ &&
             case REACT_LAZY_TYPE:
               return (
                 (key = pushDebugInfo(newChild._debugInfo)),
-                (newChild = resolveLazy(newChild)),
+                (newChild = callLazyInitInDEV(newChild)),
                 (returnFiber = updateSlot(
                   returnFiber,
                   oldFiber,
@@ -6543,7 +6530,7 @@ __DEV__ &&
               );
             case REACT_LAZY_TYPE:
               var _prevDebugInfo7 = pushDebugInfo(newChild._debugInfo);
-              newChild = resolveLazy(newChild);
+              newChild = callLazyInitInDEV(newChild);
               returnFiber = updateFromMap(
                 existingChildren,
                 returnFiber,
@@ -6621,7 +6608,7 @@ __DEV__ &&
             });
             break;
           case REACT_LAZY_TYPE:
-            (child = resolveLazy(child)),
+            (child = callLazyInitInDEV(child)),
               warnOnInvalidKey(returnFiber, workInProgress, child, knownKeys);
         }
         return knownKeys;
@@ -6900,7 +6887,7 @@ __DEV__ &&
                       ("object" === typeof key &&
                         null !== key &&
                         key.$$typeof === REACT_LAZY_TYPE &&
-                        resolveLazy(key) === currentFirstChild.type)
+                        callLazyInitInDEV(key) === currentFirstChild.type)
                     ) {
                       deleteRemainingChildren(
                         returnFiber,
@@ -6992,7 +6979,7 @@ __DEV__ &&
             case REACT_LAZY_TYPE:
               return (
                 (prevDebugInfo = pushDebugInfo(newChild._debugInfo)),
-                (newChild = resolveLazy(newChild)),
+                (newChild = callLazyInitInDEV(newChild)),
                 (returnFiber = reconcileChildFibersImpl(
                   returnFiber,
                   currentFirstChild,
@@ -11775,8 +11762,8 @@ __DEV__ &&
           a: {
             var elementType = workInProgress.elementType;
             resetSuspendedCurrentOnMountInLegacyMode(current, workInProgress);
-            var props = workInProgress.pendingProps,
-              Component = resolveLazy(elementType);
+            var props = workInProgress.pendingProps;
+            var Component = callLazyInitInDEV(elementType);
             workInProgress.type = Component;
             if ("function" === typeof Component)
               if (shouldConstruct(Component)) {
@@ -26796,7 +26783,25 @@ __DEV__ &&
       pendingUNSAFE_ComponentWillUpdateWarnings = [];
       pendingLegacyContextWarning = new Map();
     };
-    var callComponent = {
+    var SuspenseException = Error(
+        "Suspense Exception: This is not a real error! It's an implementation detail of `use` to interrupt the current render. You must either rethrow it immediately, or move the `use` call outside of the `try/catch` block. Capturing without rethrowing will lead to unexpected behavior.\n\nTo handle async errors, wrap your component in an error boundary, or call the promise's `.catch` method and pass the result to `use`."
+      ),
+      SuspenseyCommitException = Error(
+        "Suspense Exception: This is not a real error, and should not leak into userspace. If you're seeing this, it's likely a bug in React."
+      ),
+      SuspenseActionException = Error(
+        "Suspense Exception: This is not a real error! It's an implementation detail of `useActionState` to interrupt the current render. You must either rethrow it immediately, or move the `useActionState` call outside of the `try/catch` block. Capturing without rethrowing will lead to unexpected behavior.\n\nTo handle async errors, wrap your component in an error boundary."
+      ),
+      noopSuspenseyCommitThenable = {
+        then: function () {
+          console.error(
+            'Internal React error: A listener was unexpectedly attached to a "noop" thenable. This is a bug in React. Please file an issue.'
+          );
+        }
+      },
+      suspendedThenable = null,
+      needsToResetSuspendedThenableDEV = !1,
+      callComponent = {
         react_stack_bottom_frame: function (Component, props, secondArg) {
           var wasRendering = isRendering;
           isRendering = !0;
@@ -26913,24 +26918,6 @@ __DEV__ &&
       },
       callLazyInitInDEV =
         callLazyInit.react_stack_bottom_frame.bind(callLazyInit),
-      SuspenseException = Error(
-        "Suspense Exception: This is not a real error! It's an implementation detail of `use` to interrupt the current render. You must either rethrow it immediately, or move the `use` call outside of the `try/catch` block. Capturing without rethrowing will lead to unexpected behavior.\n\nTo handle async errors, wrap your component in an error boundary, or call the promise's `.catch` method and pass the result to `use`."
-      ),
-      SuspenseyCommitException = Error(
-        "Suspense Exception: This is not a real error, and should not leak into userspace. If you're seeing this, it's likely a bug in React."
-      ),
-      SuspenseActionException = Error(
-        "Suspense Exception: This is not a real error! It's an implementation detail of `useActionState` to interrupt the current render. You must either rethrow it immediately, or move the `useActionState` call outside of the `try/catch` block. Capturing without rethrowing will lead to unexpected behavior.\n\nTo handle async errors, wrap your component in an error boundary."
-      ),
-      noopSuspenseyCommitThenable = {
-        then: function () {
-          console.error(
-            'Internal React error: A listener was unexpectedly attached to a "noop" thenable. This is a bug in React. Please file an issue.'
-          );
-        }
-      },
-      suspendedThenable = null,
-      needsToResetSuspendedThenableDEV = !1,
       thenableState$1 = null,
       thenableIndexCounter$1 = 0,
       currentDebugInfo = null,
@@ -29025,11 +29012,11 @@ __DEV__ &&
     };
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.2.0-native-fb-36c63d4f-20250730" !== isomorphicReactPackageVersion)
+      if ("19.2.0-native-fb-33a2bf78-20250729" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.2.0-native-fb-36c63d4f-20250730\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.2.0-native-fb-33a2bf78-20250729\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -29066,10 +29053,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.2.0-native-fb-36c63d4f-20250730",
+          version: "19.2.0-native-fb-33a2bf78-20250729",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.2.0-native-fb-36c63d4f-20250730"
+          reconcilerVersion: "19.2.0-native-fb-33a2bf78-20250729"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -29207,5 +29194,5 @@ __DEV__ &&
       listenToAllSupportedEvents(container);
       return new ReactDOMHydrationRoot(initialChildren);
     };
-    exports.version = "19.2.0-native-fb-36c63d4f-20250730";
+    exports.version = "19.2.0-native-fb-33a2bf78-20250729";
   })();
