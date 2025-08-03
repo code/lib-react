@@ -6,7 +6,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
- * @generated SignedSource<<9333c1881d2e38e7a657bf98d1f5f416>>
+ * @generated SignedSource<<8b1b8f2145063e8c59277e8766b3c225>>
  */
 
 'use strict';
@@ -18085,6 +18085,61 @@ function phiTypeEquals(tA, tB) {
     return false;
 }
 
+const RESERVED_WORDS = new Set([
+    'break',
+    'case',
+    'catch',
+    'class',
+    'const',
+    'continue',
+    'debugger',
+    'default',
+    'delete',
+    'do',
+    'else',
+    'enum',
+    'export',
+    'extends',
+    'false',
+    'finally',
+    'for',
+    'function',
+    'if',
+    'import',
+    'in',
+    'instanceof',
+    'new',
+    'null',
+    'return',
+    'super',
+    'switch',
+    'this',
+    'throw',
+    'true',
+    'try',
+    'typeof',
+    'var',
+    'void',
+    'while',
+    'with',
+]);
+const STRICT_MODE_RESERVED_WORDS = new Set([
+    'let',
+    'static',
+    'implements',
+    'interface',
+    'package',
+    'private',
+    'protected',
+    'public',
+]);
+const STRICT_MODE_RESTRICTED_WORDS = new Set(['eval', 'arguments']);
+function isReservedWord(identifierName) {
+    return (RESERVED_WORDS.has(identifierName) ||
+        STRICT_MODE_RESERVED_WORDS.has(identifierName) ||
+        STRICT_MODE_RESTRICTED_WORDS.has(identifierName));
+}
+
 const GeneratedSource = Symbol();
 function isStatementBlockKind(kind) {
     return kind === 'block' || kind === 'catch';
@@ -18142,12 +18197,22 @@ function forkTemporaryIdentifier(id, source) {
     return Object.assign(Object.assign({}, source), { mutableRange: { start: makeInstructionId(0), end: makeInstructionId(0) }, id });
 }
 function makeIdentifierName(name) {
-    CompilerError.invariant(libExports$1.isValidIdentifier(name), {
-        reason: `Expected a valid identifier name`,
-        loc: GeneratedSource,
-        description: `\`${name}\` is not a valid JavaScript identifier`,
-        suggestions: null,
-    });
+    if (isReservedWord(name)) {
+        CompilerError.throwInvalidJS({
+            reason: 'Expected a non-reserved identifier name',
+            loc: GeneratedSource,
+            description: `\`${name}\` is a reserved word in JavaScript and cannot be used as an identifier name`,
+            suggestions: null,
+        });
+    }
+    else {
+        CompilerError.invariant(libExports$1.isValidIdentifier(name), {
+            reason: `Expected a valid identifier name`,
+            loc: GeneratedSource,
+            description: `\`${name}\` is not a valid JavaScript identifier`,
+            suggestions: null,
+        });
+    }
     return {
         kind: 'named',
         value: name,
@@ -21283,6 +21348,7 @@ function parseAliasingSignatureConfig(typeConfig, moduleName, loc) {
     const temporaries = typeConfig.temporaries.map(define);
     const effects = typeConfig.effects.map((effect) => {
         switch (effect.kind) {
+            case 'ImmutableCapture':
             case 'CreateFrom':
             case 'Capture':
             case 'Alias':
@@ -29519,6 +29585,96 @@ const TYPED_GLOBALS = [
                     returnValueKind: ValueKind.Mutable,
                 }),
             ],
+            [
+                'entries',
+                addFunction(DEFAULT_SHAPES, [], {
+                    positionalParams: [Effect.Capture],
+                    restParam: null,
+                    returnType: { kind: 'Object', shapeId: BuiltInArrayId },
+                    calleeEffect: Effect.Read,
+                    returnValueKind: ValueKind.Mutable,
+                    aliasing: {
+                        receiver: '@receiver',
+                        params: ['@object'],
+                        rest: null,
+                        returns: '@returns',
+                        temporaries: [],
+                        effects: [
+                            {
+                                kind: 'Create',
+                                into: '@returns',
+                                reason: ValueReason.KnownReturnSignature,
+                                value: ValueKind.Mutable,
+                            },
+                            {
+                                kind: 'Capture',
+                                from: '@object',
+                                into: '@returns',
+                            },
+                        ],
+                    },
+                }),
+            ],
+            [
+                'keys',
+                addFunction(DEFAULT_SHAPES, [], {
+                    positionalParams: [Effect.Read],
+                    restParam: null,
+                    returnType: { kind: 'Object', shapeId: BuiltInArrayId },
+                    calleeEffect: Effect.Read,
+                    returnValueKind: ValueKind.Mutable,
+                    aliasing: {
+                        receiver: '@receiver',
+                        params: ['@object'],
+                        rest: null,
+                        returns: '@returns',
+                        temporaries: [],
+                        effects: [
+                            {
+                                kind: 'Create',
+                                into: '@returns',
+                                reason: ValueReason.KnownReturnSignature,
+                                value: ValueKind.Mutable,
+                            },
+                            {
+                                kind: 'ImmutableCapture',
+                                from: '@object',
+                                into: '@returns',
+                            },
+                        ],
+                    },
+                }),
+            ],
+            [
+                'values',
+                addFunction(DEFAULT_SHAPES, [], {
+                    positionalParams: [Effect.Capture],
+                    restParam: null,
+                    returnType: { kind: 'Object', shapeId: BuiltInArrayId },
+                    calleeEffect: Effect.Read,
+                    returnValueKind: ValueKind.Mutable,
+                    aliasing: {
+                        receiver: '@receiver',
+                        params: ['@object'],
+                        rest: null,
+                        returns: '@returns',
+                        temporaries: [],
+                        effects: [
+                            {
+                                kind: 'Create',
+                                into: '@returns',
+                                reason: ValueReason.KnownReturnSignature,
+                                value: ValueKind.Mutable,
+                            },
+                            {
+                                kind: 'Capture',
+                                from: '@object',
+                                into: '@returns',
+                            },
+                        ],
+                    },
+                }),
+            ],
         ]),
     ],
     [
@@ -30338,6 +30494,11 @@ const AliasEffectSchema = zod.z.object({
     from: LifetimeIdSchema,
     into: LifetimeIdSchema,
 });
+const ImmutableCaptureEffectSchema = zod.z.object({
+    kind: zod.z.literal('ImmutableCapture'),
+    from: LifetimeIdSchema,
+    into: LifetimeIdSchema,
+});
 const CaptureEffectSchema = zod.z.object({
     kind: zod.z.literal('Capture'),
     from: LifetimeIdSchema,
@@ -30377,6 +30538,7 @@ const AliasingEffectSchema = zod.z.union([
     AssignEffectSchema,
     AliasEffectSchema,
     CaptureEffectSchema,
+    ImmutableCaptureEffectSchema,
     ImpureEffectSchema,
     MutateEffectSchema,
     MutateTransitiveConditionallySchema,
@@ -37105,6 +37267,7 @@ class FindLastUsageVisitor extends ReactiveFunctionVisitor {
 let Transform$4 = class Transform extends ReactiveFunctionTransform {
     constructor(lastUsage) {
         super();
+        this.temporaries = new Map();
         this.lastUsage = lastUsage;
     }
     transformScope(scopeBlock, state) {
@@ -37118,6 +37281,7 @@ let Transform$4 = class Transform extends ReactiveFunctionTransform {
         }
     }
     visitBlock(block, state) {
+        var _a;
         this.traverseBlock(block, state);
         let current = null;
         const merged = [];
@@ -37161,6 +37325,9 @@ let Transform$4 = class Transform extends ReactiveFunctionTransform {
                         case 'UnaryExpression': {
                             if (current !== null && instr.instruction.lvalue !== null) {
                                 current.lvalues.add(instr.instruction.lvalue.identifier.declarationId);
+                                if (instr.instruction.value.kind === 'LoadLocal') {
+                                    this.temporaries.set(instr.instruction.lvalue.identifier.declarationId, instr.instruction.value.place.identifier.declarationId);
+                                }
                             }
                             break;
                         }
@@ -37170,6 +37337,8 @@ let Transform$4 = class Transform extends ReactiveFunctionTransform {
                                     for (const lvalue of eachInstructionLValue(instr.instruction)) {
                                         current.lvalues.add(lvalue.identifier.declarationId);
                                     }
+                                    this.temporaries.set(instr.instruction.value.lvalue.place.identifier
+                                        .declarationId, (_a = this.temporaries.get(instr.instruction.value.value.identifier.declarationId)) !== null && _a !== void 0 ? _a : instr.instruction.value.value.identifier.declarationId);
                                 }
                                 else {
                                     reset();
@@ -37187,7 +37356,7 @@ let Transform$4 = class Transform extends ReactiveFunctionTransform {
                 }
                 case 'scope': {
                     if (current !== null &&
-                        canMergeScopes(current.block, instr) &&
+                        canMergeScopes(current.block, instr, this.temporaries) &&
                         areLValuesLastUsedByScope(instr.scope, current.lvalues, this.lastUsage)) {
                         current.block.scope.range.end = makeInstructionId(Math.max(current.block.scope.range.end, instr.scope.range.end));
                         for (const [key, value] of instr.scope.declarations) {
@@ -37283,7 +37452,7 @@ function areLValuesLastUsedByScope(scope, lvalues, lastUsage) {
     }
     return true;
 }
-function canMergeScopes(current, next) {
+function canMergeScopes(current, next, temporaries) {
     if (current.scope.reassignments.size !== 0 ||
         next.scope.reassignments.size !== 0) {
         return false;
@@ -37297,12 +37466,15 @@ function canMergeScopes(current, next) {
         path: [],
     }))), next.scope.dependencies) ||
         (next.scope.dependencies.size !== 0 &&
-            [...next.scope.dependencies].every(dep => isAlwaysInvalidatingType(dep.identifier.type) &&
-                Iterable_some(current.scope.declarations.values(), decl => decl.identifier.declarationId === dep.identifier.declarationId)))) {
+            [...next.scope.dependencies].every(dep => dep.path.length === 0 &&
+                isAlwaysInvalidatingType(dep.identifier.type) &&
+                Iterable_some(current.scope.declarations.values(), decl => decl.identifier.declarationId === dep.identifier.declarationId ||
+                    decl.identifier.declarationId ===
+                        temporaries.get(dep.identifier.declarationId))))) {
         return true;
     }
-    log(`  ${printReactiveScopeSummary(current.scope)}`);
-    log(`  ${printReactiveScopeSummary(next.scope)}`);
+    log(`  ${printReactiveScopeSummary(current.scope)} ${[...current.scope.declarations.values()].map(decl => decl.identifier.declarationId)}`);
+    log(`  ${printReactiveScopeSummary(next.scope)} ${[...next.scope.dependencies].map(dep => { var _a; return `${dep.identifier.declarationId} ${(_a = temporaries.get(dep.identifier.declarationId)) !== null && _a !== void 0 ? _a : dep.identifier.declarationId}`; })}`);
     return false;
 }
 function isAlwaysInvalidatingType(type) {
