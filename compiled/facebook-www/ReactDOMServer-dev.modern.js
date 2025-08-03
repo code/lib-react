@@ -4557,6 +4557,9 @@ __DEV__ &&
       }
       return "";
     }
+    function isEligibleForOutlining(request, boundary) {
+      return 500 < boundary.byteSize && null === boundary.contentPreamble;
+    }
     function defaultErrorHandler(error) {
       if (
         "object" === typeof error &&
@@ -5060,7 +5063,7 @@ __DEV__ &&
           if (
             1 !== rowBoundary.pendingTasks ||
             rowBoundary.parentFlushed ||
-            500 < rowBoundary.byteSize
+            isEligibleForOutlining(request, rowBoundary)
           ) {
             allCompleteAndInlinable = !1;
             break;
@@ -6118,7 +6121,7 @@ __DEV__ &&
                   ) {
                     if (
                       ((newBoundary.status = COMPLETED),
-                      !(500 < newBoundary.byteSize))
+                      !isEligibleForOutlining(request, newBoundary))
                     ) {
                       null !== prevRow$jscomp$0 &&
                         0 === --prevRow$jscomp$0.pendingTasks &&
@@ -7329,7 +7332,7 @@ __DEV__ &&
             (row = boundary$jscomp$0.row),
               null !== row &&
                 hoistHoistables(row.hoistables, boundary$jscomp$0.contentState),
-              500 < boundary$jscomp$0.byteSize ||
+              isEligibleForOutlining(request$jscomp$0, boundary$jscomp$0) ||
                 (boundary$jscomp$0.fallbackAbortableTasks.forEach(
                   abortTaskSoft,
                   request$jscomp$0
@@ -7692,6 +7695,7 @@ __DEV__ &&
       switch (boundary.status) {
         case COMPLETED:
           hoistPreambleState(request.renderState, preamble);
+          request.byteSize += boundary.byteSize;
           segment = boundary.completedSegments[0];
           if (!segment)
             throw Error(
@@ -7724,17 +7728,17 @@ __DEV__ &&
         null === request.completedPreambleSegments
       ) {
         var collectedPreambleSegments = [],
+          originalRequestByteSize = request.byteSize,
           hasPendingPreambles = preparePreambleFromSegment(
             request,
             request.completedRootSegment,
             collectedPreambleSegments
           ),
           preamble = request.renderState.preamble;
-        if (
-          !1 === hasPendingPreambles ||
-          (preamble.headChunks && preamble.bodyChunks)
-        )
-          request.completedPreambleSegments = collectedPreambleSegments;
+        !1 === hasPendingPreambles ||
+        (preamble.headChunks && preamble.bodyChunks)
+          ? (request.completedPreambleSegments = collectedPreambleSegments)
+          : (request.byteSize = originalRequestByteSize);
       }
     }
     function flushSubtree(request, destination, segment, hoistableState) {
@@ -7847,7 +7851,7 @@ __DEV__ &&
           destination.push(endSuspenseBoundary)
         );
       if (
-        500 < boundary.byteSize &&
+        isEligibleForOutlining(request, boundary) &&
         flushedByteSize + boundary.byteSize > request.progressiveChunkSize
       )
         return (
@@ -7865,7 +7869,7 @@ __DEV__ &&
       hoistableState && hoistHoistables(hoistableState, boundary.contentState);
       segment = boundary.row;
       null !== segment &&
-        500 < boundary.byteSize &&
+        isEligibleForOutlining(request, boundary) &&
         0 === --segment.pendingTasks &&
         finishSuspenseListRow(request, segment);
       request.renderState.generateStaticMarkup ||
@@ -7912,7 +7916,7 @@ __DEV__ &&
       completedSegments.length = 0;
       completedSegments = boundary.row;
       null !== completedSegments &&
-        500 < boundary.byteSize &&
+        isEligibleForOutlining(request, boundary) &&
         0 === --completedSegments.pendingTasks &&
         finishSuspenseListRow(request, completedSegments);
       writeHoistablesForBoundary(
@@ -10084,5 +10088,5 @@ __DEV__ &&
         'The server used "renderToString" which does not support Suspense. If you intended for this Suspense boundary to render the fallback content on the server consider throwing an Error somewhere within the Suspense boundary. If you intended to have the server wait for the suspended component please switch to "renderToReadableStream" which supports Suspense on the server'
       );
     };
-    exports.version = "19.2.0-www-modern-04a7a619-20250729";
+    exports.version = "19.2.0-www-modern-c260b38d-20250731";
   })();
