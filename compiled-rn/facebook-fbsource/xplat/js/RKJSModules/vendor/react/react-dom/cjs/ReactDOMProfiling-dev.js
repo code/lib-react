@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<86029126af0a88c78ff91677e48bb88a>>
+ * @generated SignedSource<<cf5c2ecdfa882b3fc17d86bcb07c03d9>>
  */
 
 /*
@@ -28878,8 +28878,9 @@ __DEV__ &&
       );
     };
     FragmentInstance.prototype.unobserveUsing = function (observer) {
-      null !== this._observers && this._observers.has(observer)
-        ? (this._observers.delete(observer),
+      var observers = this._observers;
+      null !== observers && observers.has(observer)
+        ? (observers.delete(observer),
           traverseVisibleHostChildren(
             this._fragmentFiber.child,
             !1,
@@ -29418,11 +29419,11 @@ __DEV__ &&
     };
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.2.0-native-fb-83c7379b-20250820" !== isomorphicReactPackageVersion)
+      if ("19.2.0-native-fb-11d7bcf8-20250822" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.2.0-native-fb-83c7379b-20250820\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.2.0-native-fb-11d7bcf8-20250822\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -29459,10 +29460,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.2.0-native-fb-83c7379b-20250820",
+          version: "19.2.0-native-fb-11d7bcf8-20250822",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.2.0-native-fb-83c7379b-20250820"
+          reconcilerVersion: "19.2.0-native-fb-11d7bcf8-20250822"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -29917,7 +29918,7 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.2.0-native-fb-83c7379b-20250820";
+    exports.version = "19.2.0-native-fb-11d7bcf8-20250822";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&

@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<b673dc4f56e97d87b30770c458b00a56>>
+ * @generated SignedSource<<b183038096c1f5457c77004cea1d1471>>
  */
 
 "use strict";
@@ -12872,9 +12872,10 @@ function observeChild(child, observer) {
   return !1;
 }
 FragmentInstance.prototype.unobserveUsing = function (observer) {
-  null !== this._observers &&
-    this._observers.has(observer) &&
-    (this._observers.delete(observer),
+  var observers = this._observers;
+  null !== observers &&
+    observers.has(observer) &&
+    (observers.delete(observer),
     traverseVisibleHostChildren(
       this._fragmentFiber.child,
       !1,
@@ -13058,10 +13059,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1504 = {
     bundleType: 0,
-    version: "19.2.0-native-fb-83c7379b-20250820",
+    version: "19.2.0-native-fb-11d7bcf8-20250822",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.2.0-native-fb-83c7379b-20250820"
+    reconcilerVersion: "19.2.0-native-fb-11d7bcf8-20250822"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1504.rendererConfig = extraDevToolsConfig);

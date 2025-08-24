@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<e841f5823ef43b309ae295e72793a7ff>>
+ * @generated SignedSource<<5ecc1bfdb3b6eec846c68f7c81d65b4d>>
  */
 
 "use strict";
@@ -19430,8 +19430,9 @@ __DEV__ &&
       );
     };
     FragmentInstance.prototype.unobserveUsing = function (observer) {
-      null !== this._observers && this._observers.has(observer)
-        ? (this._observers.delete(observer),
+      var observers = this._observers;
+      null !== observers && observers.has(observer)
+        ? (observers.delete(observer),
           traverseVisibleHostChildren(
             this._fragmentFiber.child,
             !1,
@@ -19593,10 +19594,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.2.0-native-fb-83c7379b-20250820",
+        version: "19.2.0-native-fb-11d7bcf8-20250822",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.2.0-native-fb-83c7379b-20250820"
+        reconcilerVersion: "19.2.0-native-fb-11d7bcf8-20250822"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
