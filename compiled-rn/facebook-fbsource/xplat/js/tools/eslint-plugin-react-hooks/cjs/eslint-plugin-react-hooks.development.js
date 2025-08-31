@@ -12,7 +12,7 @@
  * @lightSyntaxTransform
  * @preventMunge
  * @oncall react_core
- * @generated SignedSource<<be66197fc160b3b2770f1e922e8384a0>>
+ * @generated SignedSource<<0b67bfcfb9565db79230dbc1db3b3603>>
  */
 
 'use strict';
@@ -19519,7 +19519,6 @@ function getFunctionName$2(instrValue, defaultValue) {
     }
 }
 function printAliasingEffect(effect) {
-    var _a;
     switch (effect.kind) {
         case 'Assign': {
             return `Assign ${printPlaceForAliasEffect(effect.into)} = ${printPlaceForAliasEffect(effect.from)}`;
@@ -19578,7 +19577,7 @@ function printAliasingEffect(effect) {
         case 'MutateConditionally':
         case 'MutateTransitive':
         case 'MutateTransitiveConditionally': {
-            return `${effect.kind} ${printPlaceForAliasEffect(effect.value)}${effect.kind === 'Mutate' && ((_a = effect.reason) === null || _a === void 0 ? void 0 : _a.kind) === 'AssignCurrentProperty' ? ' (assign `.current`)' : ''}`;
+            return `${effect.kind} ${printPlaceForAliasEffect(effect.value)}`;
         }
         case 'MutateFrozen': {
             return `MutateFrozen ${printPlaceForAliasEffect(effect.place)} reason=${JSON.stringify(effect.error.reason)}`;
@@ -21090,7 +21089,7 @@ class HIRBuilder {
         }
     }
     resolveBinding(node) {
-        var _a, _b, _c;
+        var _a, _b;
         if (node.name === 'fbt') {
             CompilerError.throwDiagnostic({
                 severity: ErrorSeverity.Todo,
@@ -21102,21 +21101,6 @@ class HIRBuilder {
                         kind: 'error',
                         message: 'Rename to avoid conflict with fbt plugin',
                         loc: (_a = node.loc) !== null && _a !== void 0 ? _a : GeneratedSource,
-                    },
-                ],
-            });
-        }
-        if (node.name === 'this') {
-            CompilerError.throwDiagnostic({
-                severity: ErrorSeverity.UnsupportedJS,
-                category: ErrorCategory.UnsupportedSyntax,
-                reason: '`this` is not supported syntax',
-                description: 'React Compiler does not support compiling functions that use `this`',
-                details: [
-                    {
-                        kind: 'error',
-                        message: '`this` was used here',
-                        loc: (_b = node.loc) !== null && _b !== void 0 ? _b : GeneratedSource,
                     },
                 ],
             });
@@ -21138,7 +21122,7 @@ class HIRBuilder {
                     },
                     scope: null,
                     type: makeType(),
-                    loc: (_c = node.loc) !== null && _c !== void 0 ? _c : GeneratedSource,
+                    loc: (_b = node.loc) !== null && _b !== void 0 ? _b : GeneratedSource,
                 };
                 __classPrivateFieldGet(this, _HIRBuilder_env, "f").programContext.addNewReference(name);
                 __classPrivateFieldGet(this, _HIRBuilder_bindings, "f").set(name, { node, identifier });
@@ -42315,7 +42299,7 @@ class RewriteBlockIds extends ReactiveFunctionVisitor {
 }
 
 function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f;
     const functionEffects = [];
     const state = new AliasingState();
     const pendingPhis = new Map();
@@ -42382,7 +42366,6 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
                         kind: effect.kind === 'MutateTransitive'
                             ? MutationKind.Definite
                             : MutationKind.Conditional,
-                        reason: null,
                         place: effect.value,
                     });
                 }
@@ -42395,7 +42378,6 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
                         kind: effect.kind === 'Mutate'
                             ? MutationKind.Definite
                             : MutationKind.Conditional,
-                        reason: effect.kind === 'Mutate' ? ((_a = effect.reason) !== null && _a !== void 0 ? _a : null) : null,
                         place: effect.value,
                     });
                 }
@@ -42437,7 +42419,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
         }
     }
     for (const mutation of mutations) {
-        state.mutate(mutation.index, mutation.place.identifier, makeInstructionId(mutation.id + 1), mutation.transitive, mutation.kind, mutation.place.loc, mutation.reason, errors);
+        state.mutate(mutation.index, mutation.place.identifier, makeInstructionId(mutation.id + 1), mutation.transitive, mutation.kind, mutation.place.loc, errors);
     }
     for (const render of renders) {
         state.render(render.index, render.place.identifier, errors);
@@ -42462,7 +42444,6 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
                 functionEffects.push({
                     kind: 'Mutate',
                     value: Object.assign(Object.assign({}, place), { loc: node.local.loc }),
-                    reason: node.mutationReason,
                 });
             }
         }
@@ -42490,7 +42471,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
         for (const phi of block.phis) {
             phi.place.effect = Effect.Store;
             const isPhiMutatedAfterCreation = phi.place.identifier.mutableRange.end >
-                ((_c = (_b = block.instructions.at(0)) === null || _b === void 0 ? void 0 : _b.id) !== null && _c !== void 0 ? _c : block.terminal.id);
+                ((_b = (_a = block.instructions.at(0)) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : block.terminal.id);
             for (const operand of phi.operands.values()) {
                 operand.effect = isPhiMutatedAfterCreation
                     ? Effect.Capture
@@ -42498,7 +42479,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
             }
             if (isPhiMutatedAfterCreation &&
                 phi.place.identifier.mutableRange.start === 0) {
-                const firstInstructionIdOfBlock = (_e = (_d = block.instructions.at(0)) === null || _d === void 0 ? void 0 : _d.id) !== null && _e !== void 0 ? _e : block.terminal.id;
+                const firstInstructionIdOfBlock = (_d = (_c = block.instructions.at(0)) === null || _c === void 0 ? void 0 : _c.id) !== null && _d !== void 0 ? _d : block.terminal.id;
                 phi.place.identifier.mutableRange.start = makeInstructionId(firstInstructionIdOfBlock - 1);
             }
         }
@@ -42576,7 +42557,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
                 }
             }
             for (const lvalue of eachInstructionLValue(instr)) {
-                const effect = (_f = operandEffects.get(lvalue.identifier.id)) !== null && _f !== void 0 ? _f : Effect.ConditionallyMutate;
+                const effect = (_e = operandEffects.get(lvalue.identifier.id)) !== null && _e !== void 0 ? _e : Effect.ConditionallyMutate;
                 lvalue.effect = effect;
             }
             for (const operand of eachInstructionValueOperand(instr.value)) {
@@ -42584,7 +42565,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
                     operand.identifier.mutableRange.start === 0) {
                     operand.identifier.mutableRange.start = instr.id;
                 }
-                const effect = (_g = operandEffects.get(operand.identifier.id)) !== null && _g !== void 0 ? _g : Effect.Read;
+                const effect = (_f = operandEffects.get(operand.identifier.id)) !== null && _f !== void 0 ? _f : Effect.Read;
                 operand.effect = effect;
             }
             if (instr.value.kind === 'StoreContext' &&
@@ -42622,7 +42603,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
     }
     for (const into of tracked) {
         const mutationIndex = index++;
-        state.mutate(mutationIndex, into.identifier, null, true, MutationKind.Conditional, into.loc, null, ignoredErrors);
+        state.mutate(mutationIndex, into.identifier, null, true, MutationKind.Conditional, into.loc, ignoredErrors);
         for (const from of tracked) {
             if (from.identifier.id === into.identifier.id ||
                 from.identifier.id === fn.returns.identifier.id) {
@@ -42690,7 +42671,6 @@ class AliasingState {
             transitive: null,
             local: null,
             lastMutated: 0,
-            mutationReason: null,
             value,
         });
     }
@@ -42775,8 +42755,7 @@ class AliasingState {
             }
         }
     }
-    mutate(index, start, end, transitive, startKind, loc, reason, errors) {
-        var _a;
+    mutate(index, start, end, transitive, startKind, loc, errors) {
         const seen = new Map();
         const queue = [{ place: start, transitive, direction: 'backwards', kind: startKind }];
         while (queue.length !== 0) {
@@ -42790,7 +42769,6 @@ class AliasingState {
             if (node == null) {
                 continue;
             }
-            (_a = node.mutationReason) !== null && _a !== void 0 ? _a : (node.mutationReason = reason);
             node.lastMutated = Math.max(node.lastMutated, index);
             if (end != null) {
                 node.id.mutableRange.end = makeInstructionId(Math.max(node.id.mutableRange.end, end));
