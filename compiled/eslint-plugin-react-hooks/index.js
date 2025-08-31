@@ -17980,6 +17980,7 @@ var ErrorCategory;
     ErrorCategory["CapitalizedCalls"] = "CapitalizedCalls";
     ErrorCategory["StaticComponents"] = "StaticComponents";
     ErrorCategory["UseMemo"] = "UseMemo";
+    ErrorCategory["Factories"] = "Factories";
     ErrorCategory["PreserveManualMemo"] = "PreserveManualMemo";
     ErrorCategory["Immutability"] = "Immutability";
     ErrorCategory["Globals"] = "Globals";
@@ -18062,6 +18063,15 @@ function getRuleForCategoryImpl(category) {
                 category,
                 name: 'error-boundaries',
                 description: 'Validates usage of error boundaries instead of try/catch for errors in child components',
+                recommended: true,
+            };
+        }
+        case ErrorCategory.Factories: {
+            return {
+                category,
+                name: 'component-hook-factories',
+                description: 'Validates against higher order functions defining nested components or hooks. ' +
+                    'Components and hooks should be defined at the module level',
                 recommended: true,
             };
         }
@@ -19475,7 +19485,8 @@ function printType(type) {
         return `:T${type.kind}<${type.shapeId}>`;
     }
     else if (type.kind === 'Function' && type.shapeId != null) {
-        return `:T${type.kind}<${type.shapeId}>`;
+        const returnType = printType(type.return);
+        return `:T${type.kind}<${type.shapeId}>()${returnType !== '' ? `:  ${returnType}` : ''}`;
     }
     else {
         return `:T${type.kind}`;
@@ -19507,6 +19518,7 @@ function getFunctionName$2(instrValue, defaultValue) {
     }
 }
 function printAliasingEffect(effect) {
+    var _a;
     switch (effect.kind) {
         case 'Assign': {
             return `Assign ${printPlaceForAliasEffect(effect.into)} = ${printPlaceForAliasEffect(effect.from)}`;
@@ -19565,7 +19577,7 @@ function printAliasingEffect(effect) {
         case 'MutateConditionally':
         case 'MutateTransitive':
         case 'MutateTransitiveConditionally': {
-            return `${effect.kind} ${printPlaceForAliasEffect(effect.value)}`;
+            return `${effect.kind} ${printPlaceForAliasEffect(effect.value)}${effect.kind === 'Mutate' && ((_a = effect.reason) === null || _a === void 0 ? void 0 : _a.kind) === 'AssignCurrentProperty' ? ' (assign `.current`)' : ''}`;
         }
         case 'MutateFrozen': {
             return `MutateFrozen ${printPlaceForAliasEffect(effect.place)} reason=${JSON.stringify(effect.error.reason)}`;
@@ -21077,7 +21089,7 @@ class HIRBuilder {
         }
     }
     resolveBinding(node) {
-        var _a, _b;
+        var _a, _b, _c;
         if (node.name === 'fbt') {
             CompilerError.throwDiagnostic({
                 severity: ErrorSeverity.Todo,
@@ -21089,6 +21101,21 @@ class HIRBuilder {
                         kind: 'error',
                         message: 'Rename to avoid conflict with fbt plugin',
                         loc: (_a = node.loc) !== null && _a !== void 0 ? _a : GeneratedSource,
+                    },
+                ],
+            });
+        }
+        if (node.name === 'this') {
+            CompilerError.throwDiagnostic({
+                severity: ErrorSeverity.UnsupportedJS,
+                category: ErrorCategory.UnsupportedSyntax,
+                reason: '`this` is not supported syntax',
+                description: 'React Compiler does not support compiling functions that use `this`',
+                details: [
+                    {
+                        kind: 'error',
+                        message: '`this` was used here',
+                        loc: (_b = node.loc) !== null && _b !== void 0 ? _b : GeneratedSource,
                     },
                 ],
             });
@@ -21110,7 +21137,7 @@ class HIRBuilder {
                     },
                     scope: null,
                     type: makeType(),
-                    loc: (_b = node.loc) !== null && _b !== void 0 ? _b : GeneratedSource,
+                    loc: (_c = node.loc) !== null && _c !== void 0 ? _c : GeneratedSource,
                 };
                 __classPrivateFieldGet(this, _HIRBuilder_env, "f").programContext.addNewReference(name);
                 __classPrivateFieldGet(this, _HIRBuilder_bindings, "f").set(name, { node, identifier });
@@ -31661,6 +31688,7 @@ const EnvironmentConfigSchema = zod.z.object({
     enableTreatRefLikeIdentifiersAsRefs: zod.z.boolean().default(true),
     lowerContextAccess: ExternalFunctionSchema.nullable().default(null),
     validateNoVoidUseMemo: zod.z.boolean().default(false),
+    validateNoDynamicallyCreatedComponentsOrHooks: zod.z.boolean().default(false),
 });
 class Environment {
     constructor(scope, fnType, compilerMode, config, contextIdentifiers, parentFunction, logger, filename, code, programContext) {
@@ -40502,6 +40530,18 @@ function computeSignatureForInstruction(context, env, instr) {
                         });
                     }
                 }
+                for (const prop of value.props) {
+                    if (prop.kind === 'JsxAttribute' &&
+                        prop.place.identifier.type.kind === 'Function' &&
+                        (isJsxType(prop.place.identifier.type.return) ||
+                            (prop.place.identifier.type.return.kind === 'Phi' &&
+                                prop.place.identifier.type.return.operands.some(operand => isJsxType(operand))))) {
+                        effects.push({
+                            kind: 'Render',
+                            place: prop.place,
+                        });
+                    }
+                }
             }
             break;
         }
@@ -42274,7 +42314,7 @@ class RewriteBlockIds extends ReactiveFunctionVisitor {
 }
 
 function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g;
     const functionEffects = [];
     const state = new AliasingState();
     const pendingPhis = new Map();
@@ -42341,6 +42381,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
                         kind: effect.kind === 'MutateTransitive'
                             ? MutationKind.Definite
                             : MutationKind.Conditional,
+                        reason: null,
                         place: effect.value,
                     });
                 }
@@ -42353,6 +42394,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
                         kind: effect.kind === 'Mutate'
                             ? MutationKind.Definite
                             : MutationKind.Conditional,
+                        reason: effect.kind === 'Mutate' ? ((_a = effect.reason) !== null && _a !== void 0 ? _a : null) : null,
                         place: effect.value,
                     });
                 }
@@ -42394,7 +42436,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
         }
     }
     for (const mutation of mutations) {
-        state.mutate(mutation.index, mutation.place.identifier, makeInstructionId(mutation.id + 1), mutation.transitive, mutation.kind, mutation.place.loc, errors);
+        state.mutate(mutation.index, mutation.place.identifier, makeInstructionId(mutation.id + 1), mutation.transitive, mutation.kind, mutation.place.loc, mutation.reason, errors);
     }
     for (const render of renders) {
         state.render(render.index, render.place.identifier, errors);
@@ -42419,6 +42461,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
                 functionEffects.push({
                     kind: 'Mutate',
                     value: Object.assign(Object.assign({}, place), { loc: node.local.loc }),
+                    reason: node.mutationReason,
                 });
             }
         }
@@ -42446,7 +42489,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
         for (const phi of block.phis) {
             phi.place.effect = Effect.Store;
             const isPhiMutatedAfterCreation = phi.place.identifier.mutableRange.end >
-                ((_b = (_a = block.instructions.at(0)) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : block.terminal.id);
+                ((_c = (_b = block.instructions.at(0)) === null || _b === void 0 ? void 0 : _b.id) !== null && _c !== void 0 ? _c : block.terminal.id);
             for (const operand of phi.operands.values()) {
                 operand.effect = isPhiMutatedAfterCreation
                     ? Effect.Capture
@@ -42454,7 +42497,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
             }
             if (isPhiMutatedAfterCreation &&
                 phi.place.identifier.mutableRange.start === 0) {
-                const firstInstructionIdOfBlock = (_d = (_c = block.instructions.at(0)) === null || _c === void 0 ? void 0 : _c.id) !== null && _d !== void 0 ? _d : block.terminal.id;
+                const firstInstructionIdOfBlock = (_e = (_d = block.instructions.at(0)) === null || _d === void 0 ? void 0 : _d.id) !== null && _e !== void 0 ? _e : block.terminal.id;
                 phi.place.identifier.mutableRange.start = makeInstructionId(firstInstructionIdOfBlock - 1);
             }
         }
@@ -42532,7 +42575,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
                 }
             }
             for (const lvalue of eachInstructionLValue(instr)) {
-                const effect = (_e = operandEffects.get(lvalue.identifier.id)) !== null && _e !== void 0 ? _e : Effect.ConditionallyMutate;
+                const effect = (_f = operandEffects.get(lvalue.identifier.id)) !== null && _f !== void 0 ? _f : Effect.ConditionallyMutate;
                 lvalue.effect = effect;
             }
             for (const operand of eachInstructionValueOperand(instr.value)) {
@@ -42540,7 +42583,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
                     operand.identifier.mutableRange.start === 0) {
                     operand.identifier.mutableRange.start = instr.id;
                 }
-                const effect = (_f = operandEffects.get(operand.identifier.id)) !== null && _f !== void 0 ? _f : Effect.Read;
+                const effect = (_g = operandEffects.get(operand.identifier.id)) !== null && _g !== void 0 ? _g : Effect.Read;
                 operand.effect = effect;
             }
             if (instr.value.kind === 'StoreContext' &&
@@ -42578,7 +42621,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
     }
     for (const into of tracked) {
         const mutationIndex = index++;
-        state.mutate(mutationIndex, into.identifier, null, true, MutationKind.Conditional, into.loc, ignoredErrors);
+        state.mutate(mutationIndex, into.identifier, null, true, MutationKind.Conditional, into.loc, null, ignoredErrors);
         for (const from of tracked) {
             if (from.identifier.id === into.identifier.id ||
                 from.identifier.id === fn.returns.identifier.id) {
@@ -42646,6 +42689,7 @@ class AliasingState {
             transitive: null,
             local: null,
             lastMutated: 0,
+            mutationReason: null,
             value,
         });
     }
@@ -42730,7 +42774,8 @@ class AliasingState {
             }
         }
     }
-    mutate(index, start, end, transitive, startKind, loc, errors) {
+    mutate(index, start, end, transitive, startKind, loc, reason, errors) {
+        var _a;
         const seen = new Map();
         const queue = [{ place: start, transitive, direction: 'backwards', kind: startKind }];
         while (queue.length !== 0) {
@@ -42744,6 +42789,7 @@ class AliasingState {
             if (node == null) {
                 continue;
             }
+            (_a = node.mutationReason) !== null && _a !== void 0 ? _a : (node.mutationReason = reason);
             node.lastMutated = Math.max(node.lastMutated, index);
             if (end != null) {
                 node.id.mutableRange.end = makeInstructionId(Math.max(node.id.mutableRange.end, end));
@@ -46794,6 +46840,14 @@ class Unifier {
         }
         if (type.kind === 'Phi') {
             return { kind: 'Phi', operands: type.operands.map(o => this.get(o)) };
+        }
+        if (type.kind === 'Function') {
+            return {
+                kind: 'Function',
+                isConstructor: type.isConstructor,
+                shapeId: type.shapeId,
+                return: this.get(type.return),
+            };
         }
         return type;
     }
@@ -50971,7 +51025,14 @@ function findFunctionsToCompile(program, pass, programContext) {
     var _a;
     const queue = [];
     const traverseFunction = (fn, pass) => {
+        if (pass.opts.compilationMode === 'all' &&
+            fn.scope.getProgramParent() !== fn.scope.parent) {
+            return;
+        }
         const fnType = getReactFunctionType(fn, pass);
+        if (pass.opts.environment.validateNoDynamicallyCreatedComponentsOrHooks) {
+            validateNoDynamicallyCreatedComponentsOrHooks(fn, pass, programContext);
+        }
         if (fnType === null || programContext.alreadyCompiled.has(fn.node)) {
             return;
         }
@@ -51156,6 +51217,52 @@ function shouldSkipCompilation(program, pass) {
     }
     return false;
 }
+function validateNoDynamicallyCreatedComponentsOrHooks(fn, pass, programContext) {
+    const parentNameExpr = getFunctionName$1(fn);
+    const parentName = parentNameExpr !== null && parentNameExpr.isIdentifier()
+        ? parentNameExpr.node.name
+        : '<anonymous>';
+    const validateNestedFunction = (nestedFn) => {
+        var _a, _b, _c, _d;
+        if (nestedFn.node === fn.node ||
+            programContext.alreadyCompiled.has(nestedFn.node)) {
+            return;
+        }
+        if (nestedFn.scope.getProgramParent() !== nestedFn.scope.parent) {
+            const nestedFnType = getReactFunctionType(nestedFn, pass);
+            const nestedFnNameExpr = getFunctionName$1(nestedFn);
+            const nestedName = nestedFnNameExpr !== null && nestedFnNameExpr.isIdentifier()
+                ? nestedFnNameExpr.node.name
+                : '<anonymous>';
+            if (nestedFnType === 'Component' || nestedFnType === 'Hook') {
+                CompilerError.throwDiagnostic({
+                    category: ErrorCategory.Factories,
+                    severity: ErrorSeverity.InvalidReact,
+                    reason: `Components and hooks cannot be created dynamically`,
+                    description: `The function \`${nestedName}\` appears to be a React ${nestedFnType.toLowerCase()}, but it's defined inside \`${parentName}\`. Components and Hooks should always be declared at module scope`,
+                    details: [
+                        {
+                            kind: 'error',
+                            message: 'this function dynamically created a component/hook',
+                            loc: (_b = (_a = parentNameExpr === null || parentNameExpr === void 0 ? void 0 : parentNameExpr.node.loc) !== null && _a !== void 0 ? _a : fn.node.loc) !== null && _b !== void 0 ? _b : null,
+                        },
+                        {
+                            kind: 'error',
+                            message: 'the component is created here',
+                            loc: (_d = (_c = nestedFnNameExpr === null || nestedFnNameExpr === void 0 ? void 0 : nestedFnNameExpr.node.loc) !== null && _c !== void 0 ? _c : nestedFn.node.loc) !== null && _d !== void 0 ? _d : null,
+                        },
+                    ],
+                });
+            }
+        }
+        nestedFn.skip();
+    };
+    fn.traverse({
+        FunctionDeclaration: validateNestedFunction,
+        FunctionExpression: validateNestedFunction,
+        ArrowFunctionExpression: validateNestedFunction,
+    });
+}
 function getReactFunctionType(fn, pass) {
     var _a, _b;
     const hookPattern = pass.opts.environment.hookPattern;
@@ -51185,9 +51292,6 @@ function getReactFunctionType(fn, pass) {
             return componentSyntaxType;
         }
         case 'all': {
-            if (fn.scope.getProgramParent() !== fn.scope.parent) {
-                return null;
-            }
             return (_b = getComponentOrHookLike(fn, hookPattern)) !== null && _b !== void 0 ? _b : 'Other';
         }
         default: {
