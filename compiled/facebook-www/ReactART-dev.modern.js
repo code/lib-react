@@ -19359,10 +19359,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.2.0-www-modern-3fe51c9e-20250829",
+        version: "19.2.0-www-modern-aad7c664-20250829",
         rendererPackageName: "react-art",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.2.0-www-modern-3fe51c9e-20250829"
+        reconcilerVersion: "19.2.0-www-modern-aad7c664-20250829"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -19396,7 +19396,7 @@ __DEV__ &&
     exports.Shape = Shape;
     exports.Surface = Surface;
     exports.Text = Text;
-    exports.version = "19.2.0-www-modern-3fe51c9e-20250829";
+    exports.version = "19.2.0-www-modern-aad7c664-20250829";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&
