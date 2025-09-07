@@ -17647,14 +17647,10 @@ function hasOwnProperty$1(obj, key) {
 
 var ErrorSeverity;
 (function (ErrorSeverity) {
-    ErrorSeverity["InvalidJS"] = "InvalidJS";
-    ErrorSeverity["UnsupportedJS"] = "UnsupportedJS";
-    ErrorSeverity["InvalidReact"] = "InvalidReact";
-    ErrorSeverity["InvalidConfig"] = "InvalidConfig";
-    ErrorSeverity["CannotPreserveMemoization"] = "CannotPreserveMemoization";
-    ErrorSeverity["IncompatibleLibrary"] = "IncompatibleLibrary";
-    ErrorSeverity["Todo"] = "Todo";
-    ErrorSeverity["Invariant"] = "Invariant";
+    ErrorSeverity["Error"] = "Error";
+    ErrorSeverity["Warning"] = "Warning";
+    ErrorSeverity["Hint"] = "Hint";
+    ErrorSeverity["Off"] = "Off";
 })(ErrorSeverity || (ErrorSeverity = {}));
 var CompilerSuggestionOperation;
 (function (CompilerSuggestionOperation) {
@@ -17677,7 +17673,7 @@ class CompilerDiagnostic {
         return this.options.description;
     }
     get severity() {
-        return this.options.severity;
+        return getRuleForCategory(this.category).severity;
     }
     get suggestions() {
         return this.options.suggestions;
@@ -17685,8 +17681,8 @@ class CompilerDiagnostic {
     get category() {
         return this.options.category;
     }
-    withDetail(detail) {
-        this.options.details.push(detail);
+    withDetails(...details) {
+        this.options.details.push(...details);
         return this;
     }
     primaryLocation() {
@@ -17696,11 +17692,11 @@ class CompilerDiagnostic {
             : null;
     }
     printErrorMessage(source, options) {
-        const buffer = [
-            printErrorSummary(this.severity, this.reason),
-            '\n\n',
-            this.description,
-        ];
+        var _a, _b;
+        const buffer = [printErrorSummary(this.category, this.reason)];
+        if (this.description != null) {
+            buffer.push('\n\n', `${this.description}.`);
+        }
         for (const detail of this.options.details) {
             switch (detail.kind) {
                 case 'error': {
@@ -17710,10 +17706,10 @@ class CompilerDiagnostic {
                     }
                     let codeFrame;
                     try {
-                        codeFrame = printCodeFrame(source, loc, detail.message);
+                        codeFrame = printCodeFrame(source, loc, (_a = detail.message) !== null && _a !== void 0 ? _a : '');
                     }
                     catch (e) {
-                        codeFrame = detail.message;
+                        codeFrame = (_b = detail.message) !== null && _b !== void 0 ? _b : '';
                     }
                     buffer.push('\n\n');
                     if (loc.filename != null) {
@@ -17739,7 +17735,7 @@ class CompilerDiagnostic {
         return buffer.join('');
     }
     toString() {
-        const buffer = [printErrorSummary(this.severity, this.reason)];
+        const buffer = [printErrorSummary(this.category, this.reason)];
         if (this.description != null) {
             buffer.push(`. ${this.description}.`);
         }
@@ -17761,7 +17757,7 @@ class CompilerErrorDetail {
         return this.options.description;
     }
     get severity() {
-        return this.options.severity;
+        return getRuleForCategory(this.category).severity;
     }
     get loc() {
         return this.options.loc;
@@ -17776,7 +17772,7 @@ class CompilerErrorDetail {
         return this.loc;
     }
     printErrorMessage(source, options) {
-        const buffer = [printErrorSummary(this.severity, this.reason)];
+        const buffer = [printErrorSummary(this.category, this.reason)];
         if (this.description != null) {
             buffer.push(`\n\n${this.description}.`);
         }
@@ -17801,7 +17797,7 @@ class CompilerErrorDetail {
         return buffer.join('');
     }
     toString() {
-        const buffer = [printErrorSummary(this.severity, this.reason)];
+        const buffer = [printErrorSummary(this.category, this.reason)];
         if (this.description != null) {
             buffer.push(`. ${this.description}.`);
         }
@@ -17816,7 +17812,11 @@ class CompilerError extends Error {
     static invariant(condition, options) {
         if (!condition) {
             const errors = new CompilerError();
-            errors.pushErrorDetail(new CompilerErrorDetail(Object.assign(Object.assign({}, options), { category: ErrorCategory.Invariant, severity: ErrorSeverity.Invariant })));
+            errors.pushDiagnostic(CompilerDiagnostic.create({
+                reason: options.reason,
+                description: options.description,
+                category: ErrorCategory.Invariant,
+            }).withDetails(...options.details));
             throw errors;
         }
     }
@@ -17827,22 +17827,22 @@ class CompilerError extends Error {
     }
     static throwTodo(options) {
         const errors = new CompilerError();
-        errors.pushErrorDetail(new CompilerErrorDetail(Object.assign(Object.assign({}, options), { severity: ErrorSeverity.Todo, category: ErrorCategory.Todo })));
+        errors.pushErrorDetail(new CompilerErrorDetail(Object.assign(Object.assign({}, options), { category: ErrorCategory.Todo })));
         throw errors;
     }
     static throwInvalidJS(options) {
         const errors = new CompilerError();
-        errors.pushErrorDetail(new CompilerErrorDetail(Object.assign(Object.assign({}, options), { severity: ErrorSeverity.InvalidJS, category: ErrorCategory.Syntax })));
+        errors.pushErrorDetail(new CompilerErrorDetail(Object.assign(Object.assign({}, options), { category: ErrorCategory.Syntax })));
         throw errors;
     }
     static throwInvalidReact(options) {
         const errors = new CompilerError();
-        errors.pushErrorDetail(new CompilerErrorDetail(Object.assign(Object.assign({}, options), { severity: ErrorSeverity.InvalidReact })));
+        errors.pushErrorDetail(new CompilerErrorDetail(options));
         throw errors;
     }
     static throwInvalidConfig(options) {
         const errors = new CompilerError();
-        errors.pushErrorDetail(new CompilerErrorDetail(Object.assign(Object.assign({}, options), { severity: ErrorSeverity.InvalidConfig, category: ErrorCategory.Config })));
+        errors.pushErrorDetail(new CompilerErrorDetail(Object.assign(Object.assign({}, options), { category: ErrorCategory.Config })));
         throw errors;
     }
     static throw(options) {
@@ -17853,9 +17853,11 @@ class CompilerError extends Error {
     constructor(...args) {
         super(...args);
         this.details = [];
+        this.disabledDetails = [];
         this.printedMessage = null;
         this.name = 'ReactCompilerError';
         this.details = [];
+        this.disabledDetails = [];
     }
     get message() {
         var _a;
@@ -17886,9 +17888,15 @@ class CompilerError extends Error {
     }
     merge(other) {
         this.details.push(...other.details);
+        this.disabledDetails.push(...other.disabledDetails);
     }
     pushDiagnostic(diagnostic) {
-        this.details.push(diagnostic);
+        if (diagnostic.severity === ErrorSeverity.Off) {
+            this.disabledDetails.push(diagnostic);
+        }
+        else {
+            this.details.push(diagnostic);
+        }
     }
     push(options) {
         var _a;
@@ -17896,42 +17904,60 @@ class CompilerError extends Error {
             category: options.category,
             reason: options.reason,
             description: (_a = options.description) !== null && _a !== void 0 ? _a : null,
-            severity: options.severity,
             suggestions: options.suggestions,
             loc: typeof options.loc === 'symbol' ? null : options.loc,
         });
         return this.pushErrorDetail(detail);
     }
     pushErrorDetail(detail) {
-        this.details.push(detail);
+        if (detail.severity === ErrorSeverity.Off) {
+            this.disabledDetails.push(detail);
+        }
+        else {
+            this.details.push(detail);
+        }
         return detail;
     }
-    hasErrors() {
+    hasAnyErrors() {
         return this.details.length > 0;
     }
     asResult() {
-        return this.hasErrors() ? Err(this) : Ok(undefined);
+        return this.hasAnyErrors() ? Err(this) : Ok(undefined);
     }
-    isCritical() {
-        return this.details.some(detail => {
-            switch (detail.severity) {
-                case ErrorSeverity.Invariant:
-                case ErrorSeverity.InvalidJS:
-                case ErrorSeverity.InvalidReact:
-                case ErrorSeverity.InvalidConfig:
-                case ErrorSeverity.UnsupportedJS:
-                case ErrorSeverity.IncompatibleLibrary: {
-                    return true;
-                }
-                case ErrorSeverity.CannotPreserveMemoization:
-                case ErrorSeverity.Todo: {
-                    return false;
-                }
-                default: {
-                    assertExhaustive$1(detail.severity, 'Unhandled error severity');
-                }
+    hasErrors() {
+        for (const detail of this.details) {
+            if (detail.severity === ErrorSeverity.Error) {
+                return true;
             }
-        });
+        }
+        return false;
+    }
+    hasWarning() {
+        let res = false;
+        for (const detail of this.details) {
+            if (detail.severity === ErrorSeverity.Error) {
+                return false;
+            }
+            if (detail.severity === ErrorSeverity.Warning) {
+                res = true;
+            }
+        }
+        return res;
+    }
+    hasHints() {
+        let res = false;
+        for (const detail of this.details) {
+            if (detail.severity === ErrorSeverity.Error) {
+                return false;
+            }
+            if (detail.severity === ErrorSeverity.Warning) {
+                return false;
+            }
+            if (detail.severity === ErrorSeverity.Hint) {
+                res = true;
+            }
+        }
+        return res;
     }
 }
 function printCodeFrame(source, loc, message) {
@@ -17948,34 +17974,52 @@ function printCodeFrame(source, loc, message) {
         message,
     });
 }
-function printErrorSummary(severity, message) {
-    let severityCategory;
-    switch (severity) {
-        case ErrorSeverity.InvalidConfig:
-        case ErrorSeverity.InvalidJS:
-        case ErrorSeverity.InvalidReact:
-        case ErrorSeverity.UnsupportedJS: {
-            severityCategory = 'Error';
+function printErrorSummary(category, message) {
+    let heading;
+    switch (category) {
+        case ErrorCategory.AutomaticEffectDependencies:
+        case ErrorCategory.CapitalizedCalls:
+        case ErrorCategory.Config:
+        case ErrorCategory.EffectDerivationsOfState:
+        case ErrorCategory.EffectSetState:
+        case ErrorCategory.ErrorBoundaries:
+        case ErrorCategory.Factories:
+        case ErrorCategory.FBT:
+        case ErrorCategory.Fire:
+        case ErrorCategory.Gating:
+        case ErrorCategory.Globals:
+        case ErrorCategory.Hooks:
+        case ErrorCategory.Immutability:
+        case ErrorCategory.Purity:
+        case ErrorCategory.Refs:
+        case ErrorCategory.RenderSetState:
+        case ErrorCategory.StaticComponents:
+        case ErrorCategory.Suppression:
+        case ErrorCategory.Syntax:
+        case ErrorCategory.UseMemo: {
+            heading = 'Error';
             break;
         }
-        case ErrorSeverity.IncompatibleLibrary:
-        case ErrorSeverity.CannotPreserveMemoization: {
-            severityCategory = 'Compilation Skipped';
+        case ErrorCategory.EffectDependencies:
+        case ErrorCategory.IncompatibleLibrary:
+        case ErrorCategory.PreserveManualMemo:
+        case ErrorCategory.UnsupportedSyntax: {
+            heading = 'Compilation Skipped';
             break;
         }
-        case ErrorSeverity.Invariant: {
-            severityCategory = 'Invariant';
+        case ErrorCategory.Invariant: {
+            heading = 'Invariant';
             break;
         }
-        case ErrorSeverity.Todo: {
-            severityCategory = 'Todo';
+        case ErrorCategory.Todo: {
+            heading = 'Todo';
             break;
         }
         default: {
-            assertExhaustive$1(severity, `Unexpected severity '${severity}'`);
+            assertExhaustive$1(category, `Unhandled category '${category}'`);
         }
     }
-    return `${severityCategory}: ${message}`;
+    return `${heading}: ${message}`;
 }
 var ErrorCategory;
 (function (ErrorCategory) {
@@ -18017,6 +18061,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.AutomaticEffectDependencies: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'automatic-effect-dependencies',
                 description: 'Verifies that automatic effect dependencies are compiled if opted-in',
                 recommended: false,
@@ -18025,6 +18070,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.CapitalizedCalls: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'capitalized-calls',
                 description: 'Validates against calling capitalized functions/methods instead of using JSX',
                 recommended: false,
@@ -18033,6 +18079,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.Config: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'config',
                 description: 'Validates the compiler configuration options',
                 recommended: true,
@@ -18041,6 +18088,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.EffectDependencies: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'memoized-effect-dependencies',
                 description: 'Validates that effect dependencies are memoized',
                 recommended: false,
@@ -18049,6 +18097,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.EffectDerivationsOfState: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'no-deriving-state-in-effects',
                 description: 'Validates against deriving values from state in an effect',
                 recommended: false,
@@ -18057,6 +18106,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.EffectSetState: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'set-state-in-effect',
                 description: 'Validates against calling setState synchronously in an effect, which can lead to re-renders that degrade performance',
                 recommended: true,
@@ -18065,6 +18115,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.ErrorBoundaries: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'error-boundaries',
                 description: 'Validates usage of error boundaries instead of try/catch for errors in child components',
                 recommended: true,
@@ -18073,6 +18124,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.Factories: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'component-hook-factories',
                 description: 'Validates against higher order functions defining nested components or hooks. ' +
                     'Components and hooks should be defined at the module level',
@@ -18082,6 +18134,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.FBT: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'fbt',
                 description: 'Validates usage of fbt',
                 recommended: false,
@@ -18090,6 +18143,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.Fire: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'fire',
                 description: 'Validates usage of `fire`',
                 recommended: false,
@@ -18098,6 +18152,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.Gating: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'gating',
                 description: 'Validates configuration of [gating mode](https://react.dev/reference/react-compiler/gating)',
                 recommended: true,
@@ -18106,6 +18161,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.Globals: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'globals',
                 description: 'Validates against assignment/mutation of globals during render, part of ensuring that ' +
                     '[side effects must render outside of render](https://react.dev/reference/rules/components-and-hooks-must-be-pure#side-effects-must-run-outside-of-render)',
@@ -18115,6 +18171,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.Hooks: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'hooks',
                 description: 'Validates the rules of hooks',
                 recommended: false,
@@ -18123,6 +18180,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.Immutability: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'immutability',
                 description: 'Validates against mutating props, state, and other values that [are immutable](https://react.dev/reference/rules/components-and-hooks-must-be-pure#props-and-state-are-immutable)',
                 recommended: true,
@@ -18131,6 +18189,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.Invariant: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'invariant',
                 description: 'Internal invariants',
                 recommended: false,
@@ -18139,6 +18198,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.PreserveManualMemo: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'preserve-manual-memoization',
                 description: 'Validates that existing manual memoized is preserved by the compiler. ' +
                     'React Compiler will only compile components and hooks if its inference ' +
@@ -18149,6 +18209,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.Purity: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'purity',
                 description: 'Validates that [components/hooks are pure](https://react.dev/reference/rules/components-and-hooks-must-be-pure) by checking that they do not call known-impure functions',
                 recommended: true,
@@ -18157,6 +18218,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.Refs: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'refs',
                 description: 'Validates correct usage of refs, not reading/writing during render. See the "pitfalls" section in [`useRef()` usage](https://react.dev/reference/react/useRef#usage)',
                 recommended: true,
@@ -18165,6 +18227,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.RenderSetState: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'set-state-in-render',
                 description: 'Validates against setting state during render, which can trigger additional renders and potential infinite render loops',
                 recommended: true,
@@ -18173,6 +18236,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.StaticComponents: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'static-components',
                 description: 'Validates that components are static, not recreated every render. Components that are recreated dynamically can reset state and trigger excessive re-rendering',
                 recommended: true,
@@ -18181,6 +18245,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.Suppression: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'rule-suppression',
                 description: 'Validates against suppression of other rules',
                 recommended: false,
@@ -18189,6 +18254,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.Syntax: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'syntax',
                 description: 'Validates against invalid syntax',
                 recommended: false,
@@ -18197,6 +18263,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.Todo: {
             return {
                 category,
+                severity: ErrorSeverity.Hint,
                 name: 'todo',
                 description: 'Unimplemented features',
                 recommended: false,
@@ -18205,6 +18272,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.UnsupportedSyntax: {
             return {
                 category,
+                severity: ErrorSeverity.Warning,
                 name: 'unsupported-syntax',
                 description: 'Validates against syntax that we do not plan to support in React Compiler',
                 recommended: true,
@@ -18213,6 +18281,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.UseMemo: {
             return {
                 category,
+                severity: ErrorSeverity.Error,
                 name: 'use-memo',
                 description: 'Validates usage of the useMemo() hook against common mistakes. See [`useMemo()` docs](https://react.dev/reference/react/useMemo) for more information.',
                 recommended: true,
@@ -18221,6 +18290,7 @@ function getRuleForCategoryImpl(category) {
         case ErrorCategory.IncompatibleLibrary: {
             return {
                 category,
+                severity: ErrorSeverity.Warning,
                 name: 'incompatible-library',
                 description: 'Validates against usage of libraries which are incompatible with memoization (manual or automatic)',
                 recommended: true,
@@ -18240,11 +18310,25 @@ function insertAdditionalFunctionDeclaration(fnPath, compiled, programContext, g
     const compiledParams = fnPath.node.params;
     CompilerError.invariant(originalFnName != null && compiled.id != null, {
         reason: 'Expected function declarations that are referenced elsewhere to have a named identifier',
-        loc: (_a = fnPath.node.loc) !== null && _a !== void 0 ? _a : null,
+        description: null,
+        details: [
+            {
+                kind: 'error',
+                loc: (_a = fnPath.node.loc) !== null && _a !== void 0 ? _a : null,
+                message: null,
+            },
+        ],
     });
     CompilerError.invariant(originalFnParams.length === compiledParams.length, {
         reason: 'Expected React Compiler optimized function declarations to have the same number of parameters as source',
-        loc: (_b = fnPath.node.loc) !== null && _b !== void 0 ? _b : null,
+        description: null,
+        details: [
+            {
+                kind: 'error',
+                loc: (_b = fnPath.node.loc) !== null && _b !== void 0 ? _b : null,
+                message: null,
+            },
+        ],
     });
     const gatingCondition = libExports$1.identifier(programContext.newUid(`${gatingFunctionIdentifierName}_result`));
     const unoptimizedFnName = libExports$1.identifier(programContext.newUid(`${originalFnName.name}_unoptimized`));
@@ -18279,7 +18363,13 @@ function insertGatedFunctionDeclaration(fnPath, compiled, programContext, gating
         CompilerError.invariant(compiled.type === 'FunctionDeclaration', {
             reason: 'Expected compiled node type to match input type',
             description: `Got ${compiled.type} but expected FunctionDeclaration`,
-            loc: (_a = fnPath.node.loc) !== null && _a !== void 0 ? _a : null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: (_a = fnPath.node.loc) !== null && _a !== void 0 ? _a : null,
+                    message: null,
+                },
+            ],
         });
         insertAdditionalFunctionDeclaration(fnPath, compiled, programContext, gatingImportedName);
     }
@@ -18329,7 +18419,13 @@ function makeTypeId(id) {
     CompilerError.invariant(id >= 0 && Number.isInteger(id), {
         reason: 'Expected instruction id to be a non-negative integer',
         description: null,
-        loc: null,
+        details: [
+            {
+                kind: 'error',
+                loc: null,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     return id;
@@ -18530,8 +18626,14 @@ function makeIdentifierName(name) {
     else {
         CompilerError.invariant(libExports$1.isValidIdentifier(name), {
             reason: `Expected a valid identifier name`,
-            loc: GeneratedSource,
             description: `\`${name}\` is not a valid JavaScript identifier`,
+            details: [
+                {
+                    kind: 'error',
+                    loc: GeneratedSource,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
     }
@@ -18543,8 +18645,14 @@ function makeIdentifierName(name) {
 function promoteTemporary(identifier) {
     CompilerError.invariant(identifier.name === null, {
         reason: `Expected a temporary (unnamed) identifier`,
-        loc: GeneratedSource,
         description: `Identifier already has a name, \`${identifier.name}\``,
+        details: [
+            {
+                kind: 'error',
+                loc: GeneratedSource,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     identifier.name = {
@@ -18558,8 +18666,14 @@ function isPromotedTemporary(name) {
 function promoteTemporaryJsxTag(identifier) {
     CompilerError.invariant(identifier.name === null, {
         reason: `Expected a temporary (unnamed) identifier`,
-        loc: GeneratedSource,
         description: `Identifier already has a name, \`${identifier.name}\``,
+        details: [
+            {
+                kind: 'error',
+                loc: GeneratedSource,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     identifier.name = {
@@ -18647,7 +18761,13 @@ function isMutableEffect(effect, location) {
             CompilerError.invariant(false, {
                 reason: 'Unexpected unknown effect',
                 description: null,
-                loc: location,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: location,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
         }
@@ -18681,7 +18801,13 @@ function makeBlockId(id) {
     CompilerError.invariant(id >= 0 && Number.isInteger(id), {
         reason: 'Expected block id to be a non-negative integer',
         description: null,
-        loc: null,
+        details: [
+            {
+                kind: 'error',
+                loc: null,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     return id;
@@ -18690,7 +18816,13 @@ function makeScopeId(id) {
     CompilerError.invariant(id >= 0 && Number.isInteger(id), {
         reason: 'Expected block id to be a non-negative integer',
         description: null,
-        loc: null,
+        details: [
+            {
+                kind: 'error',
+                loc: null,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     return id;
@@ -18699,7 +18831,13 @@ function makeIdentifierId(id) {
     CompilerError.invariant(id >= 0 && Number.isInteger(id), {
         reason: 'Expected identifier id to be a non-negative integer',
         description: null,
-        loc: null,
+        details: [
+            {
+                kind: 'error',
+                loc: null,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     return id;
@@ -18708,7 +18846,13 @@ function makeDeclarationId(id) {
     CompilerError.invariant(id >= 0 && Number.isInteger(id), {
         reason: 'Expected declaration id to be a non-negative integer',
         description: null,
-        loc: null,
+        details: [
+            {
+                kind: 'error',
+                loc: null,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     return id;
@@ -18717,7 +18861,13 @@ function makeInstructionId(id) {
     CompilerError.invariant(id >= 0 && Number.isInteger(id), {
         reason: 'Expected instruction id to be a non-negative integer',
         description: null,
-        loc: null,
+        details: [
+            {
+                kind: 'error',
+                loc: null,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     return id;
@@ -19296,7 +19446,13 @@ function printInstructionValue(instrValue) {
             CompilerError.invariant(instrValue.subexprs.length === instrValue.quasis.length - 1, {
                 reason: 'Bad assumption about quasi length.',
                 description: null,
-                loc: instrValue.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: instrValue.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             for (let i = 0; i < instrValue.subexprs.length; i++) {
@@ -19481,8 +19637,15 @@ function printManualMemoDependency(val, nameOnly) {
     else {
         CompilerError.invariant(((_a = val.root.value.identifier.name) === null || _a === void 0 ? void 0 : _a.kind) === 'named', {
             reason: 'DepsValidation: expected named local variable in depslist',
+            description: null,
             suggestions: null,
-            loc: val.root.value.loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc: val.root.value.loc,
+                    message: null,
+                },
+            ],
         });
         rootStr = nameOnly
             ? val.root.value.identifier.name.value
@@ -20729,7 +20892,14 @@ class ScopeBlockTraversal {
             const top = __classPrivateFieldGet(this, _ScopeBlockTraversal_activeScopes, "f").at(-1);
             CompilerError.invariant(blockInfo.scope.id === top, {
                 reason: 'Expected traversed block fallthrough to match top-most active scope',
-                loc: (_b = (_a = block.instructions[0]) === null || _a === void 0 ? void 0 : _a.loc) !== null && _b !== void 0 ? _b : block.terminal.id,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: (_b = (_a = block.instructions[0]) === null || _a === void 0 ? void 0 : _a.loc) !== null && _b !== void 0 ? _b : block.terminal.id,
+                        message: null,
+                    },
+                ],
             });
             __classPrivateFieldGet(this, _ScopeBlockTraversal_activeScopes, "f").pop();
         }
@@ -20738,7 +20908,14 @@ class ScopeBlockTraversal {
             CompilerError.invariant(!this.blockInfos.has(block.terminal.block) &&
                 !this.blockInfos.has(block.terminal.fallthrough), {
                 reason: 'Expected unique scope blocks and fallthroughs',
-                loc: block.terminal.loc,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: block.terminal.loc,
+                        message: null,
+                    },
+                ],
             });
             this.blockInfos.set(block.terminal.block, {
                 kind: 'begin',
@@ -20777,13 +20954,25 @@ function assertConsistentIdentifiers(fn) {
             CompilerError.invariant(instr.lvalue.identifier.name === null, {
                 reason: `Expected all lvalues to be temporaries`,
                 description: `Found named lvalue \`${instr.lvalue.identifier.name}\``,
-                loc: instr.lvalue.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: instr.lvalue.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             CompilerError.invariant(!assignments.has(instr.lvalue.identifier.id), {
                 reason: `Expected lvalues to be assigned exactly once`,
                 description: `Found duplicate assignment of '${printPlace(instr.lvalue)}'`,
-                loc: instr.lvalue.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: instr.lvalue.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             assignments.add(instr.lvalue.identifier.id);
@@ -20808,7 +20997,13 @@ function validate(identifiers, identifier, loc = null) {
         CompilerError.invariant(identifier === previous, {
             reason: `Duplicate identifier object`,
             description: `Found duplicate identifier object for id ${identifier.id}`,
-            loc: loc !== null && loc !== void 0 ? loc : GeneratedSource,
+            details: [
+                {
+                    kind: 'error',
+                    loc: loc !== null && loc !== void 0 ? loc : GeneratedSource,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
     }
@@ -20821,7 +21016,13 @@ function assertTerminalSuccessorsExist(fn) {
             CompilerError.invariant(fn.body.blocks.has(successor), {
                 reason: `Terminal successor references unknown block`,
                 description: `Block bb${successor} does not exist for terminal '${printTerminal(block.terminal)}'`,
-                loc: (_a = block.terminal.loc) !== null && _a !== void 0 ? _a : GeneratedSource,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: (_a = block.terminal.loc) !== null && _a !== void 0 ? _a : GeneratedSource,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             return successor;
@@ -20835,12 +21036,24 @@ function assertTerminalPredsExist(fn) {
             CompilerError.invariant(predBlock != null, {
                 reason: 'Expected predecessor block to exist',
                 description: `Block ${block.id} references non-existent ${pred}`,
-                loc: GeneratedSource,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: GeneratedSource,
+                        message: null,
+                    },
+                ],
             });
             CompilerError.invariant([...eachTerminalSuccessor(predBlock.terminal)].includes(block.id), {
                 reason: 'Terminal successor does not reference correct predecessor',
                 description: `Block bb${block.id} has bb${predBlock.id} as a predecessor, but bb${predBlock.id}'s successors do not include bb${block.id}`,
-                loc: GeneratedSource,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: GeneratedSource,
+                        message: null,
+                    },
+                ],
             });
         }
     }
@@ -20892,7 +21105,13 @@ function recursivelyTraverseItems(items, getRange, context, enter, exit) {
             CompilerError.invariant(disjoint || nested, {
                 reason: 'Invalid nesting in program blocks or scopes',
                 description: `Items overlap but are not nested: ${maybeParentRange.start}:${maybeParentRange.end}(${currRange.start}:${currRange.end})`,
-                loc: GeneratedSource,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: GeneratedSource,
+                        message: null,
+                    },
+                ],
             });
             if (disjoint) {
                 exit(maybeParent, context);
@@ -20963,7 +21182,13 @@ function validateMutableRange(place, range, description) {
     CompilerError.invariant((range.start === 0 && range.end === 0) || range.end > range.start, {
         reason: `Invalid mutable range: [${range.start}:${range.end}]`,
         description: `${printPlace(place)} in ${description}`,
-        loc: place.loc,
+        details: [
+            {
+                kind: 'error',
+                loc: place.loc,
+                message: null,
+            },
+        ],
     });
 }
 
@@ -21104,8 +21329,7 @@ class HIRBuilder {
         var _a, _b, _c;
         if (node.name === 'fbt') {
             CompilerError.throwDiagnostic({
-                severity: ErrorSeverity.Todo,
-                category: ErrorCategory.FBT,
+                category: ErrorCategory.Todo,
                 reason: 'Support local variables named `fbt`',
                 description: 'Local variables named `fbt` may conflict with the fbt plugin and are not yet supported',
                 details: [
@@ -21119,7 +21343,6 @@ class HIRBuilder {
         }
         if (node.name === 'this') {
             CompilerError.throwDiagnostic({
-                severity: ErrorSeverity.UnsupportedJS,
                 category: ErrorCategory.UnsupportedSyntax,
                 reason: '`this` is not supported syntax',
                 description: 'React Compiler does not support compiling functions that use `this`',
@@ -21267,7 +21490,13 @@ class HIRBuilder {
             last.breakBlock === breakBlock, {
             reason: 'Mismatched label',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         return value;
@@ -21286,7 +21515,13 @@ class HIRBuilder {
             last.breakBlock === breakBlock, {
             reason: 'Mismatched label',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         return value;
@@ -21307,7 +21542,13 @@ class HIRBuilder {
             last.breakBlock === breakBlock, {
             reason: 'Mismatched loops',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         return value;
@@ -21324,7 +21565,13 @@ class HIRBuilder {
         CompilerError.invariant(false, {
             reason: 'Expected a loop or switch to be in scope',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
     }
@@ -21340,7 +21587,13 @@ class HIRBuilder {
                 CompilerError.invariant(false, {
                     reason: 'Continue may only refer to a labeled loop',
                     description: null,
-                    loc: null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: null,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
             }
@@ -21348,7 +21601,13 @@ class HIRBuilder {
         CompilerError.invariant(false, {
             reason: 'Expected a loop to be in scope',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
     }
@@ -21412,7 +21671,13 @@ function getReversePostorderedBlocks(func) {
         CompilerError.invariant(block != null, {
             reason: '[HIRBuilder] Unexpected null block',
             description: `expected block ${blockId} to exist`,
-            loc: GeneratedSource,
+            details: [
+                {
+                    kind: 'error',
+                    loc: GeneratedSource,
+                    message: null,
+                },
+            ],
         });
         const successors = [...eachTerminalSuccessor(block.terminal)].reverse();
         const fallthrough = terminalFallthrough(block.terminal);
@@ -21454,7 +21719,13 @@ function markInstructionIds(func) {
             CompilerError.invariant(!visited.has(instr), {
                 reason: `${printInstruction(instr)} already visited!`,
                 description: null,
-                loc: instr.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: instr.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             visited.add(instr);
@@ -21476,7 +21747,13 @@ function markPredecessors(func) {
         CompilerError.invariant(block != null, {
             reason: 'unexpected missing block',
             description: `block ${blockId}`,
-            loc: GeneratedSource,
+            details: [
+                {
+                    kind: 'error',
+                    loc: GeneratedSource,
+                    message: null,
+                },
+            ],
         });
         if (prevBlock) {
             block.preds.add(prevBlock.id);
@@ -21585,7 +21862,13 @@ function parseAliasingSignatureConfig(typeConfig, moduleName, loc) {
         CompilerError.invariant(!lifetimes.has(temp), {
             reason: `Invalid type configuration for module`,
             description: `Expected aliasing signature to have unique names for receiver, params, rest, returns, and temporaries in module '${moduleName}'`,
-            loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc,
+                    message: null,
+                },
+            ],
         });
         const place = signatureArgument(lifetimes.size);
         lifetimes.set(temp, place);
@@ -21596,7 +21879,13 @@ function parseAliasingSignatureConfig(typeConfig, moduleName, loc) {
         CompilerError.invariant(place != null, {
             reason: `Invalid type configuration for module`,
             description: `Expected aliasing signature effects to reference known names from receiver/params/rest/returns/temporaries, but '${temp}' is not a known name in '${moduleName}'`,
-            loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc,
+                    message: null,
+                },
+            ],
         });
         return place;
     }
@@ -21709,7 +21998,13 @@ function addShape(registry, id, properties, functionType) {
     CompilerError.invariant(!registry.has(id), {
         reason: `[ObjectShape] Could not add shape to registry: name ${id} already exists.`,
         description: null,
-        loc: null,
+        details: [
+            {
+                kind: 'error',
+                loc: null,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     registry.set(id, shape);
@@ -22644,11 +22939,10 @@ function lower(func, env, bindings = null, capturedRefs = new Map()) {
             const binding = builder.resolveIdentifier(param);
             if (binding.kind !== 'Identifier') {
                 builder.errors.pushDiagnostic(CompilerDiagnostic.create({
-                    severity: ErrorSeverity.Invariant,
                     category: ErrorCategory.Invariant,
                     reason: 'Could not find binding',
-                    description: `[BuildHIR] Could not find binding for param \`${param.node.name}\`.`,
-                }).withDetail({
+                    description: `[BuildHIR] Could not find binding for param \`${param.node.name}\``,
+                }).withDetails({
                     kind: 'error',
                     loc: (_a = param.node.loc) !== null && _a !== void 0 ? _a : null,
                     message: 'Could not find binding',
@@ -22694,11 +22988,10 @@ function lower(func, env, bindings = null, capturedRefs = new Map()) {
         }
         else {
             builder.errors.pushDiagnostic(CompilerDiagnostic.create({
-                severity: ErrorSeverity.Todo,
                 category: ErrorCategory.Todo,
                 reason: `Handle ${param.node.type} parameters`,
-                description: `[BuildHIR] Add support for ${param.node.type} parameters.`,
-            }).withDetail({
+                description: `[BuildHIR] Add support for ${param.node.type} parameters`,
+            }).withDetails({
                 kind: 'error',
                 loc: (_j = param.node.loc) !== null && _j !== void 0 ? _j : null,
                 message: 'Unsupported parameter type',
@@ -22725,17 +23018,16 @@ function lower(func, env, bindings = null, capturedRefs = new Map()) {
     }
     else {
         builder.errors.pushDiagnostic(CompilerDiagnostic.create({
-            severity: ErrorSeverity.InvalidJS,
             category: ErrorCategory.Syntax,
             reason: `Unexpected function body kind`,
-            description: `Expected function body to be an expression or a block statement, got \`${body.type}\`.`,
-        }).withDetail({
+            description: `Expected function body to be an expression or a block statement, got \`${body.type}\``,
+        }).withDetails({
             kind: 'error',
             loc: (_a = body.node.loc) !== null && _a !== void 0 ? _a : null,
             message: 'Expected a block statement or expression',
         }));
     }
-    if (builder.errors.hasErrors()) {
+    if (builder.errors.hasAnyErrors()) {
         return Err(builder.errors);
     }
     builder.terminate({
@@ -22778,7 +23070,6 @@ function lowerStatement(builder, stmtPath, label = null) {
             if (handler != null) {
                 builder.errors.push({
                     reason: '(BuildHIR::lowerStatement) Support ThrowStatement inside of try/catch',
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_a = stmt.node.loc) !== null && _a !== void 0 ? _a : null,
                     suggestions: null,
@@ -22916,7 +23207,13 @@ function lowerStatement(builder, stmtPath, label = null) {
                         reason: 'Expected to find binding for hoisted identifier',
                         description: `Could not find a binding for ${id.node.name}`,
                         suggestions: null,
-                        loc: (_e = id.node.loc) !== null && _e !== void 0 ? _e : GeneratedSource,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: (_e = id.node.loc) !== null && _e !== void 0 ? _e : GeneratedSource,
+                                message: null,
+                            },
+                        ],
                     });
                     if (builder.environment.isHoistedIdentifier(binding.identifier)) {
                         continue;
@@ -22933,7 +23230,6 @@ function lowerStatement(builder, stmtPath, label = null) {
                     }
                     else if (!binding.path.isVariableDeclarator()) {
                         builder.errors.push({
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             reason: 'Unsupported declaration type for hoisting',
                             description: `variable "${binding.identifier.name}" declared with ${binding.path.type}`,
@@ -22944,7 +23240,6 @@ function lowerStatement(builder, stmtPath, label = null) {
                     }
                     else {
                         builder.errors.push({
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             reason: 'Handle non-const declarations for hoisting',
                             description: `variable "${binding.identifier.name}" declared with ${binding.kind}`,
@@ -22956,7 +23251,14 @@ function lowerStatement(builder, stmtPath, label = null) {
                     const identifier = builder.resolveIdentifier(id);
                     CompilerError.invariant(identifier.kind === 'Identifier', {
                         reason: 'Expected hoisted binding to be a local identifier, not a global',
-                        loc: (_h = id.node.loc) !== null && _h !== void 0 ? _h : GeneratedSource,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: (_h = id.node.loc) !== null && _h !== void 0 ? _h : GeneratedSource,
+                                message: null,
+                            },
+                        ],
                     });
                     const place = {
                         effect: Effect.Unknown,
@@ -23013,7 +23315,6 @@ function lowerStatement(builder, stmtPath, label = null) {
                 if (!init.isVariableDeclaration()) {
                     builder.errors.push({
                         reason: '(BuildHIR::lowerStatement) Handle non-variable initialization in ForStatement',
-                        severity: ErrorSeverity.Todo,
                         category: ErrorCategory.Todo,
                         loc: (_a = stmt.node.loc) !== null && _a !== void 0 ? _a : null,
                         suggestions: null,
@@ -23076,7 +23377,6 @@ function lowerStatement(builder, stmtPath, label = null) {
             if (test.node == null) {
                 builder.errors.push({
                     reason: `(BuildHIR::lowerStatement) Handle empty test in ForStatement`,
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_t = stmt.node.loc) !== null && _t !== void 0 ? _t : null,
                     suggestions: null,
@@ -23188,7 +23488,6 @@ function lowerStatement(builder, stmtPath, label = null) {
                     if (hasDefault) {
                         builder.errors.push({
                             reason: `Expected at most one \`default\` branch in a switch statement, this code should have failed to parse`,
-                            severity: ErrorSeverity.InvalidJS,
                             category: ErrorCategory.Syntax,
                             loc: (_y = case_.node.loc) !== null && _y !== void 0 ? _y : null,
                             suggestions: null,
@@ -23243,7 +23542,6 @@ function lowerStatement(builder, stmtPath, label = null) {
             if (nodeKind === 'var') {
                 builder.errors.push({
                     reason: `(BuildHIR::lowerStatement) Handle ${nodeKind} kinds in VariableDeclaration`,
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_0 = stmt.node.loc) !== null && _0 !== void 0 ? _0 : null,
                     suggestions: null,
@@ -23265,7 +23563,6 @@ function lowerStatement(builder, stmtPath, label = null) {
                     if (binding.kind !== 'Identifier') {
                         builder.errors.push({
                             reason: `(BuildHIR::lowerAssignment) Could not find binding for declaration.`,
-                            severity: ErrorSeverity.Invariant,
                             category: ErrorCategory.Invariant,
                             loc: (_2 = id.node.loc) !== null && _2 !== void 0 ? _2 : null,
                             suggestions: null,
@@ -23284,7 +23581,6 @@ function lowerStatement(builder, stmtPath, label = null) {
                                 const declRangeStart = declaration.parentPath.node.start;
                                 builder.errors.push({
                                     reason: `Expect \`const\` declaration not to be reassigned`,
-                                    severity: ErrorSeverity.InvalidJS,
                                     category: ErrorCategory.Syntax,
                                     loc: (_4 = id.node.loc) !== null && _4 !== void 0 ? _4 : null,
                                     suggestions: [
@@ -23336,7 +23632,6 @@ function lowerStatement(builder, stmtPath, label = null) {
                     builder.errors.push({
                         reason: `Expected variable declaration to be an identifier if no initializer was provided`,
                         description: `Got a \`${id.type}\``,
-                        severity: ErrorSeverity.InvalidJS,
                         category: ErrorCategory.Syntax,
                         loc: (_7 = stmt.node.loc) !== null && _7 !== void 0 ? _7 : null,
                         suggestions: null,
@@ -23397,7 +23692,13 @@ function lowerStatement(builder, stmtPath, label = null) {
             CompilerError.invariant(stmt.get('id').type === 'Identifier', {
                 reason: 'function declarations must have a name',
                 description: null,
-                loc: (_9 = stmt.node.loc) !== null && _9 !== void 0 ? _9 : null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: (_9 = stmt.node.loc) !== null && _9 !== void 0 ? _9 : null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             const id = stmt.get('id');
@@ -23413,7 +23714,6 @@ function lowerStatement(builder, stmtPath, label = null) {
             if (stmt.node.await) {
                 builder.errors.push({
                     reason: `(BuildHIR::lowerStatement) Handle for-await loops`,
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_11 = stmt.node.loc) !== null && _11 !== void 0 ? _11 : null,
                     suggestions: null,
@@ -23471,7 +23771,13 @@ function lowerStatement(builder, stmtPath, label = null) {
                 CompilerError.invariant(declarations.length === 1, {
                     reason: `Expected only one declaration in the init of a ForOfStatement, got ${declarations.length}`,
                     description: null,
-                    loc: (_15 = left.node.loc) !== null && _15 !== void 0 ? _15 : null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: (_15 = left.node.loc) !== null && _15 !== void 0 ? _15 : null,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
                 const id = declarations[0].get('id');
@@ -23480,8 +23786,15 @@ function lowerStatement(builder, stmtPath, label = null) {
             }
             else {
                 CompilerError.invariant(left.isLVal(), {
-                    loc: leftLoc,
                     reason: 'Expected ForOf init to be a variable declaration or lval',
+                    description: null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: leftLoc,
+                            message: null,
+                        },
+                    ],
                 });
                 const assign = lowerAssignment(builder, leftLoc, InstructionKind.Reassign, left, advanceIterator, 'Assignment');
                 test = lowerValueToTemporary(builder, assign);
@@ -23538,7 +23851,13 @@ function lowerStatement(builder, stmtPath, label = null) {
                 CompilerError.invariant(declarations.length === 1, {
                     reason: `Expected only one declaration in the init of a ForInStatement, got ${declarations.length}`,
                     description: null,
-                    loc: (_19 = left.node.loc) !== null && _19 !== void 0 ? _19 : null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: (_19 = left.node.loc) !== null && _19 !== void 0 ? _19 : null,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
                 const id = declarations[0].get('id');
@@ -23547,8 +23866,15 @@ function lowerStatement(builder, stmtPath, label = null) {
             }
             else {
                 CompilerError.invariant(left.isLVal(), {
-                    loc: leftLoc,
                     reason: 'Expected ForIn init to be a variable declaration or lval',
+                    description: null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: leftLoc,
+                            message: null,
+                        },
+                    ],
                 });
                 const assign = lowerAssignment(builder, leftLoc, InstructionKind.Reassign, left, nextPropertyTemp, 'Assignment');
                 test = lowerValueToTemporary(builder, assign);
@@ -23589,7 +23915,6 @@ function lowerStatement(builder, stmtPath, label = null) {
             if (!hasNode(handlerPath)) {
                 builder.errors.push({
                     reason: `(BuildHIR::lowerStatement) Handle TryStatement without a catch clause`,
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_22 = stmt.node.loc) !== null && _22 !== void 0 ? _22 : null,
                     suggestions: null,
@@ -23599,7 +23924,6 @@ function lowerStatement(builder, stmtPath, label = null) {
             if (hasNode(stmt.get('finalizer'))) {
                 builder.errors.push({
                     reason: `(BuildHIR::lowerStatement) Handle TryStatement with a finalizer ('finally') clause`,
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_23 = stmt.node.loc) !== null && _23 !== void 0 ? _23 : null,
                     suggestions: null,
@@ -23673,7 +23997,6 @@ function lowerStatement(builder, stmtPath, label = null) {
             builder.errors.push({
                 reason: `JavaScript 'with' syntax is not supported`,
                 description: `'with' syntax is considered deprecated and removed from JavaScript standards, consider alternatives`,
-                severity: ErrorSeverity.UnsupportedJS,
                 category: ErrorCategory.UnsupportedSyntax,
                 loc: (_28 = stmtPath.node.loc) !== null && _28 !== void 0 ? _28 : null,
                 suggestions: null,
@@ -23689,7 +24012,6 @@ function lowerStatement(builder, stmtPath, label = null) {
             builder.errors.push({
                 reason: 'Inline `class` declarations are not supported',
                 description: `Move class declarations outside of components/hooks`,
-                severity: ErrorSeverity.UnsupportedJS,
                 category: ErrorCategory.UnsupportedSyntax,
                 loc: (_30 = stmtPath.node.loc) !== null && _30 !== void 0 ? _30 : null,
                 suggestions: null,
@@ -23718,7 +24040,6 @@ function lowerStatement(builder, stmtPath, label = null) {
         case 'TSImportEqualsDeclaration': {
             builder.errors.push({
                 reason: 'JavaScript `import` and `export` statements may only appear at the top level of a module',
-                severity: ErrorSeverity.InvalidJS,
                 category: ErrorCategory.Syntax,
                 loc: (_33 = stmtPath.node.loc) !== null && _33 !== void 0 ? _33 : null,
                 suggestions: null,
@@ -23733,7 +24054,6 @@ function lowerStatement(builder, stmtPath, label = null) {
         case 'TSNamespaceExportDeclaration': {
             builder.errors.push({
                 reason: 'TypeScript `namespace` statements may only appear at the top level of a module',
-                severity: ErrorSeverity.InvalidJS,
                 category: ErrorCategory.Syntax,
                 loc: (_35 = stmtPath.node.loc) !== null && _35 !== void 0 ? _35 : null,
                 suggestions: null,
@@ -23795,7 +24115,6 @@ function lowerObjectPropertyKey(builder, property) {
         if (!key.isIdentifier() && !key.isMemberExpression()) {
             builder.errors.push({
                 reason: `(BuildHIR::lowerExpression) Expected Identifier, got ${key.type} key in ObjectExpression`,
-                severity: ErrorSeverity.Todo,
                 category: ErrorCategory.Todo,
                 loc: (_a = key.node.loc) !== null && _a !== void 0 ? _a : null,
                 suggestions: null,
@@ -23822,7 +24141,6 @@ function lowerObjectPropertyKey(builder, property) {
     }
     builder.errors.push({
         reason: `(BuildHIR::lowerExpression) Expected Identifier, got ${key.type} key in ObjectExpression`,
-        severity: ErrorSeverity.Todo,
         category: ErrorCategory.Todo,
         loc: (_b = key.node.loc) !== null && _b !== void 0 ? _b : null,
         suggestions: null,
@@ -23875,7 +24193,6 @@ function lowerExpression(builder, exprPath) {
                     if (!valuePath.isExpression()) {
                         builder.errors.push({
                             reason: `(BuildHIR::lowerExpression) Handle ${valuePath.type} values in ObjectExpression`,
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             loc: (_b = valuePath.node.loc) !== null && _b !== void 0 ? _b : null,
                             suggestions: null,
@@ -23901,7 +24218,6 @@ function lowerExpression(builder, exprPath) {
                     if (propertyPath.node.kind !== 'method') {
                         builder.errors.push({
                             reason: `(BuildHIR::lowerExpression) Handle ${propertyPath.node.kind} functions in ObjectExpression`,
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             loc: (_c = propertyPath.node.loc) !== null && _c !== void 0 ? _c : null,
                             suggestions: null,
@@ -23924,7 +24240,6 @@ function lowerExpression(builder, exprPath) {
                 else {
                     builder.errors.push({
                         reason: `(BuildHIR::lowerExpression) Handle ${propertyPath.type} properties in ObjectExpression`,
-                        severity: ErrorSeverity.Todo,
                         category: ErrorCategory.Todo,
                         loc: (_d = propertyPath.node.loc) !== null && _d !== void 0 ? _d : null,
                         suggestions: null,
@@ -23958,7 +24273,6 @@ function lowerExpression(builder, exprPath) {
                 else {
                     builder.errors.push({
                         reason: `(BuildHIR::lowerExpression) Handle ${element.type} elements in ArrayExpression`,
-                        severity: ErrorSeverity.Todo,
                         category: ErrorCategory.Todo,
                         loc: (_e = element.node.loc) !== null && _e !== void 0 ? _e : null,
                         suggestions: null,
@@ -23979,7 +24293,6 @@ function lowerExpression(builder, exprPath) {
                 builder.errors.push({
                     reason: `Expected an expression as the \`new\` expression receiver (v8 intrinsics are not supported)`,
                     description: `Got a \`${calleePath.node.type}\``,
-                    severity: ErrorSeverity.InvalidJS,
                     category: ErrorCategory.Syntax,
                     loc: (_f = calleePath.node.loc) !== null && _f !== void 0 ? _f : null,
                     suggestions: null,
@@ -24005,7 +24318,6 @@ function lowerExpression(builder, exprPath) {
             if (!calleePath.isExpression()) {
                 builder.errors.push({
                     reason: `Expected Expression, got ${calleePath.type} in CallExpression (v8 intrinsics not supported). This error is likely caused by a bug in React Compiler. Please file an issue`,
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_g = calleePath.node.loc) !== null && _g !== void 0 ? _g : null,
                     suggestions: null,
@@ -24041,7 +24353,6 @@ function lowerExpression(builder, exprPath) {
             if (!leftPath.isExpression()) {
                 builder.errors.push({
                     reason: `(BuildHIR::lowerExpression) Expected Expression, got ${leftPath.type} lval in BinaryExpression`,
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_h = leftPath.node.loc) !== null && _h !== void 0 ? _h : null,
                     suggestions: null,
@@ -24054,7 +24365,6 @@ function lowerExpression(builder, exprPath) {
             if (operator === '|>') {
                 builder.errors.push({
                     reason: `(BuildHIR::lowerExpression) Pipe operator not supported`,
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_j = leftPath.node.loc) !== null && _j !== void 0 ? _j : null,
                     suggestions: null,
@@ -24083,7 +24393,6 @@ function lowerExpression(builder, exprPath) {
                 if (last === null) {
                     builder.errors.push({
                         reason: `Expected sequence expression to have at least one expression`,
-                        severity: ErrorSeverity.InvalidJS,
                         category: ErrorCategory.Syntax,
                         loc: (_a = expr.node.loc) !== null && _a !== void 0 ? _a : null,
                         suggestions: null,
@@ -24263,7 +24572,6 @@ function lowerExpression(builder, exprPath) {
                     builder.errors.push({
                         reason: `(BuildHIR::lowerExpression) Unsupported syntax on the left side of an AssignmentExpression`,
                         description: `Expected an LVal, got: ${left.type}`,
-                        severity: ErrorSeverity.Todo,
                         category: ErrorCategory.Todo,
                         loc: (_q = left.node.loc) !== null && _q !== void 0 ? _q : null,
                         suggestions: null,
@@ -24289,7 +24597,6 @@ function lowerExpression(builder, exprPath) {
             if (binaryOperator == null) {
                 builder.errors.push({
                     reason: `(BuildHIR::lowerExpression) Handle ${operator} operators in AssignmentExpression`,
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_r = expr.node.loc) !== null && _r !== void 0 ? _r : null,
                     suggestions: null,
@@ -24383,7 +24690,6 @@ function lowerExpression(builder, exprPath) {
                 default: {
                     builder.errors.push({
                         reason: `(BuildHIR::lowerExpression) Expected Identifier or MemberExpression, got ${expr.type} lval in AssignmentExpression`,
-                        severity: ErrorSeverity.Todo,
                         category: ErrorCategory.Todo,
                         loc: (_v = expr.node.loc) !== null && _v !== void 0 ? _v : null,
                         suggestions: null,
@@ -24418,7 +24724,6 @@ function lowerExpression(builder, exprPath) {
                 if (!attribute.isJSXAttribute()) {
                     builder.errors.push({
                         reason: `(BuildHIR::lowerExpression) Handle ${attribute.type} attributes in JSXElement`,
-                        severity: ErrorSeverity.Todo,
                         category: ErrorCategory.Todo,
                         loc: (_x = attribute.node.loc) !== null && _x !== void 0 ? _x : null,
                         suggestions: null,
@@ -24432,7 +24737,6 @@ function lowerExpression(builder, exprPath) {
                     if (propName.indexOf(':') !== -1) {
                         builder.errors.push({
                             reason: `(BuildHIR::lowerExpression) Unexpected colon in attribute name \`${propName}\``,
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             loc: (_y = namePath.node.loc) !== null && _y !== void 0 ? _y : null,
                             suggestions: null,
@@ -24443,7 +24747,13 @@ function lowerExpression(builder, exprPath) {
                     CompilerError.invariant(namePath.isJSXNamespacedName(), {
                         reason: 'Refinement',
                         description: null,
-                        loc: (_z = namePath.node.loc) !== null && _z !== void 0 ? _z : null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: (_z = namePath.node.loc) !== null && _z !== void 0 ? _z : null,
+                                message: null,
+                            },
+                        ],
                         suggestions: null,
                     });
                     const namespace = namePath.node.namespace.name;
@@ -24466,7 +24776,6 @@ function lowerExpression(builder, exprPath) {
                     if (!valueExpr.isJSXExpressionContainer()) {
                         builder.errors.push({
                             reason: `(BuildHIR::lowerExpression) Handle ${valueExpr.type} attribute values in JSXElement`,
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             loc: (_2 = (_1 = valueExpr.node) === null || _1 === void 0 ? void 0 : _1.loc) !== null && _2 !== void 0 ? _2 : null,
                             suggestions: null,
@@ -24477,7 +24786,6 @@ function lowerExpression(builder, exprPath) {
                     if (!expression.isExpression()) {
                         builder.errors.push({
                             reason: `(BuildHIR::lowerExpression) Handle ${expression.type} expressions in JSXExpressionContainer within JSXElement`,
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             loc: (_3 = valueExpr.node.loc) !== null && _3 !== void 0 ? _3 : null,
                             suggestions: null,
@@ -24498,8 +24806,14 @@ function lowerExpression(builder, exprPath) {
                 if (tagIdentifier != null) {
                     CompilerError.invariant(tagIdentifier.kind !== 'Identifier', {
                         reason: `<${tagName}> tags should be module-level imports`,
-                        loc: (_4 = openingIdentifier.node.loc) !== null && _4 !== void 0 ? _4 : GeneratedSource,
                         description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: (_4 = openingIdentifier.node.loc) !== null && _4 !== void 0 ? _4 : GeneratedSource,
+                                message: null,
+                            },
+                        ],
                         suggestions: null,
                     });
                 }
@@ -24532,8 +24846,7 @@ function lowerExpression(builder, exprPath) {
                 for (const [name, locations] of Object.entries(fbtLocations)) {
                     if (locations.length > 1) {
                         CompilerError.throwDiagnostic({
-                            severity: ErrorSeverity.Todo,
-                            category: ErrorCategory.FBT,
+                            category: ErrorCategory.Todo,
                             reason: 'Support duplicate fbt tags',
                             description: `Support \`<${tagName}>\` tags with multiple \`<${tagName}:${name}>\` values`,
                             details: locations.map(loc => {
@@ -24585,7 +24898,6 @@ function lowerExpression(builder, exprPath) {
             if (expr.get('quasi').get('expressions').length !== 0) {
                 builder.errors.push({
                     reason: '(BuildHIR::lowerExpression) Handle tagged template with interpolations',
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_7 = exprPath.node.loc) !== null && _7 !== void 0 ? _7 : null,
                     suggestions: null,
@@ -24595,14 +24907,19 @@ function lowerExpression(builder, exprPath) {
             CompilerError.invariant(expr.get('quasi').get('quasis').length == 1, {
                 reason: "there should be only one quasi as we don't support interpolations yet",
                 description: null,
-                loc: (_8 = expr.node.loc) !== null && _8 !== void 0 ? _8 : null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: (_8 = expr.node.loc) !== null && _8 !== void 0 ? _8 : null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             const value = expr.get('quasi').get('quasis').at(0).node.value;
             if (value.raw !== value.cooked) {
                 builder.errors.push({
                     reason: '(BuildHIR::lowerExpression) Handle tagged template where cooked value is different from raw value',
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_9 = exprPath.node.loc) !== null && _9 !== void 0 ? _9 : null,
                     suggestions: null,
@@ -24623,7 +24940,6 @@ function lowerExpression(builder, exprPath) {
             if (subexprs.length !== quasis.length - 1) {
                 builder.errors.push({
                     reason: `Unexpected quasi and subexpression lengths in template literal`,
-                    severity: ErrorSeverity.InvalidJS,
                     category: ErrorCategory.Syntax,
                     loc: (_10 = exprPath.node.loc) !== null && _10 !== void 0 ? _10 : null,
                     suggestions: null,
@@ -24633,7 +24949,6 @@ function lowerExpression(builder, exprPath) {
             if (subexprs.some(e => !e.isExpression())) {
                 builder.errors.push({
                     reason: `(BuildHIR::lowerAssignment) Handle TSType in TemplateLiteral.`,
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_11 = exprPath.node.loc) !== null && _11 !== void 0 ? _11 : null,
                     suggestions: null,
@@ -24674,7 +24989,6 @@ function lowerExpression(builder, exprPath) {
                 else {
                     builder.errors.push({
                         reason: `Only object properties can be deleted`,
-                        severity: ErrorSeverity.InvalidJS,
                         category: ErrorCategory.Syntax,
                         loc: (_12 = expr.node.loc) !== null && _12 !== void 0 ? _12 : null,
                         suggestions: [
@@ -24691,7 +25005,6 @@ function lowerExpression(builder, exprPath) {
             else if (expr.node.operator === 'throw') {
                 builder.errors.push({
                     reason: `Throw expressions are not supported`,
-                    severity: ErrorSeverity.InvalidJS,
                     category: ErrorCategory.Syntax,
                     loc: (_13 = expr.node.loc) !== null && _13 !== void 0 ? _13 : null,
                     suggestions: [
@@ -24805,7 +25118,6 @@ function lowerExpression(builder, exprPath) {
             if (!argument.isIdentifier()) {
                 builder.errors.push({
                     reason: `(BuildHIR::lowerExpression) Handle UpdateExpression with ${argument.type} argument`,
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_17 = exprPath.node.loc) !== null && _17 !== void 0 ? _17 : null,
                     suggestions: null,
@@ -24815,7 +25127,6 @@ function lowerExpression(builder, exprPath) {
             else if (builder.isContextIdentifier(argument)) {
                 builder.errors.push({
                     reason: `(BuildHIR::lowerExpression) Handle UpdateExpression to variables captured within lambdas.`,
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: (_18 = exprPath.node.loc) !== null && _18 !== void 0 ? _18 : null,
                     suggestions: null,
@@ -24824,10 +25135,9 @@ function lowerExpression(builder, exprPath) {
             }
             const lvalue = lowerIdentifierForAssignment(builder, (_19 = argument.node.loc) !== null && _19 !== void 0 ? _19 : GeneratedSource, InstructionKind.Reassign, argument);
             if (lvalue === null) {
-                if (!builder.errors.hasErrors()) {
+                if (!builder.errors.hasAnyErrors()) {
                     builder.errors.push({
                         reason: `(BuildHIR::lowerExpression) Found an invalid UpdateExpression without a previously reported error`,
-                        severity: ErrorSeverity.Invariant,
                         category: ErrorCategory.Invariant,
                         loc: exprLoc,
                         suggestions: null,
@@ -24838,7 +25148,6 @@ function lowerExpression(builder, exprPath) {
             else if (lvalue.kind === 'Global') {
                 builder.errors.push({
                     reason: `(BuildHIR::lowerExpression) Support UpdateExpression where argument is a global`,
-                    severity: ErrorSeverity.Todo,
                     category: ErrorCategory.Todo,
                     loc: exprLoc,
                     suggestions: null,
@@ -24892,7 +25201,6 @@ function lowerExpression(builder, exprPath) {
             }
             builder.errors.push({
                 reason: `(BuildHIR::lowerExpression) Handle MetaProperty expressions other than import.meta`,
-                severity: ErrorSeverity.Todo,
                 category: ErrorCategory.Todo,
                 loc: (_22 = exprPath.node.loc) !== null && _22 !== void 0 ? _22 : null,
                 suggestions: null,
@@ -24902,7 +25210,6 @@ function lowerExpression(builder, exprPath) {
         default: {
             builder.errors.push({
                 reason: `(BuildHIR::lowerExpression) Handle ${exprPath.type} expressions`,
-                severity: ErrorSeverity.Todo,
                 category: ErrorCategory.Todo,
                 loc: (_23 = exprPath.node.loc) !== null && _23 !== void 0 ? _23 : null,
                 suggestions: null,
@@ -24968,7 +25275,13 @@ function lowerOptionalMemberExpression(builder, expr, parentAlternate) {
     CompilerError.invariant(object !== null, {
         reason: 'Satisfy type checker',
         description: null,
-        loc: null,
+        details: [
+            {
+                kind: 'error',
+                loc: null,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     builder.enterReserved(consequent, () => {
@@ -25136,7 +25449,6 @@ function lowerReorderableExpression(builder, expr) {
     if (!isReorderableExpression(builder, expr, true)) {
         builder.errors.push({
             reason: `(BuildHIR::node.lowerReorderableExpression) Expression type \`${expr.type}\` cannot be safely reordered`,
-            severity: ErrorSeverity.Todo,
             category: ErrorCategory.Todo,
             loc: (_a = expr.node.loc) !== null && _a !== void 0 ? _a : null,
             suggestions: null,
@@ -25266,7 +25578,6 @@ function lowerArguments(builder, expr) {
         else {
             builder.errors.push({
                 reason: `(BuildHIR::lowerExpression) Handle ${argPath.type} arguments in CallExpression`,
-                severity: ErrorSeverity.Todo,
                 category: ErrorCategory.Todo,
                 loc: (_a = argPath.node.loc) !== null && _a !== void 0 ? _a : null,
                 suggestions: null,
@@ -25293,7 +25604,6 @@ function lowerMemberExpression(builder, expr, loweredObject = null) {
         else {
             builder.errors.push({
                 reason: `(BuildHIR::lowerMemberExpression) Handle ${propertyNode.type} property`,
-                severity: ErrorSeverity.Todo,
                 category: ErrorCategory.Todo,
                 loc: (_b = propertyNode.node.loc) !== null && _b !== void 0 ? _b : null,
                 suggestions: null,
@@ -25316,7 +25626,6 @@ function lowerMemberExpression(builder, expr, loweredObject = null) {
         if (!propertyNode.isExpression()) {
             builder.errors.push({
                 reason: `(BuildHIR::lowerMemberExpression) Expected Expression, got ${propertyNode.type} property`,
-                severity: ErrorSeverity.Todo,
                 category: ErrorCategory.Todo,
                 loc: (_c = propertyNode.node.loc) !== null && _c !== void 0 ? _c : null,
                 suggestions: null,
@@ -25374,7 +25683,6 @@ function lowerJsxElementName(builder, exprPath) {
             builder.errors.push({
                 reason: `Expected JSXNamespacedName to have no colons in the namespace or name`,
                 description: `Got \`${namespace}\` : \`${name}\``,
-                severity: ErrorSeverity.InvalidJS,
                 category: ErrorCategory.Syntax,
                 loc: (_b = exprPath.node.loc) !== null && _b !== void 0 ? _b : null,
                 suggestions: null,
@@ -25390,7 +25698,6 @@ function lowerJsxElementName(builder, exprPath) {
     else {
         builder.errors.push({
             reason: `(BuildHIR::lowerJsxElementName) Handle ${exprPath.type} tags`,
-            severity: ErrorSeverity.Todo,
             category: ErrorCategory.Todo,
             loc: (_c = exprPath.node.loc) !== null && _c !== void 0 ? _c : null,
             suggestions: null,
@@ -25414,7 +25721,13 @@ function lowerJsxMemberExpression(builder, exprPath) {
         CompilerError.invariant(object.isJSXIdentifier(), {
             reason: `TypeScript refinement fail: expected 'JsxIdentifier', got \`${object.node.type}\``,
             description: null,
-            loc: (_b = object.node.loc) !== null && _b !== void 0 ? _b : null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: (_b = object.node.loc) !== null && _b !== void 0 ? _b : null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         const kind = getLoadKind(builder, object);
@@ -25448,7 +25761,13 @@ function lowerJsxElement(builder, exprPath) {
             CompilerError.invariant(expression.isExpression(), {
                 reason: `(BuildHIR::lowerJsxElement) Expected Expression but found ${expression.type}!`,
                 description: null,
-                loc: (_b = expression.node.loc) !== null && _b !== void 0 ? _b : null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: (_b = expression.node.loc) !== null && _b !== void 0 ? _b : null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             return lowerExpressionToTemporary(builder, expression);
@@ -25475,7 +25794,6 @@ function lowerJsxElement(builder, exprPath) {
     else {
         builder.errors.push({
             reason: `(BuildHIR::lowerJsxElement) Unhandled JsxElement, got: ${exprPath.type}`,
-            severity: ErrorSeverity.Todo,
             category: ErrorCategory.Todo,
             loc: (_c = exprPath.node.loc) !== null && _c !== void 0 ? _c : null,
             suggestions: null,
@@ -25597,7 +25915,6 @@ function lowerIdentifier(builder, exprPath) {
                 builder.errors.push({
                     reason: `The 'eval' function is not supported`,
                     description: 'Eval is an anti-pattern in JavaScript, and the code executed cannot be evaluated by React Compiler',
-                    severity: ErrorSeverity.UnsupportedJS,
                     category: ErrorCategory.UnsupportedSyntax,
                     loc: (_b = exprPath.node.loc) !== null && _b !== void 0 ? _b : null,
                     suggestions: null,
@@ -25639,7 +25956,6 @@ function lowerIdentifierForAssignment(builder, loc, kind, path) {
         else {
             builder.errors.push({
                 reason: `(BuildHIR::lowerAssignment) Could not find binding for declaration.`,
-                severity: ErrorSeverity.Invariant,
                 category: ErrorCategory.Invariant,
                 loc: (_a = path.node.loc) !== null && _a !== void 0 ? _a : null,
                 suggestions: null,
@@ -25651,7 +25967,6 @@ function lowerIdentifierForAssignment(builder, loc, kind, path) {
         kind === InstructionKind.Reassign) {
         builder.errors.push({
             reason: `Cannot reassign a \`const\` variable`,
-            severity: ErrorSeverity.InvalidJS,
             category: ErrorCategory.Syntax,
             loc: (_b = path.node.loc) !== null && _b !== void 0 ? _b : null,
             description: binding.identifier.name != null
@@ -25698,7 +26013,6 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
                 if (kind === InstructionKind.Const && !isHoistedIdentifier) {
                     builder.errors.push({
                         reason: `Expected \`const\` declaration not to be reassigned`,
-                        severity: ErrorSeverity.InvalidJS,
                         category: ErrorCategory.Syntax,
                         loc: (_b = lvalue.node.loc) !== null && _b !== void 0 ? _b : null,
                         suggestions: null,
@@ -25710,7 +26024,6 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
                     kind !== InstructionKind.Function) {
                     builder.errors.push({
                         reason: `Unexpected context variable kind`,
-                        severity: ErrorSeverity.InvalidJS,
                         category: ErrorCategory.Syntax,
                         loc: (_c = lvalue.node.loc) !== null && _c !== void 0 ? _c : null,
                         suggestions: null,
@@ -25758,7 +26071,13 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
             CompilerError.invariant(kind === InstructionKind.Reassign, {
                 reason: 'MemberExpression may only appear in an assignment expression',
                 description: null,
-                loc: (_e = lvaluePath.node.loc) !== null && _e !== void 0 ? _e : null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: (_e = lvaluePath.node.loc) !== null && _e !== void 0 ? _e : null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             const lvalue = lvaluePath;
@@ -25787,7 +26106,6 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
                 else {
                     builder.errors.push({
                         reason: `(BuildHIR::lowerAssignment) Handle ${property.type} properties in MemberExpression`,
-                        severity: ErrorSeverity.Todo,
                         category: ErrorCategory.Todo,
                         loc: (_f = property.node.loc) !== null && _f !== void 0 ? _f : null,
                         suggestions: null,
@@ -25800,7 +26118,6 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
                 if (!property.isExpression()) {
                     builder.errors.push({
                         reason: '(BuildHIR::lowerAssignment) Expected private name to appear as a non-computed property',
-                        severity: ErrorSeverity.Todo,
                         category: ErrorCategory.Todo,
                         loc: (_g = property.node.loc) !== null && _g !== void 0 ? _g : null,
                         suggestions: null,
@@ -25848,7 +26165,6 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
                         }
                         else if (identifier.kind === 'Global') {
                             builder.errors.push({
-                                severity: ErrorSeverity.Todo,
                                 category: ErrorCategory.Todo,
                                 reason: 'Expected reassignment of globals to enable forceTemporaries',
                                 loc: (_j = element.node.loc) !== null && _j !== void 0 ? _j : GeneratedSource,
@@ -25880,7 +26196,6 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
                     }
                     else if (identifier.kind === 'Global') {
                         builder.errors.push({
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             reason: 'Expected reassignment of globals to enable forceTemporaries',
                             loc: (_m = element.node.loc) !== null && _m !== void 0 ? _m : GeneratedSource,
@@ -25930,7 +26245,6 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
                     if (!argument.isIdentifier()) {
                         builder.errors.push({
                             reason: `(BuildHIR::lowerAssignment) Handle ${argument.node.type} rest element in ObjectPattern`,
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             loc: (_q = argument.node.loc) !== null && _q !== void 0 ? _q : null,
                             suggestions: null,
@@ -25954,7 +26268,6 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
                         }
                         else if (identifier.kind === 'Global') {
                             builder.errors.push({
-                                severity: ErrorSeverity.Todo,
                                 category: ErrorCategory.Todo,
                                 reason: 'Expected reassignment of globals to enable forceTemporaries',
                                 loc: (_t = property.node.loc) !== null && _t !== void 0 ? _t : GeneratedSource,
@@ -25971,7 +26284,6 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
                     if (!property.isObjectProperty()) {
                         builder.errors.push({
                             reason: `(BuildHIR::lowerAssignment) Handle ${property.type} properties in ObjectPattern`,
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             loc: (_u = property.node.loc) !== null && _u !== void 0 ? _u : null,
                             suggestions: null,
@@ -25981,7 +26293,6 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
                     if (property.node.computed) {
                         builder.errors.push({
                             reason: `(BuildHIR::lowerAssignment) Handle computed properties in ObjectPattern`,
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             loc: (_v = property.node.loc) !== null && _v !== void 0 ? _v : null,
                             suggestions: null,
@@ -25996,7 +26307,6 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
                     if (!element.isLVal()) {
                         builder.errors.push({
                             reason: `(BuildHIR::lowerAssignment) Expected object property value to be an LVal, got: ${element.type}`,
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             loc: (_w = element.node.loc) !== null && _w !== void 0 ? _w : null,
                             suggestions: null,
@@ -26013,7 +26323,6 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
                         }
                         else if (identifier.kind === 'Global') {
                             builder.errors.push({
-                                severity: ErrorSeverity.Todo,
                                 category: ErrorCategory.Todo,
                                 reason: 'Expected reassignment of globals to enable forceTemporaries',
                                 loc: (_y = element.node.loc) !== null && _y !== void 0 ? _y : GeneratedSource,
@@ -26129,7 +26438,6 @@ function lowerAssignment(builder, loc, kind, lvaluePath, value, assignmentKind) 
         default: {
             builder.errors.push({
                 reason: `(BuildHIR::lowerAssignment) Handle ${lvaluePath.type} assignments`,
-                severity: ErrorSeverity.Todo,
                 category: ErrorCategory.Todo,
                 loc: (_2 = lvaluePath.node.loc) !== null && _2 !== void 0 ? _2 : null,
                 suggestions: null,
@@ -26340,7 +26648,14 @@ function pushEndScopeTerminal(scope, context) {
     const fallthroughId = context.fallthroughs.get(scope.id);
     CompilerError.invariant(fallthroughId != null, {
         reason: 'Expected scope to exist',
-        loc: GeneratedSource,
+        description: null,
+        details: [
+            {
+                kind: 'error',
+                loc: GeneratedSource,
+                message: null,
+            },
+        ],
     });
     context.rewrites.push({
         kind: 'EndScope',
@@ -29948,7 +30263,13 @@ class PostDominator {
         CompilerError.invariant(dominator !== undefined, {
             reason: 'Unknown node',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         return dominator === id ? null : dominator;
@@ -29985,7 +30306,13 @@ function computeImmediateDominators(graph) {
             CompilerError.invariant(newIdom !== null, {
                 reason: `At least one predecessor must have been visited for block ${id}`,
                 description: null,
-                loc: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             for (const pred of node.preds) {
@@ -31147,7 +31474,13 @@ function makeTypeParameterId(id) {
     CompilerError.invariant(id >= 0 && Number.isInteger(id), {
         reason: 'Expected TypeParameterId to be a non-negative integer',
         description: null,
-        loc: null,
+        details: [
+            {
+                kind: 'error',
+                loc: null,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     return id;
@@ -31225,7 +31558,14 @@ function convertFlowType(flowType, loc) {
                             else {
                                 CompilerError.invariant(false, {
                                     reason: `Unsupported property kind ${prop.kind}`,
-                                    loc: GeneratedSource,
+                                    description: null,
+                                    details: [
+                                        {
+                                            kind: 'error',
+                                            loc: GeneratedSource,
+                                            message: null,
+                                        },
+                                    ],
                                 });
                             }
                         }
@@ -31267,7 +31607,14 @@ function convertFlowType(flowType, loc) {
                             else {
                                 CompilerError.invariant(false, {
                                     reason: `Unsupported property kind ${prop.kind}`,
-                                    loc: GeneratedSource,
+                                    description: null,
+                                    details: [
+                                        {
+                                            kind: 'error',
+                                            loc: GeneratedSource,
+                                            message: null,
+                                        },
+                                    ],
                                 });
                             }
                         }
@@ -31284,7 +31631,14 @@ function convertFlowType(flowType, loc) {
                                 else {
                                     CompilerError.invariant(false, {
                                         reason: `Unsupported property kind ${prop.kind}`,
-                                        loc: GeneratedSource,
+                                        description: null,
+                                        details: [
+                                            {
+                                                kind: 'error',
+                                                loc: GeneratedSource,
+                                                message: null,
+                                            },
+                                        ],
                                     });
                                 }
                             }
@@ -31292,7 +31646,14 @@ function convertFlowType(flowType, loc) {
                         }
                         CompilerError.invariant(false, {
                             reason: `Unsupported class instance type ${flowType.def.type.kind}`,
-                            loc: GeneratedSource,
+                            description: null,
+                            details: [
+                                {
+                                    kind: 'error',
+                                    loc: GeneratedSource,
+                                    message: null,
+                                },
+                            ],
                         });
                     }
                     case 'Fun':
@@ -31329,7 +31690,14 @@ function convertFlowType(flowType, loc) {
                         else {
                             CompilerError.invariant(false, {
                                 reason: `Unsupported component props type ${propsType.type.kind}`,
-                                loc: GeneratedSource,
+                                description: null,
+                                details: [
+                                    {
+                                        kind: 'error',
+                                        loc: GeneratedSource,
+                                        message: null,
+                                    },
+                                ],
                             });
                         }
                         return Resolved.component(props, children, platform);
@@ -31427,7 +31795,14 @@ class FlowTypeEnv {
     init(env, source) {
         CompilerError.invariant(env.config.flowTypeProvider != null, {
             reason: 'Expected flowDumpTypes to be defined in environment config',
-            loc: GeneratedSource,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: GeneratedSource,
+                    message: null,
+                },
+            ],
         });
         let stdout;
         if (source === lastFlowSource) {
@@ -31790,7 +32165,13 @@ class Environment {
             CompilerError.invariant(!__classPrivateFieldGet(this, _Environment_globals, "f").has(hookName), {
                 reason: `[Globals] Found existing definition in global registry for custom hook ${hookName}`,
                 description: null,
-                loc: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             __classPrivateFieldGet(this, _Environment_globals, "f").set(hookName, addHook(__classPrivateFieldGet(this, _Environment_shapes, "f"), {
@@ -31816,7 +32197,14 @@ class Environment {
             __classPrivateFieldSet(this, _Environment_flowTypeEnvironment, new FlowTypeEnv(), "f");
             CompilerError.invariant(code != null, {
                 reason: 'Expected Environment to be initialized with source code when a Flow type provider is specified',
-                loc: null,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
             });
             __classPrivateFieldGet(this, _Environment_flowTypeEnvironment, "f").init(this, code);
         }
@@ -31827,7 +32215,14 @@ class Environment {
     get typeContext() {
         CompilerError.invariant(__classPrivateFieldGet(this, _Environment_flowTypeEnvironment, "f") != null, {
             reason: 'Flow type environment not initialized',
-            loc: null,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
         });
         return __classPrivateFieldGet(this, _Environment_flowTypeEnvironment, "f");
     }
@@ -31970,7 +32365,13 @@ class Environment {
             CompilerError.invariant(shape !== undefined, {
                 reason: `[HIR] Forget internal error: cannot resolve shape ${shapeId}`,
                 description: null,
-                loc: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             return (_a = shape.properties.get('*')) !== null && _a !== void 0 ? _a : null;
@@ -31988,7 +32389,13 @@ class Environment {
             CompilerError.invariant(shape !== undefined, {
                 reason: `[HIR] Forget internal error: cannot resolve shape ${shapeId}`,
                 description: null,
-                loc: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             if (typeof property === 'string') {
@@ -32010,7 +32417,13 @@ class Environment {
             CompilerError.invariant(shape !== undefined, {
                 reason: `[HIR] Forget internal error: cannot resolve shape ${shapeId}`,
                 description: null,
-                loc: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             return shape.functionType;
@@ -32126,7 +32539,13 @@ function mergeConsecutiveBlocks(fn) {
         CompilerError.invariant(predecessor !== undefined, {
             reason: `Expected predecessor ${predecessorId} to exist`,
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         if (predecessor.terminal.kind !== 'goto' || predecessor.kind !== 'block') {
@@ -32136,7 +32555,13 @@ function mergeConsecutiveBlocks(fn) {
             CompilerError.invariant(phi.operands.size === 1, {
                 reason: `Found a block with a single predecessor but where a phi has multiple (${phi.operands.size}) operands`,
                 description: null,
-                loc: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             const operand = Array.from(phi.operands.values())[0];
@@ -32212,7 +32637,13 @@ class DisjointSet {
         CompilerError.invariant(first != null, {
             reason: 'Expected set to be non-empty',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         let root = this.find(first);
@@ -32343,7 +32774,13 @@ function inferReactiveScopeVariables(fn) {
             });
             CompilerError.invariant(false, {
                 reason: `Invalid mutable range for scope`,
-                loc: GeneratedSource,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: GeneratedSource,
+                        message: null,
+                    },
+                ],
                 description: `Scope @${scope.id} has range [${scope.range.start}:${scope.range.end}] but the valid range is [1:${maxInstruction + 1}]`,
             });
         }
@@ -32684,14 +33121,28 @@ function pruneUnusedLabelsHIR(fn) {
         const fallthrough = fn.body.blocks.get(fallthroughId);
         CompilerError.invariant(next.phis.size === 0 && fallthrough.phis.size === 0, {
             reason: 'Unexpected phis when merging label blocks',
-            loc: label.terminal.loc,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: label.terminal.loc,
+                    message: null,
+                },
+            ],
         });
         CompilerError.invariant(next.preds.size === 1 &&
             fallthrough.preds.size === 1 &&
             next.preds.has(originalLabelId) &&
             fallthrough.preds.has(nextId), {
             reason: 'Unexpected block predecessors when merging label blocks',
-            loc: label.terminal.loc,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: label.terminal.loc,
+                    message: null,
+                },
+            ],
         });
         label.instructions.push(...next.instructions, ...fallthrough.instructions);
         label.terminal = fallthrough.terminal;
@@ -32835,7 +33286,13 @@ function handleAssignment(currentFn, identifiers, lvalPath) {
                     CompilerError.invariant(valuePath.isLVal(), {
                         reason: `[FindContextIdentifiers] Expected object property value to be an LVal, got: ${valuePath.type}`,
                         description: null,
-                        loc: (_a = valuePath.node.loc) !== null && _a !== void 0 ? _a : GeneratedSource,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: (_a = valuePath.node.loc) !== null && _a !== void 0 ? _a : GeneratedSource,
+                                message: null,
+                            },
+                        ],
                         suggestions: null,
                     });
                     handleAssignment(currentFn, identifiers, valuePath);
@@ -32844,7 +33301,13 @@ function handleAssignment(currentFn, identifiers, lvalPath) {
                     CompilerError.invariant(property.isRestElement(), {
                         reason: `[FindContextIdentifiers] Invalid assumptions for babel types.`,
                         description: null,
-                        loc: (_b = property.node.loc) !== null && _b !== void 0 ? _b : GeneratedSource,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: (_b = property.node.loc) !== null && _b !== void 0 ? _b : GeneratedSource,
+                                message: null,
+                            },
+                        ],
                         suggestions: null,
                     });
                     handleAssignment(currentFn, identifiers, property);
@@ -32915,7 +33378,13 @@ function eliminateRedundantPhi(fn, sharedRewrites) {
                 CompilerError.invariant(same !== null, {
                     reason: 'Expected phis to be non-empty',
                     description: null,
-                    loc: null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: null,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
                 rewrites.set(phi.place.identifier, same);
@@ -32981,7 +33450,13 @@ class SSABuilder {
         CompilerError.invariant(__classPrivateFieldGet(this, _SSABuilder_current, "f") !== null, {
             reason: 'we need to be in a block to access state!',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         return __classPrivateFieldGet(this, _SSABuilder_states, "f").get(__classPrivateFieldGet(this, _SSABuilder_current, "f"));
@@ -33109,7 +33584,13 @@ function enterSSAImpl(func, builder, rootEntry) {
         CompilerError.invariant(!visitedBlocks.has(block), {
             reason: `found a cycle! visiting bb${block.id} again`,
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         visitedBlocks.add(block);
@@ -33118,7 +33599,13 @@ function enterSSAImpl(func, builder, rootEntry) {
             CompilerError.invariant(func.context.length === 0, {
                 reason: `Expected function context to be empty for outer function declarations`,
                 description: null,
-                loc: func.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: func.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             func.params = func.params.map(param => {
@@ -33143,7 +33630,13 @@ function enterSSAImpl(func, builder, rootEntry) {
                 CompilerError.invariant(entry.preds.size === 0, {
                     reason: 'Expected function expression entry block to have zero predecessors',
                     description: null,
-                    loc: null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: null,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
                 entry.preds.add(blockId);
@@ -33211,7 +33704,13 @@ function rewriteInstructionKindsBasedOnReassignment(fn) {
                     CompilerError.invariant(!declarations.has(lvalue.place.identifier.declarationId), {
                         reason: `Expected variable not to be defined prior to declaration`,
                         description: `${printPlace(lvalue.place)} was already defined`,
-                        loc: lvalue.place.loc,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: lvalue.place.loc,
+                                message: null,
+                            },
+                        ],
                     });
                     declarations.set(lvalue.place.identifier.declarationId, lvalue);
                     break;
@@ -33224,7 +33723,13 @@ function rewriteInstructionKindsBasedOnReassignment(fn) {
                             CompilerError.invariant(!declarations.has(lvalue.place.identifier.declarationId), {
                                 reason: `Expected variable not to be defined prior to declaration`,
                                 description: `${printPlace(lvalue.place)} was already defined`,
-                                loc: lvalue.place.loc,
+                                details: [
+                                    {
+                                        kind: 'error',
+                                        loc: lvalue.place.loc,
+                                        message: null,
+                                    },
+                                ],
                             });
                             declarations.set(lvalue.place.identifier.declarationId, lvalue);
                             lvalue.kind = InstructionKind.Const;
@@ -33244,7 +33749,13 @@ function rewriteInstructionKindsBasedOnReassignment(fn) {
                             CompilerError.invariant(kind === null || kind === InstructionKind.Const, {
                                 reason: `Expected consistent kind for destructuring`,
                                 description: `other places were \`${kind}\` but '${printPlace(place)}' is const`,
-                                loc: place.loc,
+                                details: [
+                                    {
+                                        kind: 'error',
+                                        loc: place.loc,
+                                        message: 'Expected consistent kind for destructuring',
+                                    },
+                                ],
                                 suggestions: null,
                             });
                             kind = InstructionKind.Const;
@@ -33255,14 +33766,26 @@ function rewriteInstructionKindsBasedOnReassignment(fn) {
                                 CompilerError.invariant(block.kind !== 'value', {
                                     reason: `TODO: Handle reassignment in a value block where the original declaration was removed by dead code elimination (DCE)`,
                                     description: null,
-                                    loc: place.loc,
+                                    details: [
+                                        {
+                                            kind: 'error',
+                                            loc: place.loc,
+                                            message: null,
+                                        },
+                                    ],
                                     suggestions: null,
                                 });
                                 declarations.set(place.identifier.declarationId, lvalue);
                                 CompilerError.invariant(kind === null || kind === InstructionKind.Const, {
                                     reason: `Expected consistent kind for destructuring`,
                                     description: `Other places were \`${kind}\` but '${printPlace(place)}' is const`,
-                                    loc: place.loc,
+                                    details: [
+                                        {
+                                            kind: 'error',
+                                            loc: place.loc,
+                                            message: 'Expected consistent kind for destructuring',
+                                        },
+                                    ],
                                     suggestions: null,
                                 });
                                 kind = InstructionKind.Const;
@@ -33271,7 +33794,13 @@ function rewriteInstructionKindsBasedOnReassignment(fn) {
                                 CompilerError.invariant(kind === null || kind === InstructionKind.Reassign, {
                                     reason: `Expected consistent kind for destructuring`,
                                     description: `Other places were \`${kind}\` but '${printPlace(place)}' is reassigned`,
-                                    loc: place.loc,
+                                    details: [
+                                        {
+                                            kind: 'error',
+                                            loc: place.loc,
+                                            message: 'Expected consistent kind for destructuring',
+                                        },
+                                    ],
                                     suggestions: null,
                                 });
                                 kind = InstructionKind.Reassign;
@@ -33282,7 +33811,13 @@ function rewriteInstructionKindsBasedOnReassignment(fn) {
                     CompilerError.invariant(kind !== null, {
                         reason: 'Expected at least one operand',
                         description: null,
-                        loc: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: null,
+                                message: null,
+                            },
+                        ],
                         suggestions: null,
                     });
                     lvalue.kind = kind;
@@ -33295,7 +33830,13 @@ function rewriteInstructionKindsBasedOnReassignment(fn) {
                     CompilerError.invariant(declaration !== undefined, {
                         reason: `Expected variable to have been defined`,
                         description: `No declaration for ${printPlace(lvalue)}`,
-                        loc: lvalue.loc,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: lvalue.loc,
+                                message: null,
+                            },
+                        ],
                     });
                     declaration.kind = InstructionKind.Let;
                     break;
@@ -33397,7 +33938,14 @@ function evaluatePhi(phi, constants) {
             case 'Primitive': {
                 CompilerError.invariant(value.kind === 'Primitive', {
                     reason: 'value kind expected to be Primitive',
-                    loc: null,
+                    description: null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: null,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
                 if (operandValue.value !== value.value) {
@@ -33408,7 +33956,14 @@ function evaluatePhi(phi, constants) {
             case 'LoadGlobal': {
                 CompilerError.invariant(value.kind === 'LoadGlobal', {
                     reason: 'value kind expected to be LoadGlobal',
-                    loc: null,
+                    description: null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: null,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
                 if (operandValue.binding.name !== value.binding.name) {
@@ -34037,7 +34592,13 @@ function pruneMaybeThrows(fn) {
                         const mappedTerminal = terminalMapping.get(predecessor);
                         CompilerError.invariant(mappedTerminal != null, {
                             reason: `Expected non-existing phi operand's predecessor to have been mapped to a new terminal`,
-                            loc: GeneratedSource,
+                            details: [
+                                {
+                                    kind: 'error',
+                                    loc: GeneratedSource,
+                                    message: null,
+                                },
+                            ],
                             description: `Could not find mapping for predecessor bb${predecessor} in block bb${block.id} for phi ${printPlace(phi.place)}`,
                             suggestions: null,
                         });
@@ -34554,7 +35115,14 @@ function createPropsProperties(fn, instr, nextInstructions, propAttributes, chil
         const spreadProp = jsxSpreadAttributes[0];
         CompilerError.invariant(spreadProp.kind === 'JsxSpreadAttribute', {
             reason: 'Spread prop attribute must be of kind JSXSpreadAttribute',
-            loc: instr.loc,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: instr.loc,
+                    message: null,
+                },
+            ],
         });
         propsProperty = {
             kind: 'ObjectProperty',
@@ -34623,8 +35191,15 @@ function findScopesToMerge(fn) {
                         const lvalueScope = lvalue.identifier.scope;
                         CompilerError.invariant(operandScope != null && lvalueScope != null, {
                             reason: 'Internal error: Expected all ObjectExpressions and ObjectMethods to have non-null scope.',
+                            description: null,
                             suggestions: null,
-                            loc: GeneratedSource,
+                            details: [
+                                {
+                                    kind: 'error',
+                                    loc: GeneratedSource,
+                                    message: null,
+                                },
+                            ],
                         });
                         mergeScopesBuilder.union([operandScope, lvalueScope]);
                     }
@@ -35164,9 +35739,15 @@ class CheckInstructionsAgainstScopesVisitor extends ReactiveFunctionVisitor {
             state.has(scope.id) &&
             !this.activeScopes.has(scope.id)) {
             CompilerError.invariant(false, {
-                description: `Instruction [${id}] is part of scope @${scope.id}, but that scope has already completed.`,
-                loc: place.loc,
                 reason: 'Encountered an instruction that should be part of a scope, but where that scope has already completed',
+                description: `Instruction [${id}] is part of scope @${scope.id}, but that scope has already completed`,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: place.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
         }
@@ -35190,7 +35771,14 @@ let Visitor$a = class Visitor extends ReactiveFunctionVisitor {
         if (terminal.kind === 'break' || terminal.kind === 'continue') {
             CompilerError.invariant(seenLabels.has(terminal.target), {
                 reason: 'Unexpected break to invalid label',
-                loc: stmt.terminal.loc,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: stmt.terminal.loc,
+                        message: null,
+                    },
+                ],
             });
         }
     }
@@ -35226,7 +35814,13 @@ class Driver {
         CompilerError.invariant(!this.cx.emitted.has(block.id), {
             reason: `Cannot emit the same block twice: bb${block.id}`,
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         this.cx.emitted.add(block.id);
@@ -35281,7 +35875,14 @@ class Driver {
                 if (this.cx.isScheduled(terminal.consequent)) {
                     CompilerError.invariant(false, {
                         reason: `Unexpected 'if' where the consequent is already scheduled`,
-                        loc: terminal.loc,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: terminal.loc,
+                                message: null,
+                            },
+                        ],
                     });
                 }
                 else {
@@ -35292,7 +35893,14 @@ class Driver {
                     if (this.cx.isScheduled(alternateId)) {
                         CompilerError.invariant(false, {
                             reason: `Unexpected 'if' where the alternate is already scheduled`,
-                            loc: terminal.loc,
+                            description: null,
+                            details: [
+                                {
+                                    kind: 'error',
+                                    loc: terminal.loc,
+                                    message: null,
+                                },
+                            ],
                         });
                     }
                     else {
@@ -35338,7 +35946,14 @@ class Driver {
                     if (this.cx.isScheduled(case_.block)) {
                         CompilerError.invariant(case_.block === terminal.fallthrough, {
                             reason: `Unexpected 'switch' where a case is already scheduled and block is not the fallthrough`,
-                            loc: terminal.loc,
+                            description: null,
+                            details: [
+                                {
+                                    kind: 'error',
+                                    loc: terminal.loc,
+                                    message: null,
+                                },
+                            ],
                         });
                         return;
                     }
@@ -35389,7 +36004,14 @@ class Driver {
                 else {
                     CompilerError.invariant(false, {
                         reason: `Unexpected 'do-while' where the loop is already scheduled`,
-                        loc: terminal.loc,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: terminal.loc,
+                                message: null,
+                            },
+                        ],
                     });
                 }
                 const testValue = this.visitValueBlock(terminal.test, terminal.loc).value;
@@ -35434,7 +36056,14 @@ class Driver {
                 else {
                     CompilerError.invariant(false, {
                         reason: `Unexpected 'while' where the loop is already scheduled`,
-                        loc: terminal.loc,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: terminal.loc,
+                                message: null,
+                            },
+                        ],
                     });
                 }
                 this.cx.unscheduleAll(scheduleIds);
@@ -35505,7 +36134,14 @@ class Driver {
                 else {
                     CompilerError.invariant(false, {
                         reason: `Unexpected 'for' where the loop is already scheduled`,
-                        loc: terminal.loc,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: terminal.loc,
+                                message: null,
+                            },
+                        ],
                     });
                 }
                 this.cx.unscheduleAll(scheduleIds);
@@ -35594,7 +36230,14 @@ class Driver {
                 else {
                     CompilerError.invariant(false, {
                         reason: `Unexpected 'for-of' where the loop is already scheduled`,
-                        loc: terminal.loc,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: terminal.loc,
+                                message: null,
+                            },
+                        ],
                     });
                 }
                 this.cx.unscheduleAll(scheduleIds);
@@ -35657,7 +36300,14 @@ class Driver {
                 else {
                     CompilerError.invariant(false, {
                         reason: `Unexpected 'for-in' where the loop is already scheduled`,
-                        loc: terminal.loc,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: terminal.loc,
+                                message: null,
+                            },
+                        ],
                     });
                 }
                 this.cx.unscheduleAll(scheduleIds);
@@ -35692,7 +36342,14 @@ class Driver {
                 if (this.cx.isScheduled(terminal.alternate)) {
                     CompilerError.invariant(false, {
                         reason: `Unexpected 'branch' where the alternate is already scheduled`,
-                        loc: terminal.loc,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: terminal.loc,
+                                message: null,
+                            },
+                        ],
                     });
                 }
                 else {
@@ -35725,7 +36382,14 @@ class Driver {
                 if (this.cx.isScheduled(terminal.block)) {
                     CompilerError.invariant(false, {
                         reason: `Unexpected 'label' where the block is already scheduled`,
-                        loc: terminal.loc,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: terminal.loc,
+                                message: null,
+                            },
+                        ],
                     });
                 }
                 else {
@@ -35850,7 +36514,14 @@ class Driver {
                 if (this.cx.isScheduled(terminal.block)) {
                     CompilerError.invariant(false, {
                         reason: `Unexpected 'scope' where the block is already scheduled`,
-                        loc: terminal.loc,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: terminal.loc,
+                                message: null,
+                            },
+                        ],
                     });
                 }
                 else {
@@ -35874,7 +36545,13 @@ class Driver {
                 CompilerError.invariant(false, {
                     reason: 'Unexpected unsupported terminal',
                     description: null,
-                    loc: terminal.loc,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: terminal.loc,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
             }
@@ -35905,7 +36582,13 @@ class Driver {
                     defaultBlock.terminal.test.identifier.id, {
                     reason: 'Expected branch block to end in an instruction that sets the test value',
                     description: null,
-                    loc: instr.lvalue.loc,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: instr.lvalue.loc,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
                 return {
@@ -35938,7 +36621,13 @@ class Driver {
                 CompilerError.invariant(false, {
                     reason: 'Expected goto value block to have at least one instruction',
                     description: null,
-                    loc: null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: null,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
             }
@@ -36169,14 +36858,27 @@ class Driver {
             CompilerError.invariant(false, {
                 reason: 'Expected a break target',
                 description: null,
-                loc: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
         }
         if (this.cx.scopeFallthroughs.has(target.block)) {
             CompilerError.invariant(target.type === 'implicit', {
                 reason: 'Expected reactive scope to implicitly break to fallthrough',
-                loc,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc,
+                        message: null,
+                    },
+                ],
             });
             return null;
         }
@@ -36197,7 +36899,13 @@ class Driver {
         CompilerError.invariant(target !== null, {
             reason: `Expected continue target to be scheduled for bb${block}`,
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         return {
@@ -36239,7 +36947,13 @@ let Context$3 = class Context {
         CompilerError.invariant(!__classPrivateFieldGet(this, _Context_scheduled, "f").has(block), {
             reason: `Break block is already scheduled: bb${block}`,
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         __classPrivateFieldGet(this, _Context_scheduled, "f").add(block);
@@ -36254,7 +36968,13 @@ let Context$3 = class Context {
         CompilerError.invariant(!__classPrivateFieldGet(this, _Context_scheduled, "f").has(continueBlock), {
             reason: `Continue block is already scheduled: bb${continueBlock}`,
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         __classPrivateFieldGet(this, _Context_scheduled, "f").add(continueBlock);
@@ -36279,7 +36999,13 @@ let Context$3 = class Context {
         CompilerError.invariant(last !== undefined && last.id === scheduleId, {
             reason: 'Can only unschedule the last target',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         if (last.type !== 'loop' || last.ownsBlock !== null) {
@@ -36325,7 +37051,13 @@ let Context$3 = class Context {
         CompilerError.invariant(false, {
             reason: 'Expected a break target',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
     }
@@ -36596,7 +37328,14 @@ function codegenFunction(fn, { uniqueIdentifiers, fbtOperands, }) {
         else {
             CompilerError.invariant(globalGating != null, {
                 reason: 'Bad config not caught! Expected at least one of gating or globalGating',
-                loc: null,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             ifTest = globalGating;
@@ -36640,7 +37379,7 @@ function codegenReactiveFunction(cx, fn) {
             statements.pop();
         }
     }
-    if (cx.errors.hasErrors()) {
+    if (cx.errors.hasAnyErrors()) {
         return Err(cx.errors);
     }
     const countMemoBlockVisitor = new CountMemoBlockVisitor(fn.env);
@@ -36739,10 +37478,16 @@ function codegenBlock(cx, block) {
             continue;
         }
         CompilerError.invariant(temp.get(key) === value, {
-            loc: null,
             reason: 'Expected temporary value to be unchanged',
             description: null,
             suggestions: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
         });
     }
     cx.temp = temp;
@@ -36843,7 +37588,13 @@ function codegenReactiveScope(cx, statements, scope, block) {
         CompilerError.invariant(identifier.name != null, {
             reason: `Expected scope declaration identifier to be named`,
             description: `Declaration \`${printIdentifier(identifier)}\` is unnamed in scope @${scope.id}`,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         const name = convertIdentifier(identifier);
@@ -36873,7 +37624,13 @@ function codegenReactiveScope(cx, statements, scope, block) {
         CompilerError.invariant(firstOutputIndex !== null, {
             reason: `Expected scope to have at least one declaration`,
             description: `Scope '@${scope.id}' has no declarations`,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         testCondition = libExports$1.binaryExpression('===', libExports$1.memberExpression(libExports$1.identifier(cx.synthesizeName('$')), libExports$1.numericLiteral(firstOutputIndex), true), libExports$1.callExpression(libExports$1.memberExpression(libExports$1.identifier('Symbol'), libExports$1.identifier('for')), [libExports$1.stringLiteral(MEMO_CACHE_SENTINEL)]));
@@ -36882,7 +37639,13 @@ function codegenReactiveScope(cx, statements, scope, block) {
         CompilerError.invariant(cx.env.config.enableChangeDetectionForDebugging == null, {
             reason: `Expected to not have both change detection enabled and memoization disabled`,
             description: `Incompatible config options`,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
         });
         testCondition = libExports$1.logicalExpression('||', testCondition, libExports$1.booleanLiteral(true));
     }
@@ -36970,8 +37733,14 @@ function codegenReactiveScope(cx, statements, scope, block) {
         CompilerError.invariant(earlyReturnValue.value.name !== null &&
             earlyReturnValue.value.name.kind === 'named', {
             reason: `Expected early return value to be promoted to a named variable`,
-            loc: earlyReturnValue.loc,
             description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: earlyReturnValue.loc,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         const name = earlyReturnValue.value.name.value;
@@ -36984,7 +37753,7 @@ function codegenTerminal(cx, terminal) {
             if (terminal.targetKind === 'implicit') {
                 return null;
             }
-            return libExports$1.breakStatement(terminal.targetKind === 'labeled'
+            return createBreakStatement(terminal.loc, terminal.targetKind === 'labeled'
                 ? libExports$1.identifier(codegenLabel(terminal.target))
                 : null);
         }
@@ -36992,12 +37761,12 @@ function codegenTerminal(cx, terminal) {
             if (terminal.targetKind === 'implicit') {
                 return null;
             }
-            return libExports$1.continueStatement(terminal.targetKind === 'labeled'
+            return createContinueStatement(terminal.loc, terminal.targetKind === 'labeled'
                 ? libExports$1.identifier(codegenLabel(terminal.target))
                 : null);
         }
         case 'for': {
-            return libExports$1.forStatement(codegenForInit(cx, terminal.init), codegenInstructionValueToExpression(cx, terminal.test), terminal.update !== null
+            return createForStatement(terminal.loc, codegenForInit(cx, terminal.init), codegenInstructionValueToExpression(cx, terminal.test), terminal.update !== null
                 ? codegenInstructionValueToExpression(cx, terminal.update)
                 : null, codegenBlock(cx, terminal.loop));
         }
@@ -37005,7 +37774,13 @@ function codegenTerminal(cx, terminal) {
             CompilerError.invariant(terminal.init.kind === 'SequenceExpression', {
                 reason: `Expected a sequence expression init for for..in`,
                 description: `Got \`${terminal.init.kind}\` expression instead`,
-                loc: terminal.init.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: terminal.init.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             if (terminal.init.instructions.length !== 2) {
@@ -37040,7 +37815,13 @@ function codegenTerminal(cx, terminal) {
                     CompilerError.invariant(false, {
                         reason: `Expected a StoreLocal or Destructure to be assigned to the collection`,
                         description: `Found ${iterableItem.value.kind}`,
-                        loc: iterableItem.value.loc,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: iterableItem.value.loc,
+                                message: null,
+                            },
+                        ],
                         suggestions: null,
                     });
             }
@@ -37056,7 +37837,13 @@ function codegenTerminal(cx, terminal) {
                     CompilerError.invariant(false, {
                         reason: 'Destructure should never be Reassign as it would be an Object/ArrayPattern',
                         description: null,
-                        loc: iterableItem.loc,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: iterableItem.loc,
+                                message: null,
+                            },
+                        ],
                         suggestions: null,
                     });
                 case InstructionKind.Catch:
@@ -37067,13 +37854,19 @@ function codegenTerminal(cx, terminal) {
                     CompilerError.invariant(false, {
                         reason: `Unexpected ${iterableItem.value.lvalue.kind} variable in for..in collection`,
                         description: null,
-                        loc: iterableItem.loc,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: iterableItem.loc,
+                                message: null,
+                            },
+                        ],
                         suggestions: null,
                     });
                 default:
                     assertExhaustive$1(iterableItem.value.lvalue.kind, `Unhandled lvalue kind: ${iterableItem.value.lvalue.kind}`);
             }
-            return libExports$1.forInStatement(createVariableDeclaration(iterableItem.value.loc, varDeclKind, [
+            return createForInStatement(terminal.loc, createVariableDeclaration(iterableItem.value.loc, varDeclKind, [
                 libExports$1.variableDeclarator(lval, null),
             ]), codegenInstructionValueToExpression(cx, iterableCollection.value), codegenBlock(cx, terminal.loop));
         }
@@ -37083,14 +37876,26 @@ function codegenTerminal(cx, terminal) {
                 terminal.init.instructions[0].value.kind === 'GetIterator', {
                 reason: `Expected a single-expression sequence expression init for for..of`,
                 description: `Got \`${terminal.init.kind}\` expression instead`,
-                loc: terminal.init.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: terminal.init.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             const iterableCollection = terminal.init.instructions[0].value;
             CompilerError.invariant(terminal.test.kind === 'SequenceExpression', {
                 reason: `Expected a sequence expression test for for..of`,
                 description: `Got \`${terminal.init.kind}\` expression instead`,
-                loc: terminal.test.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: terminal.test.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             if (terminal.test.instructions.length !== 2) {
@@ -37124,7 +37929,13 @@ function codegenTerminal(cx, terminal) {
                     CompilerError.invariant(false, {
                         reason: `Expected a StoreLocal or Destructure to be assigned to the collection`,
                         description: `Found ${iterableItem.value.kind}`,
-                        loc: iterableItem.value.loc,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: iterableItem.value.loc,
+                                message: null,
+                            },
+                        ],
                         suggestions: null,
                     });
             }
@@ -37145,13 +37956,19 @@ function codegenTerminal(cx, terminal) {
                     CompilerError.invariant(false, {
                         reason: `Unexpected ${iterableItem.value.lvalue.kind} variable in for..of collection`,
                         description: null,
-                        loc: iterableItem.loc,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: iterableItem.loc,
+                                message: null,
+                            },
+                        ],
                         suggestions: null,
                     });
                 default:
                     assertExhaustive$1(iterableItem.value.lvalue.kind, `Unhandled lvalue kind: ${iterableItem.value.lvalue.kind}`);
             }
-            return libExports$1.forOfStatement(createVariableDeclaration(iterableItem.value.loc, varDeclKind, [
+            return createForOfStatement(terminal.loc, createVariableDeclaration(iterableItem.value.loc, varDeclKind, [
                 libExports$1.variableDeclarator(lval, null),
             ]), codegenInstructionValueToExpression(cx, iterableCollection), codegenBlock(cx, terminal.loop));
         }
@@ -37165,7 +37982,7 @@ function codegenTerminal(cx, terminal) {
                     alternate = block;
                 }
             }
-            return libExports$1.ifStatement(test, consequent, alternate);
+            return createIfStatement(terminal.loc, test, consequent, alternate);
         }
         case 'return': {
             const value = codegenPlaceToExpression(cx, terminal.value);
@@ -37175,7 +37992,7 @@ function codegenTerminal(cx, terminal) {
             return libExports$1.returnStatement(value);
         }
         case 'switch': {
-            return libExports$1.switchStatement(codegenPlaceToExpression(cx, terminal.test), terminal.cases.map(case_ => {
+            return createSwitchStatement(terminal.loc, codegenPlaceToExpression(cx, terminal.test), terminal.cases.map(case_ => {
                 const test = case_.test !== null
                     ? codegenPlaceToExpression(cx, case_.test)
                     : null;
@@ -37184,15 +38001,15 @@ function codegenTerminal(cx, terminal) {
             }));
         }
         case 'throw': {
-            return libExports$1.throwStatement(codegenPlaceToExpression(cx, terminal.value));
+            return createThrowStatement(terminal.loc, codegenPlaceToExpression(cx, terminal.value));
         }
         case 'do-while': {
             const test = codegenInstructionValueToExpression(cx, terminal.test);
-            return libExports$1.doWhileStatement(test, codegenBlock(cx, terminal.loop));
+            return createDoWhileStatement(terminal.loc, test, codegenBlock(cx, terminal.loop));
         }
         case 'while': {
             const test = codegenInstructionValueToExpression(cx, terminal.test);
-            return libExports$1.whileStatement(test, codegenBlock(cx, terminal.loop));
+            return createWhileStatement(terminal.loc, test, codegenBlock(cx, terminal.loop));
         }
         case 'label': {
             return codegenBlock(cx, terminal.block);
@@ -37203,7 +38020,7 @@ function codegenTerminal(cx, terminal) {
                 catchParam = convertIdentifier(terminal.handlerBinding.identifier);
                 cx.temp.set(terminal.handlerBinding.identifier.declarationId, null);
             }
-            return libExports$1.tryStatement(codegenBlock(cx, terminal.block), libExports$1.catchClause(catchParam, codegenBlock(cx, terminal.handler)));
+            return createTryStatement(terminal.loc, codegenBlock(cx, terminal.block), libExports$1.catchClause(catchParam, codegenBlock(cx, terminal.handler)));
         }
         default: {
             assertExhaustive$1(terminal, `Unexpected terminal kind \`${terminal.kind}\``);
@@ -37256,7 +38073,13 @@ function codegenInstructionNullable(cx, instr) {
                 CompilerError.invariant(false, {
                     reason: 'Encountered a destructuring operation where some identifiers are already declared (reassignments) but others are not (declarations)',
                     description: null,
-                    loc: instr.loc,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: instr.loc,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
             }
@@ -37270,7 +38093,13 @@ function codegenInstructionNullable(cx, instr) {
                 CompilerError.invariant(instr.lvalue === null, {
                     reason: `Const declaration cannot be referenced as an expression`,
                     description: null,
-                    loc: instr.value.loc,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: instr.value.loc,
+                            message: `this is ${kind}`,
+                        },
+                    ],
                     suggestions: null,
                 });
                 return createVariableDeclaration(instr.loc, 'const', [
@@ -37281,20 +38110,38 @@ function codegenInstructionNullable(cx, instr) {
                 CompilerError.invariant(instr.lvalue === null, {
                     reason: `Function declaration cannot be referenced as an expression`,
                     description: null,
-                    loc: instr.value.loc,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: instr.value.loc,
+                            message: `this is ${kind}`,
+                        },
+                    ],
                     suggestions: null,
                 });
                 const genLvalue = codegenLValue(cx, lvalue);
                 CompilerError.invariant(genLvalue.type === 'Identifier', {
                     reason: 'Expected an identifier as a function declaration lvalue',
                     description: null,
-                    loc: instr.value.loc,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: instr.value.loc,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
                 CompilerError.invariant((value === null || value === void 0 ? void 0 : value.type) === 'FunctionExpression', {
                     reason: 'Expected a function as a function declaration value',
                     description: `Got ${value == null ? String(value) : value.type} at ${printInstruction(instr)}`,
-                    loc: instr.value.loc,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: instr.value.loc,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
                 return createFunctionDeclaration(instr.loc, genLvalue, value.params, value.body, value.generator, value.async);
@@ -37303,7 +38150,13 @@ function codegenInstructionNullable(cx, instr) {
                 CompilerError.invariant(instr.lvalue === null, {
                     reason: `Const declaration cannot be referenced as an expression`,
                     description: null,
-                    loc: instr.value.loc,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: instr.value.loc,
+                            message: 'this is const',
+                        },
+                    ],
                     suggestions: null,
                 });
                 return createVariableDeclaration(instr.loc, 'let', [
@@ -37314,7 +38167,13 @@ function codegenInstructionNullable(cx, instr) {
                 CompilerError.invariant(value !== null, {
                     reason: 'Expected a value for reassignment',
                     description: null,
-                    loc: instr.value.loc,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: instr.value.loc,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
                 const expr = libExports$1.assignmentExpression('=', codegenLValue(cx, lvalue), value);
@@ -37344,7 +38203,13 @@ function codegenInstructionNullable(cx, instr) {
                 CompilerError.invariant(false, {
                     reason: `Expected ${kind} to have been pruned in PruneHoistedContexts`,
                     description: null,
-                    loc: instr.loc,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: instr.loc,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
             }
@@ -37363,7 +38228,14 @@ function codegenInstructionNullable(cx, instr) {
     else if (instr.value.kind === 'ObjectMethod') {
         CompilerError.invariant(instr.lvalue, {
             reason: 'Expected object methods to have a temp lvalue',
-            loc: null,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         cx.objectMethods.set(instr.lvalue.identifier.id, instr.value);
@@ -37402,7 +38274,13 @@ function codegenForInit(cx, init) {
                 CompilerError.invariant(instr.type === 'VariableDeclaration' &&
                     (instr.kind === 'let' || instr.kind === 'const'), {
                     reason: 'Expected a variable declaration',
-                    loc: init.loc,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: init.loc,
+                            message: null,
+                        },
+                    ],
                     description: `Got ${instr.type}`,
                     suggestions: null,
                 });
@@ -37414,7 +38292,13 @@ function codegenForInit(cx, init) {
         });
         CompilerError.invariant(declarators.length > 0, {
             reason: 'Expected a variable declaration',
-            loc: init.loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc: init.loc,
+                    message: null,
+                },
+            ],
             description: null,
             suggestions: null,
         });
@@ -37488,6 +38372,13 @@ const createBinaryExpression = withLoc(libExports$1.binaryExpression);
 const createExpressionStatement = withLoc(libExports$1.expressionStatement);
 const createVariableDeclaration = withLoc(libExports$1.variableDeclaration);
 const createFunctionDeclaration = withLoc(libExports$1.functionDeclaration);
+const createWhileStatement = withLoc(libExports$1.whileStatement);
+const createDoWhileStatement = withLoc(libExports$1.doWhileStatement);
+const createSwitchStatement = withLoc(libExports$1.switchStatement);
+const createIfStatement = withLoc(libExports$1.ifStatement);
+const createForStatement = withLoc(libExports$1.forStatement);
+const createForOfStatement = withLoc(libExports$1.forOfStatement);
+const createForInStatement = withLoc(libExports$1.forInStatement);
 const createTaggedTemplateExpression = withLoc(libExports$1.taggedTemplateExpression);
 const createLogicalExpression = withLoc(libExports$1.logicalExpression);
 const createSequenceExpression = withLoc(libExports$1.sequenceExpression);
@@ -37502,6 +38393,10 @@ const createJsxText = withLoc(libExports$1.jsxText);
 const createJsxClosingElement = withLoc(libExports$1.jsxClosingElement);
 const createJsxOpeningElement = withLoc(libExports$1.jsxOpeningElement);
 const createStringLiteral = withLoc(libExports$1.stringLiteral);
+const createThrowStatement = withLoc(libExports$1.throwStatement);
+const createTryStatement = withLoc(libExports$1.tryStatement);
+const createBreakStatement = withLoc(libExports$1.breakStatement);
+const createContinueStatement = withLoc(libExports$1.continueStatement);
 function createHookGuard(guard, context, stmts, before, after) {
     const guardFnName = context.addImportSpecifier(guard).name;
     function createHookGuardImpl(kind) {
@@ -37618,7 +38513,13 @@ function codegenInstructionValue(cx, instrValue) {
                     CompilerError.invariant(libExports$1.isExpression(optionalValue.callee), {
                         reason: 'v8 intrinsics are validated during lowering',
                         description: null,
-                        loc: (_a = optionalValue.callee.loc) !== null && _a !== void 0 ? _a : null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: (_a = optionalValue.callee.loc) !== null && _a !== void 0 ? _a : null,
+                                message: null,
+                            },
+                        ],
                         suggestions: null,
                     });
                     value = libExports$1.optionalCallExpression(optionalValue.callee, optionalValue.arguments, instrValue.optional);
@@ -37630,7 +38531,13 @@ function codegenInstructionValue(cx, instrValue) {
                     CompilerError.invariant(libExports$1.isExpression(property), {
                         reason: 'Private names are validated during lowering',
                         description: null,
-                        loc: (_b = property.loc) !== null && _b !== void 0 ? _b : null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: (_b = property.loc) !== null && _b !== void 0 ? _b : null,
+                                message: null,
+                            },
+                        ],
                         suggestions: null,
                     });
                     value = libExports$1.optionalMemberExpression(optionalValue.object, property, optionalValue.computed, instrValue.optional);
@@ -37640,7 +38547,13 @@ function codegenInstructionValue(cx, instrValue) {
                     CompilerError.invariant(false, {
                         reason: 'Expected an optional value to resolve to a call expression or member expression',
                         description: `Got a \`${optionalValue.type}\``,
-                        loc: instrValue.loc,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: instrValue.loc,
+                                message: null,
+                            },
+                        ],
                         suggestions: null,
                     });
                 }
@@ -37652,17 +38565,28 @@ function codegenInstructionValue(cx, instrValue) {
             const memberExpr = codegenPlaceToExpression(cx, instrValue.property);
             CompilerError.invariant(libExports$1.isMemberExpression(memberExpr) ||
                 libExports$1.isOptionalMemberExpression(memberExpr), {
-                reason: '[Codegen] Internal error: MethodCall::property must be an unpromoted + unmemoized MemberExpression. ' +
-                    `Got a \`${memberExpr.type}\``,
+                reason: '[Codegen] Internal error: MethodCall::property must be an unpromoted + unmemoized MemberExpression',
                 description: null,
-                loc: (_c = memberExpr.loc) !== null && _c !== void 0 ? _c : null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: (_c = memberExpr.loc) !== null && _c !== void 0 ? _c : null,
+                        message: `Got: '${memberExpr.type}'`,
+                    },
+                ],
                 suggestions: null,
             });
             CompilerError.invariant(libExports$1.isNodesEquivalent(memberExpr.object, codegenPlaceToExpression(cx, instrValue.receiver)), {
                 reason: '[Codegen] Internal error: Forget should always generate MethodCall::property ' +
                     'as a MemberExpression of MethodCall::receiver',
                 description: null,
-                loc: (_d = memberExpr.loc) !== null && _d !== void 0 ? _d : null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: (_d = memberExpr.loc) !== null && _d !== void 0 ? _d : null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             const args = instrValue.args.map(arg => codegenArgument(cx, arg));
@@ -37692,7 +38616,14 @@ function codegenInstructionValue(cx, instrValue) {
                             const method = cx.objectMethods.get(property.place.identifier.id);
                             CompilerError.invariant(method, {
                                 reason: 'Expected ObjectMethod instruction',
-                                loc: null,
+                                description: null,
+                                details: [
+                                    {
+                                        kind: 'error',
+                                        loc: null,
+                                        message: null,
+                                    },
+                                ],
                                 suggestions: null,
                             });
                             const loweredFunc = method.loweredFunc;
@@ -37740,7 +38671,13 @@ function codegenInstructionValue(cx, instrValue) {
                 CompilerError.invariant(tagValue.type === 'StringLiteral', {
                     reason: `Expected JSX tag to be an identifier or string, got \`${tagValue.type}\``,
                     description: null,
-                    loc: (_f = tagValue.loc) !== null && _f !== void 0 ? _f : null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: (_f = tagValue.loc) !== null && _f !== void 0 ? _f : null,
+                            message: null,
+                        },
+                    ],
                     suggestions: null,
                 });
                 if (tagValue.value.indexOf(':') >= 0) {
@@ -37755,7 +38692,13 @@ function codegenInstructionValue(cx, instrValue) {
             if (tagValue.type === 'StringLiteral' &&
                 SINGLE_CHILD_FBT_TAGS.has(tagValue.value)) {
                 CompilerError.invariant(instrValue.children != null, {
-                    loc: instrValue.loc,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: instrValue.loc,
+                            message: null,
+                        },
+                    ],
                     reason: 'Expected fbt element to have children',
                     suggestions: null,
                     description: null,
@@ -37888,7 +38831,6 @@ function codegenInstructionValue(cx, instrValue) {
                         const declarator = stmt.declarations[0];
                         cx.errors.push({
                             reason: `(CodegenReactiveFunction::codegenInstructionValue) Cannot declare variables in a value block, tried to declare '${declarator.id.name}'`,
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             loc: (_a = declarator.loc) !== null && _a !== void 0 ? _a : null,
                             suggestions: null,
@@ -37898,7 +38840,6 @@ function codegenInstructionValue(cx, instrValue) {
                     else {
                         cx.errors.push({
                             reason: `(CodegenReactiveFunction::codegenInstructionValue) Handle conversion of ${stmt.type} to expression`,
-                            severity: ErrorSeverity.Todo,
                             category: ErrorCategory.Todo,
                             loc: (_b = stmt.loc) !== null && _b !== void 0 ? _b : null,
                             suggestions: null,
@@ -37962,7 +38903,13 @@ function codegenInstructionValue(cx, instrValue) {
             CompilerError.invariant(instrValue.lvalue.kind === InstructionKind.Reassign, {
                 reason: `Unexpected StoreLocal in codegenInstructionValue`,
                 description: null,
-                loc: instrValue.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: instrValue.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             value = libExports$1.assignmentExpression('=', codegenLValue(cx, instrValue.lvalue.place), codegenPlaceToExpression(cx, instrValue.value));
@@ -37983,13 +38930,22 @@ function codegenInstructionValue(cx, instrValue) {
             CompilerError.invariant(false, {
                 reason: `Unexpected ${instrValue.kind} in codegenInstructionValue`,
                 description: null,
-                loc: instrValue.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: instrValue.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
         }
         default: {
             assertExhaustive$1(instrValue, `Unexpected instruction value kind \`${instrValue.kind}\``);
         }
+    }
+    if (instrValue.loc != null && instrValue.loc != GeneratedSource) {
+        value.loc = instrValue.loc;
     }
     return value;
 }
@@ -38067,7 +39023,13 @@ function convertMemberExpressionToJsx(expr) {
     CompilerError.invariant(expr.property.type === 'Identifier', {
         reason: 'Expected JSX member expression property to be a string',
         description: null,
-        loc: (_a = expr.loc) !== null && _a !== void 0 ? _a : null,
+        details: [
+            {
+                kind: 'error',
+                loc: (_a = expr.loc) !== null && _a !== void 0 ? _a : null,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     const property = libExports$1.jsxIdentifier(expr.property.name);
@@ -38078,7 +39040,13 @@ function convertMemberExpressionToJsx(expr) {
         CompilerError.invariant(expr.object.type === 'MemberExpression', {
             reason: 'Expected JSX member expression to be an identifier or nested member expression',
             description: null,
-            loc: (_b = expr.object.loc) !== null && _b !== void 0 ? _b : null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: (_b = expr.object.loc) !== null && _b !== void 0 ? _b : null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         const object = convertMemberExpressionToJsx(expr.object);
@@ -38098,7 +39066,13 @@ function codegenObjectPropertyKey(cx, key) {
             CompilerError.invariant(libExports$1.isExpression(expr), {
                 reason: 'Expected object property key to be an expression',
                 description: null,
-                loc: key.name.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: key.name.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             return expr;
@@ -38206,7 +39180,13 @@ function codegenPlace(cx, place) {
     CompilerError.invariant(place.identifier.name !== null || tmp !== undefined, {
         reason: `[Codegen] No value found for temporary`,
         description: `Value for '${printPlace(place)}' was not set in the codegen context`,
-        loc: place.loc,
+        details: [
+            {
+                kind: 'error',
+                loc: place.loc,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     const identifier = convertIdentifier(place.identifier);
@@ -38216,7 +39196,13 @@ function codegenPlace(cx, place) {
 function convertIdentifier(identifier) {
     CompilerError.invariant(identifier.name !== null && identifier.name.kind === 'named', {
         reason: `Expected temporaries to be promoted to named identifiers in an earlier pass`,
-        loc: GeneratedSource,
+        details: [
+            {
+                kind: 'error',
+                loc: GeneratedSource,
+                message: null,
+            },
+        ],
         description: `identifier ${identifier.id} is unnamed`,
         suggestions: null,
     });
@@ -38226,7 +39212,14 @@ function compareScopeDependency(a, b) {
     var _a, _b;
     CompilerError.invariant(((_a = a.identifier.name) === null || _a === void 0 ? void 0 : _a.kind) === 'named' && ((_b = b.identifier.name) === null || _b === void 0 ? void 0 : _b.kind) === 'named', {
         reason: '[Codegen] Expected named identifier for dependency',
-        loc: a.identifier.loc,
+        description: null,
+        details: [
+            {
+                kind: 'error',
+                loc: a.identifier.loc,
+                message: null,
+            },
+        ],
     });
     const aName = [
         a.identifier.name.value,
@@ -38247,7 +39240,14 @@ function compareScopeDeclaration(a, b) {
     var _a, _b;
     CompilerError.invariant(((_a = a.identifier.name) === null || _a === void 0 ? void 0 : _a.kind) === 'named' && ((_b = b.identifier.name) === null || _b === void 0 ? void 0 : _b.kind) === 'named', {
         reason: '[Codegen] Expected named identifier for declaration',
-        loc: a.identifier.loc,
+        description: null,
+        details: [
+            {
+                kind: 'error',
+                loc: a.identifier.loc,
+                message: null,
+            },
+        ],
     });
     const aName = a.identifier.name.value;
     const bName = b.identifier.name.value;
@@ -38385,10 +39385,16 @@ let Transform$4 = class Transform extends ReactiveFunctionTransform {
         const merged = [];
         function reset() {
             CompilerError.invariant(current !== null, {
-                loc: null,
                 reason: 'MergeConsecutiveScopes: expected current scope to be non-null if reset()',
-                suggestions: null,
                 description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
+                suggestions: null,
             });
             if (current.to > current.from + 1) {
                 merged.push(current);
@@ -38508,9 +39514,15 @@ let Transform$4 = class Transform extends ReactiveFunctionTransform {
             }
             const mergedScope = block[entry.from];
             CompilerError.invariant(mergedScope.kind === 'scope', {
-                loc: null,
                 reason: 'MergeConsecutiveScopes: Expected scope starting index to be a scope',
                 description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             nextInstructions.push(mergedScope);
@@ -38777,7 +39789,14 @@ class PromoteInterposedTemporaries extends ReactiveFunctionVisitor {
         for (const lval of eachInstructionValueLValue(instruction.value)) {
             CompilerError.invariant(lval.identifier.name != null, {
                 reason: 'PromoteInterposedTemporaries: Assignment targets not expected to be temporaries',
-                loc: instruction.loc,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: instruction.loc,
+                        message: null,
+                    },
+                ],
             });
         }
         switch (instruction.value.kind) {
@@ -38901,7 +39920,13 @@ function promoteIdentifier(identifier, state) {
     CompilerError.invariant(identifier.name === null, {
         reason: 'promoteTemporary: Expected to be called only for temporary variables',
         description: null,
-        loc: GeneratedSource,
+        details: [
+            {
+                kind: 'error',
+                loc: GeneratedSource,
+                message: null,
+            },
+        ],
         suggestions: null,
     });
     if (state.tags.has(identifier.declarationId)) {
@@ -39230,7 +40255,14 @@ let Visitor$8 = class Visitor extends ReactiveFunctionTransform {
                     if (maybeHoistedFn != null) {
                         CompilerError.invariant(maybeHoistedFn.kind === 'func', {
                             reason: '[PruneHoistedContexts] Unexpected hoisted function',
-                            loc: instruction.loc,
+                            description: null,
+                            details: [
+                                {
+                                    kind: 'error',
+                                    loc: instruction.loc,
+                                    message: null,
+                                },
+                            ],
                         });
                         maybeHoistedFn.definition = instruction.value.lvalue.place;
                         state.uninitialized.delete(lvalueId);
@@ -39361,7 +40393,13 @@ function inferMutationAliasingEffects(fn, { isFunctionExpression } = {
         CompilerError.invariant(fn.params.length <= 2, {
             reason: 'Expected React component to have not more than two parameters: one for props and for ref',
             description: null,
-            loc: fn.loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc: fn.loc,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         const [props, ref] = fn.params;
@@ -39413,7 +40451,13 @@ function inferMutationAliasingEffects(fn, { isFunctionExpression } = {
             CompilerError.invariant(false, {
                 reason: `[InferMutationAliasingEffects] Potential infinite loop`,
                 description: `A value, temporary place, or effect was not cached properly`,
-                loc: fn.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: fn.loc,
+                        message: null,
+                    },
+                ],
             });
         }
         for (const [blockId, block] of fn.body.blocks) {
@@ -39520,7 +40564,14 @@ function inferBlock(context, state, block) {
         if (handlerParam != null) {
             CompilerError.invariant(state.kind(handlerParam) != null, {
                 reason: 'Expected catch binding to be intialized with a DeclareLocal Catch instruction',
-                loc: terminal.loc,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: terminal.loc,
+                        message: null,
+                    },
+                ],
             });
             const effects = [];
             for (const instr of block.instructions) {
@@ -39577,17 +40628,16 @@ function applySignature(context, state, signature, instruction) {
                             : 'value';
                         const diagnostic = CompilerDiagnostic.create({
                             category: ErrorCategory.Immutability,
-                            severity: ErrorSeverity.InvalidReact,
                             reason: 'This value cannot be modified',
-                            description: `${reason}.`,
-                        }).withDetail({
+                            description: reason,
+                        }).withDetails({
                             kind: 'error',
                             loc: effect.value.loc,
                             message: `${variable} cannot be modified`,
                         });
                         if (effect.kind === 'Mutate' &&
                             ((_b = effect.reason) === null || _b === void 0 ? void 0 : _b.kind) === 'AssignCurrentProperty') {
-                            diagnostic.withDetail({
+                            diagnostic.withDetails({
                                 kind: 'hint',
                                 message: `Hint: If this value is a Ref (value returned by \`useRef()\`), rename the variable to end in "Ref".`,
                             });
@@ -39609,7 +40659,14 @@ function applySignature(context, state, signature, instruction) {
     if (!(state.isDefined(instruction.lvalue) && state.kind(instruction.lvalue))) {
         CompilerError.invariant(false, {
             reason: `Expected instruction lvalue to be initialized`,
-            loc: instruction.loc,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: instruction.loc,
+                    message: null,
+                },
+            ],
         });
     }
     return effects.length !== 0 ? effects : null;
@@ -39629,7 +40686,13 @@ function applyEffect(context, state, _effect, initialized, effects) {
             CompilerError.invariant(!initialized.has(effect.into.identifier.id), {
                 reason: `Cannot re-initialize variable within an instruction`,
                 description: `Re-initialized ${printPlace(effect.into)} in ${printAliasingEffect(effect)}`,
-                loc: effect.into.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: effect.into.loc,
+                        message: null,
+                    },
+                ],
             });
             initialized.add(effect.into.identifier.id);
             let value = context.effectInstructionValueCache.get(effect);
@@ -39666,7 +40729,13 @@ function applyEffect(context, state, _effect, initialized, effects) {
             CompilerError.invariant(!initialized.has(effect.into.identifier.id), {
                 reason: `Cannot re-initialize variable within an instruction`,
                 description: `Re-initialized ${printPlace(effect.into)} in ${printAliasingEffect(effect)}`,
-                loc: effect.into.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: effect.into.loc,
+                        message: null,
+                    },
+                ],
             });
             initialized.add(effect.into.identifier.id);
             const fromValue = state.kind(effect.from);
@@ -39719,7 +40788,13 @@ function applyEffect(context, state, _effect, initialized, effects) {
             CompilerError.invariant(!initialized.has(effect.into.identifier.id), {
                 reason: `Cannot re-initialize variable within an instruction`,
                 description: `Re-initialized ${printPlace(effect.into)} in ${printAliasingEffect(effect)}`,
-                loc: effect.into.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: effect.into.loc,
+                        message: null,
+                    },
+                ],
             });
             initialized.add(effect.into.identifier.id);
             effects.push(effect);
@@ -39770,7 +40845,13 @@ function applyEffect(context, state, _effect, initialized, effects) {
             CompilerError.invariant(effect.kind === 'Capture' || initialized.has(effect.into.identifier.id), {
                 reason: `Expected destination value to already be initialized within this instruction for Alias effect`,
                 description: `Destination ${printPlace(effect.into)} is not initialized in this instruction`,
-                loc: effect.into.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: effect.into.loc,
+                        message: null,
+                    },
+                ],
             });
             const intoKind = state.kind(effect.into).kind;
             let isMutableDesination;
@@ -39817,7 +40898,13 @@ function applyEffect(context, state, _effect, initialized, effects) {
             CompilerError.invariant(!initialized.has(effect.into.identifier.id), {
                 reason: `Cannot re-initialize variable within an instruction`,
                 description: `Re-initialized ${printPlace(effect.into)} in ${printAliasingEffect(effect)}`,
-                loc: effect.into.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: effect.into.loc,
+                        message: null,
+                    },
+                ],
             });
             initialized.add(effect.into.identifier.id);
             const fromValue = state.kind(effect.from);
@@ -39973,18 +41060,17 @@ function applyEffect(context, state, _effect, initialized, effects) {
                     const hoistedAccess = context.hoistedContextDeclarations.get(effect.value.identifier.declarationId);
                     const diagnostic = CompilerDiagnostic.create({
                         category: ErrorCategory.Immutability,
-                        severity: ErrorSeverity.InvalidReact,
                         reason: 'Cannot access variable before it is declared',
-                        description: `${variable !== null && variable !== void 0 ? variable : 'This variable'} is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.`,
+                        description: `${variable !== null && variable !== void 0 ? variable : 'This variable'} is accessed before it is declared, which prevents the earlier access from updating when this value changes over time`,
                     });
                     if (hoistedAccess != null && hoistedAccess.loc != effect.value.loc) {
-                        diagnostic.withDetail({
+                        diagnostic.withDetails({
                             kind: 'error',
                             loc: hoistedAccess.loc,
                             message: `${variable !== null && variable !== void 0 ? variable : 'variable'} accessed before it is declared`,
                         });
                     }
-                    diagnostic.withDetail({
+                    diagnostic.withDetails({
                         kind: 'error',
                         loc: effect.value.loc,
                         message: `${variable !== null && variable !== void 0 ? variable : 'variable'} is declared here`,
@@ -40006,17 +41092,16 @@ function applyEffect(context, state, _effect, initialized, effects) {
                         : 'value';
                     const diagnostic = CompilerDiagnostic.create({
                         category: ErrorCategory.Immutability,
-                        severity: ErrorSeverity.InvalidReact,
                         reason: 'This value cannot be modified',
-                        description: `${reason}.`,
-                    }).withDetail({
+                        description: reason,
+                    }).withDetails({
                         kind: 'error',
                         loc: effect.value.loc,
                         message: `${variable} cannot be modified`,
                     });
                     if (effect.kind === 'Mutate' &&
                         ((_e = effect.reason) === null || _e === void 0 ? void 0 : _e.kind) === 'AssignCurrentProperty') {
-                        diagnostic.withDetail({
+                        diagnostic.withDetails({
                             kind: 'hint',
                             message: `Hint: If this value is a Ref (value returned by \`useRef()\`), rename the variable to end in "Ref".`,
                         });
@@ -40064,7 +41149,13 @@ class InferenceState {
         CompilerError.invariant(value.kind !== 'LoadLocal', {
             reason: '[InferMutationAliasingEffects] Expected all top-level identifiers to be defined as variables, not values',
             description: null,
-            loc: value.loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc: value.loc,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         __classPrivateFieldGet(this, _InferenceState_values, "f").set(value, kind);
@@ -40074,7 +41165,13 @@ class InferenceState {
         CompilerError.invariant(values != null, {
             reason: `[InferMutationAliasingEffects] Expected value kind to be initialized`,
             description: `${printPlace(place)}`,
-            loc: place.loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc: place.loc,
+                    message: 'this is uninitialized',
+                },
+            ],
             suggestions: null,
         });
         return Array.from(values);
@@ -40084,7 +41181,13 @@ class InferenceState {
         CompilerError.invariant(values != null, {
             reason: `[InferMutationAliasingEffects] Expected value kind to be initialized`,
             description: `${printPlace(place)}`,
-            loc: place.loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc: place.loc,
+                    message: 'this is uninitialized',
+                },
+            ],
             suggestions: null,
         });
         let mergedKind = null;
@@ -40096,7 +41199,13 @@ class InferenceState {
         CompilerError.invariant(mergedKind !== null, {
             reason: `[InferMutationAliasingEffects] Expected at least one value`,
             description: `No value found at \`${printPlace(place)}\``,
-            loc: place.loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc: place.loc,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         return mergedKind;
@@ -40106,7 +41215,13 @@ class InferenceState {
         CompilerError.invariant(values != null, {
             reason: `[InferMutationAliasingEffects] Expected value for identifier to be initialized`,
             description: `${printIdentifier(value.identifier)}`,
-            loc: value.loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc: value.loc,
+                    message: 'Expected value for identifier to be initialized',
+                },
+            ],
             suggestions: null,
         });
         __classPrivateFieldGet(this, _InferenceState_variables, "f").set(place.identifier.id, new Set(values));
@@ -40116,7 +41231,13 @@ class InferenceState {
         CompilerError.invariant(values != null, {
             reason: `[InferMutationAliasingEffects] Expected value for identifier to be initialized`,
             description: `${printIdentifier(value.identifier)}`,
-            loc: value.loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc: value.loc,
+                    message: 'Expected value for identifier to be initialized',
+                },
+            ],
             suggestions: null,
         });
         const prevValues = this.values(place);
@@ -40124,9 +41245,15 @@ class InferenceState {
     }
     define(place, value) {
         CompilerError.invariant(__classPrivateFieldGet(this, _InferenceState_values, "f").has(value), {
-            reason: `[InferMutationAliasingEffects] Expected value to be initialized at '${printSourceLocation(value.loc)}'`,
+            reason: `[InferMutationAliasingEffects] Expected value to be initialized`,
             description: printInstructionValue(value),
-            loc: value.loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc: value.loc,
+                    message: 'Expected value for identifier to be initialized',
+                },
+            ],
             suggestions: null,
         });
         __classPrivateFieldGet(this, _InferenceState_variables, "f").set(place.identifier.id, new Set([value]));
@@ -40742,10 +41869,9 @@ function computeSignatureForInstruction(context, env, instr) {
                 place: value.value,
                 error: CompilerDiagnostic.create({
                     category: ErrorCategory.Globals,
-                    severity: ErrorSeverity.InvalidReact,
                     reason: 'Cannot reassign variables declared outside of the component/hook',
                     description: `Variable ${variable} is declared outside of the component/hook. Reassigning this value during render is a form of side effect, which can cause unpredictable behavior depending on when the component happens to re-render. If this variable is used in rendering, use useState instead. Otherwise, consider updating it in an effect. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#side-effects-must-run-outside-of-render)`,
-                }).withDetail({
+                }).withDetails({
                     kind: 'error',
                     loc: instr.loc,
                     message: `${variable} cannot be reassigned`,
@@ -40825,13 +41951,12 @@ function computeEffectsForLegacySignature(state, signature, lvalue, receiver, ar
             place: receiver,
             error: CompilerDiagnostic.create({
                 category: ErrorCategory.Purity,
-                severity: ErrorSeverity.InvalidReact,
                 reason: 'Cannot call impure function during render',
                 description: (signature.canonicalName != null
                     ? `\`${signature.canonicalName}\` is an impure function. `
                     : '') +
                     'Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent)',
-            }).withDetail({
+            }).withDetails({
                 kind: 'error',
                 loc,
                 message: 'Cannot call impure function',
@@ -40842,15 +41967,14 @@ function computeEffectsForLegacySignature(state, signature, lvalue, receiver, ar
         const errors = new CompilerError();
         errors.pushDiagnostic(CompilerDiagnostic.create({
             category: ErrorCategory.IncompatibleLibrary,
-            severity: ErrorSeverity.IncompatibleLibrary,
             reason: 'Use of incompatible library',
             description: [
                 'This API returns functions which cannot be memoized without leading to stale UI. ' +
                     'To prevent this, by default React Compiler will skip memoizing this component/hook. ' +
                     'However, you may see issues if values from this API are passed to other components/hooks that are ' +
-                    'memoized.',
+                    'memoized',
             ].join(''),
-        }).withDetail({
+        }).withDetails({
             kind: 'error',
             loc: receiver.loc,
             message: signature.knownIncompatible,
@@ -41277,7 +42401,13 @@ function isKnownMutableEffect(effect) {
             CompilerError.invariant(false, {
                 reason: 'Unexpected unknown effect',
                 description: null,
-                loc: GeneratedSource,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: GeneratedSource,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
         }
@@ -41327,7 +42457,13 @@ function mergeValueKinds(a, b) {
         CompilerError.invariant(a === ValueKind.Primitive && b == ValueKind.Primitive, {
             reason: `Unexpected value kind in mergeValues()`,
             description: `Found kinds ${a} and ${b}`,
-            loc: GeneratedSource,
+            details: [
+                {
+                    kind: 'error',
+                    loc: GeneratedSource,
+                    message: null,
+                },
+            ],
         });
         return ValueKind.Primitive;
     }
@@ -41403,7 +42539,13 @@ class State {
             CompilerError.invariant(identifierNode !== undefined, {
                 reason: 'Expected identifier to be initialized',
                 description: `[${id}] operand=${printPlace(place)} for identifier declaration ${identifier}`,
-                loc: place.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: place.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             identifierNode.scopes.add(scope.id);
@@ -41417,7 +42559,13 @@ function computeMemoizedIdentifiers(state) {
         CompilerError.invariant(node !== undefined, {
             reason: `Expected a node for all identifiers, none found for \`${id}\``,
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         if (node.seen) {
@@ -41447,7 +42595,13 @@ function computeMemoizedIdentifiers(state) {
         CompilerError.invariant(node !== undefined, {
             reason: 'Expected a node for all scopes',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         if (node.seen) {
@@ -41921,7 +43075,13 @@ class CollectDependenciesVisitor extends ReactiveFunctionVisitor {
             CompilerError.invariant(identifierNode !== undefined, {
                 reason: 'Expected identifier to be initialized',
                 description: null,
-                loc: stmt.terminal.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: stmt.terminal.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             for (const scope of scopes) {
@@ -41935,7 +43095,13 @@ class CollectDependenciesVisitor extends ReactiveFunctionVisitor {
             CompilerError.invariant(identifierNode !== undefined, {
                 reason: 'Expected identifier to be initialized',
                 description: null,
-                loc: reassignment.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: reassignment.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             for (const scope of scopes) {
@@ -42333,7 +43499,13 @@ class Scopes {
         CompilerError.invariant(last === next, {
             reason: 'Mismatch push/pop calls',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
     }
@@ -42514,7 +43686,14 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
                 else {
                     CompilerError.invariant(effect.kind === 'Freeze', {
                         reason: `Unexpected '${effect.kind}' effect for MaybeThrow terminal`,
-                        loc: block.terminal.loc,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: block.terminal.loc,
+                                message: null,
+                            },
+                        ],
                     });
                 }
             }
@@ -42632,7 +43811,14 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
                     case 'Apply': {
                         CompilerError.invariant(false, {
                             reason: `[AnalyzeFunctions] Expected Apply effects to be replaced with more precise effects`,
-                            loc: effect.function.loc,
+                            description: null,
+                            details: [
+                                {
+                                    kind: 'error',
+                                    loc: effect.function.loc,
+                                    message: null,
+                                },
+                            ],
                         });
                     }
                     case 'MutateTransitive':
@@ -42715,7 +43901,14 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
             const fromNode = state.nodes.get(from.identifier);
             CompilerError.invariant(fromNode != null, {
                 reason: `Expected a node to exist for all parameters and context variables`,
-                loc: into.loc,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: into.loc,
+                        message: null,
+                    },
+                ],
             });
             if (fromNode.lastMutated === mutationIndex) {
                 if (into.identifier.id === fn.returns.identifier.id) {
@@ -42735,7 +43928,7 @@ function inferMutationAliasingRanges(fn, { isFunctionExpression }) {
             }
         }
     }
-    if (errors.hasErrors() && !isFunctionExpression) {
+    if (errors.hasAnyErrors() && !isFunctionExpression) {
         return Err(errors);
     }
     return Ok(functionEffects);
@@ -42992,7 +44185,14 @@ function lowerWithMutationAliasing(fn) {
             case 'Apply': {
                 CompilerError.invariant(false, {
                     reason: `[AnalyzeFunctions] Expected Apply effects to be replaced with more precise effects`,
-                    loc: effect.function.loc,
+                    description: null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: effect.function.loc,
+                            message: null,
+                        },
+                    ],
                 });
             }
             case 'Mutate':
@@ -43188,11 +44388,10 @@ function extractManualMemoizationArgs(instr, kind, sidemap, errors) {
     if (fnPlace == null) {
         errors.pushDiagnostic(CompilerDiagnostic.create({
             category: ErrorCategory.UseMemo,
-            severity: ErrorSeverity.InvalidReact,
             reason: `Expected a callback function to be passed to ${kind}`,
             description: `Expected a callback function to be passed to ${kind}`,
             suggestions: null,
-        }).withDetail({
+        }).withDetails({
             kind: 'error',
             loc: instr.value.loc,
             message: `Expected a callback function to be passed to ${kind}`,
@@ -43202,11 +44401,10 @@ function extractManualMemoizationArgs(instr, kind, sidemap, errors) {
     if (fnPlace.kind === 'Spread' || (depsListPlace === null || depsListPlace === void 0 ? void 0 : depsListPlace.kind) === 'Spread') {
         errors.pushDiagnostic(CompilerDiagnostic.create({
             category: ErrorCategory.UseMemo,
-            severity: ErrorSeverity.InvalidReact,
             reason: `Unexpected spread argument to ${kind}`,
             description: `Unexpected spread argument to ${kind}`,
             suggestions: null,
-        }).withDetail({
+        }).withDetails({
             kind: 'error',
             loc: instr.value.loc,
             message: `Unexpected spread argument to ${kind}`,
@@ -43219,11 +44417,10 @@ function extractManualMemoizationArgs(instr, kind, sidemap, errors) {
         if (maybeDepsList == null) {
             errors.pushDiagnostic(CompilerDiagnostic.create({
                 category: ErrorCategory.UseMemo,
-                severity: ErrorSeverity.InvalidReact,
                 reason: `Expected the dependency list for ${kind} to be an array literal`,
                 description: `Expected the dependency list for ${kind} to be an array literal`,
                 suggestions: null,
-            }).withDetail({
+            }).withDetails({
                 kind: 'error',
                 loc: depsListPlace.loc,
                 message: `Expected the dependency list for ${kind} to be an array literal`,
@@ -43236,11 +44433,10 @@ function extractManualMemoizationArgs(instr, kind, sidemap, errors) {
             if (maybeDep == null) {
                 errors.pushDiagnostic(CompilerDiagnostic.create({
                     category: ErrorCategory.UseMemo,
-                    severity: ErrorSeverity.InvalidReact,
                     reason: `Expected the dependency list to be an array of simple expressions (e.g. \`x\`, \`x.y.z\`, \`x?.y?.z\`)`,
                     description: `Expected the dependency list to be an array of simple expressions (e.g. \`x\`, \`x.y.z\`, \`x?.y?.z\`)`,
                     suggestions: null,
-                }).withDetail({
+                }).withDetails({
                     kind: 'error',
                     loc: dep.loc,
                     message: `Expected the dependency list to be an array of simple expressions (e.g. \`x\`, \`x.y.z\`, \`x?.y?.z\`)`,
@@ -43293,14 +44489,13 @@ function dropManualMemoization(func) {
                         if (funcToCheck !== undefined && funcToCheck.loweredFunc.func) {
                             if (!hasNonVoidReturn(funcToCheck.loweredFunc.func)) {
                                 errors.pushDiagnostic(CompilerDiagnostic.create({
-                                    severity: ErrorSeverity.InvalidReact,
                                     category: ErrorCategory.UseMemo,
                                     reason: 'useMemo() callbacks must return a value',
                                     description: `This ${manualMemo.loadInstr.value.kind === 'PropertyLoad'
                                         ? 'React.useMemo'
-                                        : 'useMemo'} callback doesn't return a value. useMemo is for computing and caching values, not for arbitrary side effects.`,
+                                        : 'useMemo'} callback doesn't return a value. useMemo is for computing and caching values, not for arbitrary side effects`,
                                     suggestions: null,
-                                }).withDetail({
+                                }).withDetails({
                                     kind: 'error',
                                     loc: instr.value.loc,
                                     message: 'useMemo() callbacks must return a value',
@@ -43313,11 +44508,10 @@ function dropManualMemoization(func) {
                         if (!sidemap.functions.has(fnPlace.identifier.id)) {
                             errors.pushDiagnostic(CompilerDiagnostic.create({
                                 category: ErrorCategory.UseMemo,
-                                severity: ErrorSeverity.InvalidReact,
                                 reason: `Expected the first argument to be an inline function expression`,
                                 description: `Expected the first argument to be an inline function expression`,
                                 suggestions: [],
-                            }).withDetail({
+                            }).withDetails({
                                 kind: 'error',
                                 loc: fnPlace.loc,
                                 message: `Expected the first argument to be an inline function expression`,
@@ -43404,7 +44598,14 @@ function findOptionalPlaces(fn) {
                     default: {
                         CompilerError.invariant(false, {
                             reason: `Unexpected terminal in optional`,
-                            loc: terminal.loc,
+                            description: null,
+                            details: [
+                                {
+                                    kind: 'error',
+                                    loc: terminal.loc,
+                                    message: `Unexpected ${terminal.kind} in optional`,
+                                },
+                            ],
                         });
                     }
                 }
@@ -43609,7 +44810,13 @@ function inferReactivePlaces(fn) {
                                 CompilerError.invariant(false, {
                                     reason: 'Unexpected unknown effect',
                                     description: null,
-                                    loc: operand.loc,
+                                    details: [
+                                        {
+                                            kind: 'error',
+                                            loc: operand.loc,
+                                            message: null,
+                                        },
+                                    ],
                                     suggestions: null,
                                 });
                             }
@@ -43967,7 +45174,14 @@ class PropertyPathRegistry {
         else {
             CompilerError.invariant(reactive === rootNode.fullPath.reactive, {
                 reason: '[HoistablePropertyLoads] Found inconsistencies in `reactive` flag when deduping identifier reads within the same scope',
-                loc: identifier.loc,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: identifier.loc,
+                        message: null,
+                    },
+                ],
             });
         }
         return rootNode;
@@ -44096,7 +45310,14 @@ function propagateNonNull(fn, nodes, registry) {
         if (node == null) {
             CompilerError.invariant(false, {
                 reason: `Bad node ${nodeId}, kind: ${direction}`,
-                loc: GeneratedSource,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: GeneratedSource,
+                        message: null,
+                    },
+                ],
             });
         }
         const neighbors = Array.from(direction === 'backward'
@@ -44128,7 +45349,14 @@ function propagateNonNull(fn, nodes, registry) {
     do {
         CompilerError.invariant(i++ < 100, {
             reason: '[CollectHoistablePropertyLoads] fixed point iteration did not terminate after 100 loops',
-            loc: GeneratedSource,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: GeneratedSource,
+                    message: null,
+                },
+            ],
         });
         changed = false;
         for (const [blockId] of fn.body.blocks) {
@@ -44147,7 +45375,13 @@ function assertNonNull(value, source) {
     CompilerError.invariant(value != null, {
         reason: 'Unexpected null',
         description: source != null ? `(from ${source})` : null,
-        loc: GeneratedSource,
+        details: [
+            {
+                kind: 'error',
+                loc: GeneratedSource,
+                message: null,
+            },
+        ],
     });
     return value;
 }
@@ -44312,11 +45546,24 @@ function matchOptionalTestBlock(terminal, blocks) {
         CompilerError.invariant(propertyLoad.value.object.identifier.id === terminal.test.identifier.id, {
             reason: '[OptionalChainDeps] Inconsistent optional chaining property load',
             description: `Test=${printIdentifier(terminal.test.identifier)} PropertyLoad base=${printIdentifier(propertyLoad.value.object.identifier)}`,
-            loc: propertyLoad.loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc: propertyLoad.loc,
+                    message: null,
+                },
+            ],
         });
         CompilerError.invariant(storeLocal.value.identifier.id === propertyLoad.lvalue.identifier.id, {
             reason: '[OptionalChainDeps] Unexpected storeLocal',
-            loc: propertyLoad.loc,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: propertyLoad.loc,
+                    message: null,
+                },
+            ],
         });
         if (consequentBlock.terminal.kind !== 'goto' ||
             consequentBlock.terminal.variant !== GotoVariant.Break) {
@@ -44327,7 +45574,14 @@ function matchOptionalTestBlock(terminal, blocks) {
             alternate.instructions[0].value.kind === 'Primitive' &&
             alternate.instructions[1].value.kind === 'StoreLocal', {
             reason: 'Unexpected alternate structure',
-            loc: terminal.loc,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: terminal.loc,
+                    message: null,
+                },
+            ],
         });
         return {
             consequentId: storeLocal.lvalue.place.identifier.id,
@@ -44347,7 +45601,14 @@ function traverseOptionalBlock(optional, context, outerAlternate) {
     if (maybeTest.terminal.kind === 'branch') {
         CompilerError.invariant(optional.terminal.optional, {
             reason: '[OptionalChainDeps] Expect base case to be always optional',
-            loc: optional.terminal.loc,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: optional.terminal.loc,
+                    message: null,
+                },
+            ],
         });
         if (maybeTest.instructions.length === 0 ||
             maybeTest.instructions[0].value.kind !== 'LoadLocal') {
@@ -44368,7 +45629,14 @@ function traverseOptionalBlock(optional, context, outerAlternate) {
         CompilerError.invariant(maybeTest.terminal.test.identifier.id ===
             maybeTest.instructions.at(-1).lvalue.identifier.id, {
             reason: '[OptionalChainDeps] Unexpected test expression',
-            loc: maybeTest.terminal.loc,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: maybeTest.terminal.loc,
+                    message: null,
+                },
+            ],
         });
         baseObject = {
             identifier: maybeTest.instructions[0].value.place.identifier,
@@ -44405,7 +45673,14 @@ function traverseOptionalBlock(optional, context, outerAlternate) {
         CompilerError.invariant(optional.instructions.length === 0, {
             reason: '[OptionalChainDeps] Unexpected instructions an inner optional block. ' +
                 'This indicates that the compiler may be incorrectly concatenating two unrelated optional chains',
-            loc: optional.terminal.loc,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: optional.terminal.loc,
+                    message: null,
+                },
+            ],
         });
     }
     const matchConsequentResult = matchOptionalTestBlock(test, context.blocks);
@@ -44415,7 +45690,13 @@ function traverseOptionalBlock(optional, context, outerAlternate) {
     CompilerError.invariant(matchConsequentResult.consequentGoto === optional.terminal.fallthrough, {
         reason: '[OptionalChainDeps] Unexpected optional goto-fallthrough',
         description: `${matchConsequentResult.consequentGoto} != ${optional.terminal.fallthrough}`,
-        loc: optional.terminal.loc,
+        details: [
+            {
+                kind: 'error',
+                loc: optional.terminal.loc,
+                message: null,
+            },
+        ],
     });
     const load = {
         identifier: baseObject.identifier,
@@ -44448,7 +45729,14 @@ class ReactiveScopeDependencyTreeHIR {
                 const accessType = i + 1 < path.length && path[i + 1].optional ? 'Optional' : 'NonNull';
                 CompilerError.invariant(prevAccessType == null || prevAccessType === accessType, {
                     reason: 'Conflicting access types',
-                    loc: GeneratedSource,
+                    description: null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: GeneratedSource,
+                            message: null,
+                        },
+                    ],
                 });
                 let nextNode = currNode.properties.get(path[i].property);
                 if (nextNode == null) {
@@ -44535,7 +45823,13 @@ _a = ReactiveScopeDependencyTreeHIR, _ReactiveScopeDependencyTreeHIR_hoistableOb
         CompilerError.invariant(reactive === rootNode.reactive, {
             reason: '[DeriveMinimalDependenciesHIR] Conflicting reactive root flag',
             description: `Identifier ${printIdentifier(identifier)}`,
-            loc: GeneratedSource,
+            details: [
+                {
+                    kind: 'error',
+                    loc: GeneratedSource,
+                    message: null,
+                },
+            ],
         });
     }
     return rootNode;
@@ -44636,7 +45930,14 @@ function propagateScopeDependenciesHIR(fn) {
         const hoistables = hoistablePropertyLoads.get(scope.id);
         CompilerError.invariant(hoistables != null, {
             reason: '[PropagateScopeDependencies] Scope not found in tracked blocks',
-            loc: GeneratedSource,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: GeneratedSource,
+                    message: null,
+                },
+            ],
         });
         const tree = new ReactiveScopeDependencyTreeHIR([...hoistables.assumedNonNullObjects].map(o => o.fullPath));
         for (const dep of deps) {
@@ -44784,7 +46085,14 @@ class DependencyCollectionContext {
         const scopedDependencies = __classPrivateFieldGet(this, _DependencyCollectionContext_dependencies, "f").value;
         CompilerError.invariant(scopedDependencies != null, {
             reason: '[PropagateScopeDeps]: Unexpected scope mismatch',
-            loc: scope.loc,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: scope.loc,
+                    message: null,
+                },
+            ],
         });
         __classPrivateFieldSet(this, _DependencyCollectionContext_scopes, __classPrivateFieldGet(this, _DependencyCollectionContext_scopes, "f").pop(), "f");
         __classPrivateFieldSet(this, _DependencyCollectionContext_dependencies, __classPrivateFieldGet(this, _DependencyCollectionContext_dependencies, "f").pop(), "f");
@@ -45158,8 +46466,14 @@ function writeOptionalDependency(dep, builder, parentAlternate) {
         const firstOptional = dep.path.findIndex(path => path.optional);
         CompilerError.invariant(firstOptional !== -1, {
             reason: '[ScopeDependencyUtils] Internal invariant broken: expected optional path',
-            loc: dep.identifier.loc,
             description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: dep.identifier.loc,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         if (firstOptional === dep.path.length - 1) {
@@ -45188,7 +46502,13 @@ function writeOptionalDependency(dep, builder, parentAlternate) {
         CompilerError.invariant(testIdentifier !== null, {
             reason: 'Satisfy type checker',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         lowerValueToTemporary(builder, {
@@ -45441,14 +46761,28 @@ function rewriteSplices(originalBlock, splices, rewriteBlocks) {
         while (originalInstrs[cursor].id < rewrite.location) {
             CompilerError.invariant(originalInstrs[cursor].id < originalInstrs[cursor + 1].id, {
                 reason: '[InferEffectDependencies] Internal invariant broken: expected block instructions to be sorted',
-                loc: originalInstrs[cursor].loc,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: originalInstrs[cursor].loc,
+                        message: null,
+                    },
+                ],
             });
             currBlock.instructions.push(originalInstrs[cursor]);
             cursor++;
         }
         CompilerError.invariant(originalInstrs[cursor].id === rewrite.location, {
             reason: '[InferEffectDependencies] Internal invariant broken: splice location not found',
-            loc: originalInstrs[cursor].loc,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: originalInstrs[cursor].loc,
+                    message: null,
+                },
+            ],
         });
         if (rewrite.kind === 'instr') {
             currBlock.instructions.push(rewrite.value);
@@ -45460,7 +46794,14 @@ function rewriteSplices(originalBlock, splices, rewriteBlocks) {
             if (blocks.size > 1) {
                 CompilerError.invariant(terminalFallthrough(entryBlock.terminal) === rewrite.exitBlockId, {
                     reason: '[InferEffectDependencies] Internal invariant broken: expected entry block to have a fallthrough',
-                    loc: entryBlock.terminal.loc,
+                    description: null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: entryBlock.terminal.loc,
+                            message: null,
+                        },
+                    ],
                 });
                 const originalTerminal = currBlock.terminal;
                 currBlock.terminal = entryBlock.terminal;
@@ -45527,7 +46868,14 @@ function inferMinimalDependencies(fnInstr) {
     const hoistableToFnEntry = hoistablePropertyLoads.get(fn.body.entry);
     CompilerError.invariant(hoistableToFnEntry != null, {
         reason: '[InferEffectDependencies] Internal invariant broken: missing entry block',
-        loc: fnInstr.loc,
+        description: null,
+        details: [
+            {
+                kind: 'error',
+                loc: fnInstr.loc,
+                message: null,
+            },
+        ],
     });
     const dependencies = inferDependencies(fnInstr, new Map([...temporaries, ...temporariesReadInOptional]), processedInstrsInOptional);
     const tree = new ReactiveScopeDependencyTreeHIR([...hoistableToFnEntry.assumedNonNullObjects].map(o => o.fullPath));
@@ -45564,7 +46912,14 @@ function inferDependencies(fnInstr, temporaries, processedInstrsInOptional) {
     const resultUnfiltered = context.deps.get(placeholderScope);
     CompilerError.invariant(resultUnfiltered != null, {
         reason: '[InferEffectDependencies] Internal invariant broken: missing scope dependencies',
-        loc: fn.loc,
+        description: null,
+        details: [
+            {
+                kind: 'error',
+                loc: fn.loc,
+                message: null,
+            },
+        ],
     });
     const fnContext = new Set(fn.context.map(dep => dep.identifier.id));
     const result = new Set();
@@ -45613,9 +46968,16 @@ function instructionReordering(fn) {
     }
     CompilerError.invariant(shared.size === 0, {
         reason: `InstructionReordering: expected all reorderable nodes to have been emitted`,
-        loc: (_a = [...shared.values()]
-            .map(node => { var _a; return (_a = node.instruction) === null || _a === void 0 ? void 0 : _a.loc; })
-            .filter(loc => loc != null)[0]) !== null && _a !== void 0 ? _a : GeneratedSource,
+        description: null,
+        details: [
+            {
+                kind: 'error',
+                loc: (_a = [...shared.values()]
+                    .map(node => { var _a; return (_a = node.instruction) === null || _a === void 0 ? void 0 : _a.loc; })
+                    .filter(loc => loc != null)[0]) !== null && _a !== void 0 ? _a : GeneratedSource,
+                message: null,
+            },
+        ],
     });
     markInstructionIds(fn.body);
 }
@@ -45735,7 +47097,13 @@ function reorderBlock(env, block, shared, references) {
             }
             CompilerError.invariant(node.reorderability === Reorderability.Reorderable, {
                 reason: `Expected all remaining instructions to be reorderable`,
-                loc: (_b = (_a = node.instruction) === null || _a === void 0 ? void 0 : _a.loc) !== null && _b !== void 0 ? _b : block.terminal.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: (_b = (_a = node.instruction) === null || _a === void 0 ? void 0 : _a.loc) !== null && _b !== void 0 ? _b : block.terminal.loc,
+                        message: null,
+                    },
+                ],
                 description: node.instruction != null
                     ? `Instruction [${node.instruction.id}] was not emitted yet but is not reorderable`
                     : `Lvalue $${id} was not emitted yet but is not reorderable`,
@@ -45951,7 +47319,14 @@ function alignReactiveScopesToBlockScopesHIR(fn) {
             });
             CompilerError.invariant(!valueBlockNodes.has(fallthrough), {
                 reason: 'Expect hir blocks to have unique fallthroughs',
-                loc: terminal.loc,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: terminal.loc,
+                        message: null,
+                    },
+                ],
             });
             if (node != null) {
                 valueBlockNodes.set(fallthrough, node);
@@ -45986,7 +47361,14 @@ function alignReactiveScopesToBlockScopesHIR(fn) {
                 if (node == null) {
                     CompilerError.invariant(fallthrough !== null, {
                         reason: `Expected a fallthrough for value block`,
-                        loc: terminal.loc,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: terminal.loc,
+                                message: null,
+                            },
+                        ],
                     });
                     const fallthroughBlock = fn.body.blocks.get(fallthrough);
                     const nextId = (_b = (_a = fallthroughBlock.instructions[0]) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : fallthroughBlock.terminal.id;
@@ -46099,7 +47481,13 @@ function flattenScopesWithHooksOrUseHIR(fn) {
         CompilerError.invariant(terminal.kind === 'scope', {
             reason: `Expected block to have a scope terminal`,
             description: `Expected block bb${block.id} to end in a scope terminal`,
-            loc: terminal.loc,
+            details: [
+                {
+                    kind: 'error',
+                    loc: terminal.loc,
+                    message: null,
+                },
+            ],
         });
         const body = fn.body.blocks.get(terminal.block);
         if (body.instructions.length === 1 &&
@@ -46303,7 +47691,14 @@ let Visitor$2 = class Visitor extends ReactiveFunctionVisitor {
     visitTerminal(stmt, state) {
         CompilerError.invariant(state !== 'Create', {
             reason: "Visiting a terminal statement with state 'Create'",
-            loc: stmt.terminal.loc,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: stmt.terminal.loc,
+                    message: null,
+                },
+            ],
         });
         super.visitTerminal(stmt, state);
     }
@@ -46820,7 +48215,13 @@ class Unifier {
             CompilerError.invariant(type.operands.length > 0, {
                 reason: 'there should be at least one operand',
                 description: null,
-                loc: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             let candidateType = null;
@@ -47053,10 +48454,16 @@ function visit(identifiers, place, kind) {
                 });
             }
             CompilerError.invariant(false, {
-                reason: `Expected all references to a variable to be consistently local or context references`,
-                loc: place.loc,
-                description: `Identifier ${printPlace(place)} is referenced as a ${kind} variable, but was previously referenced as a ${prev} variable`,
+                reason: 'Expected all references to a variable to be consistently local or context references',
+                description: `Identifier ${printPlace(place)} is referenced as a ${kind} variable, but was previously referenced as a ${prev.kind} variable`,
                 suggestions: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: place.loc,
+                        message: `this is ${prev.kind}`,
+                    },
+                ],
             });
         }
     }
@@ -47073,7 +48480,14 @@ function computeUnconditionalBlocks(fn) {
     while (current !== null && current !== exit) {
         CompilerError.invariant(!unconditionalBlocks.has(current), {
             reason: 'Internal error: non-terminating loop in ComputeUnconditionalBlocks',
-            loc: null,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         unconditionalBlocks.add(current);
@@ -47129,7 +48543,6 @@ function validateHooksUsage(fn) {
                 description: null,
                 reason,
                 loc: place.loc,
-                severity: ErrorSeverity.InvalidReact,
                 suggestions: null,
             }));
         }
@@ -47142,7 +48555,6 @@ function validateHooksUsage(fn) {
                 description: null,
                 reason: 'Hooks may not be referenced as normal values, they must be called. See https://react.dev/reference/rules/react-calls-components-and-hooks#never-pass-around-hooks-as-regular-values',
                 loc: place.loc,
-                severity: ErrorSeverity.InvalidReact,
                 suggestions: null,
             }));
         }
@@ -47155,7 +48567,6 @@ function validateHooksUsage(fn) {
                 description: null,
                 reason: 'Hooks must be the same function on every render, but this value may change over time to a different function. See https://react.dev/reference/rules/react-calls-components-and-hooks#dont-dynamically-use-hooks',
                 loc: place.loc,
-                severity: ErrorSeverity.InvalidReact,
                 suggestions: null,
             }));
         }
@@ -47377,7 +48788,6 @@ function visitFunctionExpression(errors, fn) {
                     if (hookKind != null) {
                         errors.pushErrorDetail(new CompilerErrorDetail({
                             category: ErrorCategory.Hooks,
-                            severity: ErrorSeverity.InvalidReact,
                             reason: 'Hooks must be called at the top level in the body of a function component or custom hook, and may not be called within function expressions. See the Rules of Hooks (https://react.dev/warnings/invalid-hook-call-warning)',
                             loc: callee.loc,
                             description: `Cannot call ${hookKind === 'Custom' ? 'hook' : hookKind} within a function expression`,
@@ -47430,7 +48840,6 @@ let Visitor$1 = class Visitor extends ReactiveFunctionVisitor {
                     category: ErrorCategory.EffectDependencies,
                     reason: 'React Compiler has skipped optimizing this component because the effect dependencies could not be memoized. Unmemoized effect dependencies can trigger an infinite loop or other unexpected behavior',
                     description: null,
-                    severity: ErrorSeverity.CannotPreserveMemoization,
                     loc: typeof instruction.loc !== 'symbol' ? instruction.loc : null,
                     suggestions: null,
                 });
@@ -47481,7 +48890,7 @@ function validateNoCapitalizedCalls(fn) {
                         CompilerError.throwInvalidReact({
                             category: ErrorCategory.CapitalizedCalls,
                             reason,
-                            description: `${calleeName} may be a component.`,
+                            description: `${calleeName} may be a component`,
                             loc: value.loc,
                             suggestions: null,
                         });
@@ -47501,9 +48910,8 @@ function validateNoCapitalizedCalls(fn) {
                     if (propertyName != null) {
                         errors.push({
                             category: ErrorCategory.CapitalizedCalls,
-                            severity: ErrorSeverity.InvalidReact,
                             reason,
-                            description: `${propertyName} may be a component.`,
+                            description: `${propertyName} may be a component`,
                             loc: value.loc,
                             suggestions: null,
                         });
@@ -47521,8 +48929,14 @@ function makeRefId(id) {
     CompilerError.invariant(id >= 0 && Number.isInteger(id), {
         reason: 'Expected identifier id to be a non-negative integer',
         description: null,
-        loc: null,
         suggestions: null,
+        details: [
+            {
+                kind: 'error',
+                loc: null,
+                message: null,
+            },
+        ],
     });
     return id;
 }
@@ -47633,19 +49047,40 @@ function tyEqual(a, b) {
         case 'Guard':
             CompilerError.invariant(b.kind === 'Guard', {
                 reason: 'Expected ref value',
-                loc: null,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
             });
             return a.refId === b.refId;
         case 'RefValue':
             CompilerError.invariant(b.kind === 'RefValue', {
                 reason: 'Expected ref value',
-                loc: null,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
             });
             return a.loc == b.loc;
         case 'Structure': {
             CompilerError.invariant(b.kind === 'Structure', {
                 reason: 'Expected structure',
-                loc: null,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
             });
             const fnTypesEqual = (a.fn === null && b.fn === null) ||
                 (a.fn !== null &&
@@ -47678,7 +49113,14 @@ function joinRefAccessTypes(...types) {
         else {
             CompilerError.invariant(a.kind === 'Structure' && b.kind === 'Structure', {
                 reason: 'Expected structure',
-                loc: null,
+                description: null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: null,
+                        message: null,
+                    },
+                ],
             });
             const fn = a.fn === null
                 ? b.fn
@@ -47866,10 +49308,9 @@ function validateNoRefAccessInRenderImpl(fn, env) {
                                 didError = true;
                                 errors.pushDiagnostic(CompilerDiagnostic.create({
                                     category: ErrorCategory.Refs,
-                                    severity: ErrorSeverity.InvalidReact,
                                     reason: 'Cannot access refs during render',
                                     description: ERROR_DESCRIPTION,
-                                }).withDetail({
+                                }).withDetails({
                                     kind: 'error',
                                     loc: callee.loc,
                                     message: `This function accesses a ref value`,
@@ -48029,13 +49470,20 @@ function validateNoRefAccessInRenderImpl(fn, env) {
                 }
             }
         }
-        if (errors.hasErrors()) {
+        if (errors.hasAnyErrors()) {
             return Err(errors);
         }
     }
     CompilerError.invariant(!env.hasChanged(), {
         reason: 'Ref type environment did not converge',
-        loc: null,
+        description: null,
+        details: [
+            {
+                kind: 'error',
+                loc: null,
+                message: null,
+            },
+        ],
     });
     return Ok(joinRefAccessTypes(...returnValues.filter((env) => env !== undefined)));
 }
@@ -48050,10 +49498,9 @@ function guardCheck(errors, operand, env) {
     if (((_a = env.get(operand.identifier.id)) === null || _a === void 0 ? void 0 : _a.kind) === 'Guard') {
         errors.pushDiagnostic(CompilerDiagnostic.create({
             category: ErrorCategory.Refs,
-            severity: ErrorSeverity.InvalidReact,
             reason: 'Cannot access refs during render',
             description: ERROR_DESCRIPTION,
-        }).withDetail({
+        }).withDetails({
             kind: 'error',
             loc: operand.loc,
             message: `Cannot access ref value during render`,
@@ -48067,10 +49514,9 @@ function validateNoRefValueAccess(errors, env, operand) {
         ((type === null || type === void 0 ? void 0 : type.kind) === 'Structure' && ((_a = type.fn) === null || _a === void 0 ? void 0 : _a.readRefEffect))) {
         errors.pushDiagnostic(CompilerDiagnostic.create({
             category: ErrorCategory.Refs,
-            severity: ErrorSeverity.InvalidReact,
             reason: 'Cannot access refs during render',
             description: ERROR_DESCRIPTION,
-        }).withDetail({
+        }).withDetails({
             kind: 'error',
             loc: (type.kind === 'RefValue' && type.loc) || operand.loc,
             message: `Cannot access ref value during render`,
@@ -48085,10 +49531,9 @@ function validateNoRefPassedToFunction(errors, env, operand, loc) {
         ((type === null || type === void 0 ? void 0 : type.kind) === 'Structure' && ((_a = type.fn) === null || _a === void 0 ? void 0 : _a.readRefEffect))) {
         errors.pushDiagnostic(CompilerDiagnostic.create({
             category: ErrorCategory.Refs,
-            severity: ErrorSeverity.InvalidReact,
             reason: 'Cannot access refs during render',
             description: ERROR_DESCRIPTION,
-        }).withDetail({
+        }).withDetails({
             kind: 'error',
             loc: (type.kind === 'RefValue' && type.loc) || loc,
             message: `Passing a ref to a function may read its value during render`,
@@ -48100,10 +49545,9 @@ function validateNoRefUpdate(errors, env, operand, loc) {
     if ((type === null || type === void 0 ? void 0 : type.kind) === 'Ref' || (type === null || type === void 0 ? void 0 : type.kind) === 'RefValue') {
         errors.pushDiagnostic(CompilerDiagnostic.create({
             category: ErrorCategory.Refs,
-            severity: ErrorSeverity.InvalidReact,
             reason: 'Cannot access refs during render',
             description: ERROR_DESCRIPTION,
-        }).withDetail({
+        }).withDetails({
             kind: 'error',
             loc: (type.kind === 'RefValue' && type.loc) || loc,
             message: `Cannot update ref during render`,
@@ -48116,10 +49560,9 @@ function validateNoDirectRefValueAccess(errors, operand, env) {
     if ((type === null || type === void 0 ? void 0 : type.kind) === 'RefValue') {
         errors.pushDiagnostic(CompilerDiagnostic.create({
             category: ErrorCategory.Refs,
-            severity: ErrorSeverity.InvalidReact,
             reason: 'Cannot access refs during render',
             description: ERROR_DESCRIPTION,
-        }).withDetail({
+        }).withDetails({
             kind: 'error',
             loc: (_a = type.loc) !== null && _a !== void 0 ? _a : operand.loc,
             message: `Cannot access ref value during render`,
@@ -48167,7 +49610,14 @@ function validateNoSetStateInRenderImpl(fn, unconditionalSetStateFunctions) {
                 case 'StartMemoize': {
                     CompilerError.invariant(activeManualMemoId === null, {
                         reason: 'Unexpected nested StartMemoize instructions',
-                        loc: instr.value.loc,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: instr.value.loc,
+                                message: null,
+                            },
+                        ],
                     });
                     activeManualMemoId = instr.value.manualMemoId;
                     break;
@@ -48175,7 +49625,14 @@ function validateNoSetStateInRenderImpl(fn, unconditionalSetStateFunctions) {
                 case 'FinishMemoize': {
                     CompilerError.invariant(activeManualMemoId === instr.value.manualMemoId, {
                         reason: 'Expected FinishMemoize to align with previous StartMemoize instruction',
-                        loc: instr.value.loc,
+                        description: null,
+                        details: [
+                            {
+                                kind: 'error',
+                                loc: instr.value.loc,
+                                message: null,
+                            },
+                        ],
                     });
                     activeManualMemoId = null;
                     break;
@@ -48189,9 +49646,8 @@ function validateNoSetStateInRenderImpl(fn, unconditionalSetStateFunctions) {
                                 category: ErrorCategory.RenderSetState,
                                 reason: 'Calling setState from useMemo may trigger an infinite loop',
                                 description: 'Each time the memo callback is evaluated it will change state. This can cause a memoization dependency to change, running the memo function again and causing an infinite loop. Instead of setting state in useMemo(), prefer deriving the value during render. (https://react.dev/reference/react/useState)',
-                                severity: ErrorSeverity.InvalidReact,
                                 suggestions: null,
-                            }).withDetail({
+                            }).withDetails({
                                 kind: 'error',
                                 loc: callee.loc,
                                 message: 'Found setState() within useMemo()',
@@ -48202,9 +49658,8 @@ function validateNoSetStateInRenderImpl(fn, unconditionalSetStateFunctions) {
                                 category: ErrorCategory.RenderSetState,
                                 reason: 'Calling setState during render may trigger an infinite loop',
                                 description: 'Calling setState during render will trigger another render, and can lead to infinite loops. (https://react.dev/reference/react/useState)',
-                                severity: ErrorSeverity.InvalidReact,
                                 suggestions: null,
-                            }).withDetail({
+                            }).withDetails({
                                 kind: 'error',
                                 loc: callee.loc,
                                 message: 'Found setState() in render',
@@ -48316,7 +49771,14 @@ function validateInferredDep(dep, temporaries, declsWithinMemoBlock, validDepsIn
     else {
         CompilerError.invariant(((_a = dep.identifier.name) === null || _a === void 0 ? void 0 : _a.kind) === 'named', {
             reason: 'ValidatePreservedManualMemoization: expected scope dependency to be named',
-            loc: GeneratedSource,
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: GeneratedSource,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         normalizedDep = {
@@ -48351,7 +49813,6 @@ function validateInferredDep(dep, temporaries, declsWithinMemoBlock, validDepsIn
     }
     errorState.pushDiagnostic(CompilerDiagnostic.create({
         category: ErrorCategory.PreserveManualMemo,
-        severity: ErrorSeverity.CannotPreserveMemoization,
         reason: 'Existing memoization could not be preserved',
         description: [
             'React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. ',
@@ -48361,13 +49822,13 @@ function validateInferredDep(dep, temporaries, declsWithinMemoBlock, validDepsIn
                     .map(dep => printManualMemoDependency(dep, true))
                     .join(', ')}]. ${errorDiagnostic
                     ? getCompareDependencyResultDescription(errorDiagnostic)
-                    : 'Inferred dependency not present in source'}.`
+                    : 'Inferred dependency not present in source'}`
                 : '',
         ]
             .join('')
             .trim(),
         suggestions: null,
-    }).withDetail({
+    }).withDetails({
         kind: 'error',
         loc: memoLocation,
         message: 'Could not preserve existing manual memoization',
@@ -48496,7 +49957,13 @@ class Visitor extends ReactiveFunctionVisitor {
             CompilerError.invariant(state.manualMemoState == null, {
                 reason: 'Unexpected nested StartMemoize instructions',
                 description: `Bad manual memoization ids: ${(_a = state.manualMemoState) === null || _a === void 0 ? void 0 : _a.manualMemoId}, ${value.manualMemoId}`,
-                loc: value.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: value.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             state.manualMemoState = {
@@ -48512,13 +49979,12 @@ class Visitor extends ReactiveFunctionVisitor {
                     !this.prunedScopes.has(identifier.scope.id)) {
                     state.errors.pushDiagnostic(CompilerDiagnostic.create({
                         category: ErrorCategory.PreserveManualMemo,
-                        severity: ErrorSeverity.CannotPreserveMemoization,
                         reason: 'Existing memoization could not be preserved',
                         description: [
                             'React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. ',
-                            'This dependency may be mutated later, which could cause the value to change unexpectedly.',
+                            'This dependency may be mutated later, which could cause the value to change unexpectedly',
                         ].join(''),
-                    }).withDetail({
+                    }).withDetails({
                         kind: 'error',
                         loc,
                         message: 'This dependency may be modified later',
@@ -48531,7 +49997,13 @@ class Visitor extends ReactiveFunctionVisitor {
                 state.manualMemoState.manualMemoId === value.manualMemoId, {
                 reason: 'Unexpected mismatch between StartMemoize and FinishMemoize',
                 description: `Encountered StartMemoize id=${(_b = state.manualMemoState) === null || _b === void 0 ? void 0 : _b.manualMemoId} followed by FinishMemoize id=${value.manualMemoId}`,
-                loc: value.loc,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: value.loc,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             const reassignments = state.manualMemoState.reassignments;
@@ -48549,15 +50021,14 @@ class Visitor extends ReactiveFunctionVisitor {
                         if (isUnmemoized(identifier, this.scopes)) {
                             state.errors.pushDiagnostic(CompilerDiagnostic.create({
                                 category: ErrorCategory.PreserveManualMemo,
-                                severity: ErrorSeverity.CannotPreserveMemoization,
                                 reason: 'Existing memoization could not be preserved',
                                 description: [
-                                    'React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation output. ',
+                                    'React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation output',
                                     '',
                                 ]
                                     .join('')
                                     .trim(),
-                            }).withDetail({
+                            }).withDetails({
                                 kind: 'error',
                                 loc,
                                 message: 'Could not preserve existing memoization',
@@ -48626,11 +50097,10 @@ function validateUseMemo(fn) {
                             : firstParam.place.loc;
                         errors.pushDiagnostic(CompilerDiagnostic.create({
                             category: ErrorCategory.UseMemo,
-                            severity: ErrorSeverity.InvalidReact,
                             reason: 'useMemo() callbacks may not accept parameters',
-                            description: 'useMemo() callbacks are called by React to cache calculations across re-renders. They should not take parameters. Instead, directly reference the props, state, or local variables needed for the computation.',
+                            description: 'useMemo() callbacks are called by React to cache calculations across re-renders. They should not take parameters. Instead, directly reference the props, state, or local variables needed for the computation',
                             suggestions: null,
-                        }).withDetail({
+                        }).withDetails({
                             kind: 'error',
                             loc,
                             message: 'Callbacks with parameters are not supported',
@@ -48639,11 +50109,10 @@ function validateUseMemo(fn) {
                     if (body.loweredFunc.func.async || body.loweredFunc.func.generator) {
                         errors.pushDiagnostic(CompilerDiagnostic.create({
                             category: ErrorCategory.UseMemo,
-                            severity: ErrorSeverity.InvalidReact,
                             reason: 'useMemo() callbacks may not be async or generator functions',
-                            description: 'useMemo() callbacks are called once and must synchronously return a value.',
+                            description: 'useMemo() callbacks are called once and must synchronously return a value',
                             suggestions: null,
-                        }).withDetail({
+                        }).withDetails({
                             kind: 'error',
                             loc: body.loc,
                             message: 'Async and generator functions are not supported',
@@ -48668,10 +50137,9 @@ function validateLocalsNotReassignedAfterRender(fn) {
             : 'variable';
         errors.pushDiagnostic(CompilerDiagnostic.create({
             category: ErrorCategory.Immutability,
-            severity: ErrorSeverity.InvalidReact,
             reason: 'Cannot reassign variable after render completes',
-            description: `Reassigning ${variable} after render has completed can cause inconsistent behavior on subsequent renders. Consider using state instead.`,
-        }).withDetail({
+            description: `Reassigning ${variable} after render has completed can cause inconsistent behavior on subsequent renders. Consider using state instead`,
+        }).withDetails({
             kind: 'error',
             loc: reassignment.loc,
             message: `Cannot reassign ${variable} after render completes`,
@@ -48706,10 +50174,9 @@ function getContextReassignment(fn, contextVariables, isFunctionExpression, isAs
                                 : 'variable';
                             errors.pushDiagnostic(CompilerDiagnostic.create({
                                 category: ErrorCategory.Immutability,
-                                severity: ErrorSeverity.InvalidReact,
                                 reason: 'Cannot reassign variable in async function',
                                 description: 'Reassigning a variable in an async function can cause inconsistent behavior on subsequent renders. Consider using state instead',
-                            }).withDetail({
+                            }).withDetails({
                                 kind: 'error',
                                 loc: reassignment.loc,
                                 message: `Cannot reassign ${variable}`,
@@ -48780,7 +50247,14 @@ function getContextReassignment(fn, contextVariables, isFunctionExpression, isAs
                     for (const operand of operands) {
                         CompilerError.invariant(operand.effect !== Effect.Unknown, {
                             reason: `Expected effects to be inferred prior to ValidateLocalsNotReassignedAfterRender`,
-                            loc: operand.loc,
+                            description: null,
+                            details: [
+                                {
+                                    kind: 'error',
+                                    loc: operand.loc,
+                                    message: '',
+                                },
+                            ],
                         });
                         const reassignment = reassigningFunctions.get(operand.identifier.id);
                         if (reassignment !== undefined) {
@@ -49105,9 +50579,8 @@ function validateNoSetStateInEffects(fn) {
                                         '* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\n' +
                                         'Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. ' +
                                         '(https://react.dev/learn/you-might-not-need-an-effect)',
-                                    severity: ErrorSeverity.InvalidReact,
                                     suggestions: null,
-                                }).withDetail({
+                                }).withDetails({
                                     kind: 'error',
                                     loc: setState.loc,
                                     message: 'Avoid calling setState() directly within an effect',
@@ -49165,10 +50638,9 @@ function validateNoJSXInTryStatement(fn) {
                     case 'JsxFragment': {
                         errors.pushDiagnostic(CompilerDiagnostic.create({
                             category: ErrorCategory.ErrorBoundaries,
-                            severity: ErrorSeverity.InvalidReact,
                             reason: 'Avoid constructing JSX within try/catch',
                             description: `React does not immediately render components when JSX is rendered, so any errors from this component will not be caught by the try/catch. To catch errors in rendering a given component, wrap that component in an error boundary. (https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary)`,
-                        }).withDetail({
+                        }).withDetails({
                             kind: 'error',
                             loc: value.loc,
                             message: 'Avoid constructing JSX within try/catch',
@@ -49608,7 +51080,6 @@ function replaceFireFunctions(fn, context) {
                                 context.pushError({
                                     loc: value.loc,
                                     description: null,
-                                    severity: ErrorSeverity.Invariant,
                                     category: ErrorCategory.Invariant,
                                     reason: '[InsertFire] No LoadGlobal found for useEffect call',
                                     suggestions: null,
@@ -49642,7 +51113,6 @@ function replaceFireFunctions(fn, context) {
                             context.pushError({
                                 loc: value.args[1].loc,
                                 description: 'You must use an array literal for an effect dependency array when that effect uses `fire()`',
-                                severity: ErrorSeverity.Invariant,
                                 category: ErrorCategory.Fire,
                                 reason: CANNOT_COMPILE_FIRE,
                                 suggestions: null,
@@ -49653,7 +51123,6 @@ function replaceFireFunctions(fn, context) {
                         context.pushError({
                             loc: value.args[1].place.loc,
                             description: 'You must use an array literal for an effect dependency array when that effect uses `fire()`',
-                            severity: ErrorSeverity.Invariant,
                             category: ErrorCategory.Fire,
                             reason: CANNOT_COMPILE_FIRE,
                             suggestions: null,
@@ -49674,7 +51143,6 @@ function replaceFireFunctions(fn, context) {
                             context.pushError({
                                 loc: value.loc,
                                 description: null,
-                                severity: ErrorSeverity.Invariant,
                                 category: ErrorCategory.Invariant,
                                 reason: '[InsertFire] No loadLocal found for fire call argument',
                                 suggestions: null,
@@ -49689,7 +51157,6 @@ function replaceFireFunctions(fn, context) {
                         context.pushError({
                             loc: value.loc,
                             description: '`fire()` can only receive a function call such as `fire(fn(a,b)). Method calls and other expressions are not allowed',
-                            severity: ErrorSeverity.InvalidReact,
                             category: ErrorCategory.Fire,
                             reason: CANNOT_COMPILE_FIRE,
                             suggestions: null,
@@ -49710,7 +51177,6 @@ function replaceFireFunctions(fn, context) {
                     context.pushError({
                         loc: value.loc,
                         description,
-                        severity: ErrorSeverity.InvalidReact,
                         category: ErrorCategory.Fire,
                         reason: CANNOT_COMPILE_FIRE,
                         suggestions: null,
@@ -49796,7 +51262,6 @@ function ensureNoRemainingCalleeCaptures(fn, context, capturedCallees) {
                 description: `All uses of ${calleeName} must be either used with a fire() call in \
 this effect or not used with a fire() call at all. ${calleeName} was used with fire() on line \
 ${printSourceLocationLine(calleeInfo.fireLoc)} in this effect`,
-                severity: ErrorSeverity.InvalidReact,
                 category: ErrorCategory.Fire,
                 reason: CANNOT_COMPILE_FIRE,
                 suggestions: null,
@@ -49812,7 +51277,6 @@ function ensureNoMoreFireUses(fn, context) {
                 loc: place.identifier.loc,
                 description: 'Cannot use `fire` outside of a useEffect function',
                 category: ErrorCategory.Fire,
-                severity: ErrorSeverity.Invariant,
                 reason: CANNOT_COMPILE_FIRE,
                 suggestions: null,
             });
@@ -49986,7 +51450,7 @@ class Context {
         return __classPrivateFieldGet(this, _Context_arrayExpressions, "f").get(id);
     }
     hasErrors() {
-        return __classPrivateFieldGet(this, _Context_errors, "f").hasErrors();
+        return __classPrivateFieldGet(this, _Context_errors, "f").hasAnyErrors();
     }
     throwIfErrorsFound() {
         if (this.hasErrors())
@@ -50034,9 +51498,8 @@ function validateNoImpureFunctionsInRender(fn) {
                             ? `\`${signature.canonicalName}\` is an impure function. `
                             : '') +
                             'Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent)',
-                        severity: ErrorSeverity.InvalidReact,
                         suggestions: null,
-                    }).withDetail({
+                    }).withDetails({
                         kind: 'error',
                         loc: callee.loc,
                         message: 'Cannot call impure function',
@@ -50092,16 +51555,15 @@ function validateStaticComponents(fn) {
                         if (location != null) {
                             error.pushDiagnostic(CompilerDiagnostic.create({
                                 category: ErrorCategory.StaticComponents,
-                                severity: ErrorSeverity.InvalidReact,
                                 reason: 'Cannot create components during render',
-                                description: `Components created during render will reset their state each time they are created. Declare components outside of render. `,
+                                description: `Components created during render will reset their state each time they are created. Declare components outside of render`,
                             })
-                                .withDetail({
+                                .withDetails({
                                 kind: 'error',
                                 loc: value.tag.loc,
                                 message: 'This component is created during render',
                             })
-                                .withDetail({
+                                .withDetails({
                                 kind: 'error',
                                 loc: location,
                                 message: 'The component is created during render here',
@@ -50130,16 +51592,15 @@ function validateNoFreezingKnownMutableFunctions(fn) {
                     : 'a local variable';
                 errors.pushDiagnostic(CompilerDiagnostic.create({
                     category: ErrorCategory.Immutability,
-                    severity: ErrorSeverity.InvalidReact,
                     reason: 'Cannot modify local variables after render completes',
-                    description: `This argument is a function which may reassign or mutate ${variable} after render, which can cause inconsistent behavior on subsequent renders. Consider using state instead.`,
+                    description: `This argument is a function which may reassign or mutate ${variable} after render, which can cause inconsistent behavior on subsequent renders. Consider using state instead`,
                 })
-                    .withDetail({
+                    .withDetails({
                     kind: 'error',
                     loc: operand.loc,
                     message: `This function may (indirectly) reassign or modify ${variable} after render`,
                 })
-                    .withDetail({
+                    .withDetails({
                     kind: 'error',
                     loc: effect.value.loc,
                     message: `This modifies ${variable}`,
@@ -50246,7 +51707,14 @@ function validateNoDerivedComputationsInEffects(fn) {
                             var _a;
                             CompilerError.invariant(dep.kind === 'Identifier', {
                                 reason: `Dependency is checked as a place above`,
-                                loc: value.loc,
+                                description: null,
+                                details: [
+                                    {
+                                        kind: 'error',
+                                        loc: value.loc,
+                                        message: 'this is checked as a place above',
+                                    },
+                                ],
                             });
                             return (_a = locals.get(dep.identifier.id)) !== null && _a !== void 0 ? _a : dep.identifier.id;
                         });
@@ -50256,7 +51724,7 @@ function validateNoDerivedComputationsInEffects(fn) {
             }
         }
     }
-    if (errors.hasErrors()) {
+    if (errors.hasAnyErrors()) {
         throw errors;
     }
 }
@@ -50367,7 +51835,6 @@ function validateEffect(effectFunction, effectDeps, errors) {
             category: ErrorCategory.EffectDerivationsOfState,
             reason: 'Values derived from props and state should be calculated during render, not in an effect. (https://react.dev/learn/you-might-not-need-an-effect#updating-state-based-on-props-or-state)',
             description: null,
-            severity: ErrorSeverity.InvalidReact,
             loc,
             suggestions: null,
         });
@@ -50785,7 +52252,14 @@ function suppressionsToCompilerError(suppressionRanges) {
     var _a;
     CompilerError.invariant(suppressionRanges.length !== 0, {
         reason: `Expected at least suppression comment source range`,
-        loc: GeneratedSource,
+        description: null,
+        details: [
+            {
+                kind: 'error',
+                loc: GeneratedSource,
+                message: null,
+            },
+        ],
     });
     const error = new CompilerError();
     for (const suppressionRange of suppressionRanges) {
@@ -50812,7 +52286,6 @@ function suppressionsToCompilerError(suppressionRanges) {
         error.pushDiagnostic(CompilerDiagnostic.create({
             reason: reason,
             description: `React Compiler only works when your components follow all the rules of React, disabling them may result in unexpected or incorrect behavior. Found suppression \`${suppressionRange.disableComment.value.trim()}\``,
-            severity: ErrorSeverity.InvalidReact,
             category: ErrorCategory.Suppression,
             suggestions: [
                 {
@@ -50824,7 +52297,7 @@ function suppressionsToCompilerError(suppressionRanges) {
                     op: CompilerSuggestionOperation.Remove,
                 },
             ],
-        }).withDetail({
+        }).withDetails({
             kind: 'error',
             loc: (_a = suppressionRange.disableComment.loc) !== null && _a !== void 0 ? _a : null,
             message: 'Found React rule suppression',
@@ -50874,7 +52347,6 @@ function findDirectivesDynamicGating(directives, opts) {
                 errors.push({
                     reason: `Dynamic gating directive is not a valid JavaScript identifier`,
                     description: `Found '${directive.value.value}'`,
-                    severity: ErrorSeverity.InvalidReact,
                     category: ErrorCategory.Gating,
                     loc: (_a = directive.loc) !== null && _a !== void 0 ? _a : null,
                     suggestions: null,
@@ -50882,7 +52354,7 @@ function findDirectivesDynamicGating(directives, opts) {
             }
         }
     }
-    if (errors.hasErrors()) {
+    if (errors.hasAnyErrors()) {
         return Err(errors);
     }
     else if (result.length > 1) {
@@ -50892,7 +52364,6 @@ function findDirectivesDynamicGating(directives, opts) {
             description: `Expected a single directive but found [${result
                 .map(r => r.directive.value.value)
                 .join(', ')}]`,
-            severity: ErrorSeverity.InvalidReact,
             category: ErrorCategory.Gating,
             loc: (_b = result[0].directive.loc) !== null && _b !== void 0 ? _b : null,
             suggestions: null,
@@ -50912,12 +52383,12 @@ function findDirectivesDynamicGating(directives, opts) {
         return Ok(null);
     }
 }
-function isCriticalError(err) {
-    return !(err instanceof CompilerError) || err.isCritical();
+function isError(err) {
+    return !(err instanceof CompilerError) || err.hasErrors();
 }
 function isConfigError(err) {
     if (err instanceof CompilerError) {
-        return err.details.some(detail => detail.severity === ErrorSeverity.InvalidConfig);
+        return err.details.some(detail => detail.category === ErrorCategory.Config);
     }
     return false;
 }
@@ -50952,8 +52423,7 @@ function logError(err, context, fnLoc) {
 function handleError(err, context, fnLoc) {
     logError(err, context, fnLoc);
     if (context.opts.panicThreshold === 'all_errors' ||
-        (context.opts.panicThreshold === 'critical_errors' &&
-            isCriticalError(err)) ||
+        (context.opts.panicThreshold === 'critical_errors' && isError(err)) ||
         isConfigError(err)) {
         throw err;
     }
@@ -51028,7 +52498,13 @@ function insertNewOutlinedFunctionNode(program, originalFn, compiledFn) {
             CompilerError.invariant(insertedFuncDecl.isFunctionDeclaration(), {
                 reason: 'Expected inserted function declaration',
                 description: `Got: ${insertedFuncDecl}`,
-                loc: (_c = (_b = insertedFuncDecl.node) === null || _b === void 0 ? void 0 : _b.loc) !== null && _c !== void 0 ? _c : null,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: (_c = (_b = insertedFuncDecl.node) === null || _b === void 0 ? void 0 : _b.loc) !== null && _c !== void 0 ? _c : null,
+                        message: null,
+                    },
+                ],
             });
             return insertedFuncDecl;
         }
@@ -51081,7 +52557,14 @@ function compileProgram(program, pass) {
             for (const outlined of compiled.outlined) {
                 CompilerError.invariant(outlined.fn.outlined.length === 0, {
                     reason: 'Unexpected nested outlined functions',
-                    loc: outlined.fn.loc,
+                    description: null,
+                    details: [
+                        {
+                            kind: 'error',
+                            loc: outlined.fn.loc,
+                            message: null,
+                        },
+                    ],
                 });
                 const fn = insertNewOutlinedFunctionNode(program, current.fn, outlined.fn);
                 fn.skip();
@@ -51106,7 +52589,6 @@ function compileProgram(program, pass) {
             const error = new CompilerError();
             error.pushErrorDetail(new CompilerErrorDetail({
                 reason: 'Unexpected compiled functions when module scope opt-out is present',
-                severity: ErrorSeverity.Invariant,
                 category: ErrorCategory.Invariant,
                 loc: null,
             }));
@@ -51300,7 +52782,6 @@ function shouldSkipCompilation(program, pass) {
             error.pushErrorDetail(new CompilerErrorDetail({
                 reason: `Expected a filename but found none.`,
                 description: "When the 'sources' config options is specified, the React compiler will only compile files with a name",
-                severity: ErrorSeverity.InvalidConfig,
                 category: ErrorCategory.Config,
                 loc: null,
             }));
@@ -51336,7 +52817,6 @@ function validateNoDynamicallyCreatedComponentsOrHooks(fn, pass, programContext)
             if (nestedFnType === 'Component' || nestedFnType === 'Hook') {
                 CompilerError.throwDiagnostic({
                     category: ErrorCategory.Factories,
-                    severity: ErrorSeverity.InvalidReact,
                     reason: `Components and hooks cannot be created dynamically`,
                     description: `The function \`${nestedName}\` appears to be a React ${nestedFnType.toLowerCase()}, but it's defined inside \`${parentName}\`. Components and Hooks should always be declared at module scope`,
                     details: [
@@ -51693,7 +53173,13 @@ function getReactCompilerRuntimeModule(target) {
             typeof target.runtimeModule === 'string', {
             reason: 'Expected target to already be validated',
             description: null,
-            loc: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: null,
+                    message: null,
+                },
+            ],
             suggestions: null,
         });
         return target.runtimeModule;
@@ -51713,7 +53199,6 @@ function validateRestrictedImports(path, { validateBlocklistedImports }) {
             if (restrictedImports.has(importDeclPath.node.source.value)) {
                 error.push({
                     category: ErrorCategory.Todo,
-                    severity: ErrorSeverity.Todo,
                     reason: 'Bailing out due to blocklisted import',
                     description: `Import from module ${importDeclPath.node.source.value}`,
                     loc: (_a = importDeclPath.node.loc) !== null && _a !== void 0 ? _a : null,
@@ -51721,7 +53206,7 @@ function validateRestrictedImports(path, { validateBlocklistedImports }) {
             }
         },
     });
-    if (error.hasErrors()) {
+    if (error.hasAnyErrors()) {
         return error;
     }
     else {
@@ -51810,7 +53295,6 @@ class ProgramContext {
         const error = new CompilerError();
         error.push({
             category: ErrorCategory.Todo,
-            severity: ErrorSeverity.Todo,
             reason: 'Encountered conflicting global in generated program',
             description: `Conflict from local binding ${name}`,
             loc: (_b = (_a = scope.getBinding(name)) === null || _a === void 0 ? void 0 : _a.path.node.loc) !== null && _b !== void 0 ? _b : null,
@@ -51843,15 +53327,27 @@ function addImportsToProgram(path, programContext) {
         for (const [specifierName, loweredImport] of importsMap) {
             CompilerError.invariant(path.scope.getBinding(loweredImport.name) == null, {
                 reason: 'Encountered conflicting import specifiers in generated program',
-                description: `Conflict from import ${loweredImport.module}:(${loweredImport.imported} as ${loweredImport.name}).`,
-                loc: GeneratedSource,
+                description: `Conflict from import ${loweredImport.module}:(${loweredImport.imported} as ${loweredImport.name})`,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: GeneratedSource,
+                        message: null,
+                    },
+                ],
                 suggestions: null,
             });
             CompilerError.invariant(loweredImport.module === moduleName &&
                 loweredImport.imported === specifierName, {
                 reason: 'Found inconsistent import specifier. This is an internal bug.',
                 description: `Expected import ${moduleName}:${specifierName} but found ${loweredImport.module}:${loweredImport.imported}`,
-                loc: GeneratedSource,
+                details: [
+                    {
+                        kind: 'error',
+                        loc: GeneratedSource,
+                        message: null,
+                    },
+                ],
             });
         }
         const sortedImport = [
@@ -52054,13 +53550,12 @@ function injectReanimatedFlag(options) {
 }
 
 function throwInvalidReact(options, { logger, filename }) {
-    const detail = Object.assign({ severity: ErrorSeverity.InvalidReact }, options);
     logger === null || logger === void 0 ? void 0 : logger.logEvent(filename, {
         kind: 'CompileError',
         fnLoc: null,
-        detail: new CompilerDiagnostic(detail),
+        detail: new CompilerDiagnostic(options),
     });
-    CompilerError.throwDiagnostic(detail);
+    CompilerError.throwDiagnostic(options);
 }
 function isAutodepsSigil(arg) {
     if (arg.isIdentifier() && arg.node.name === 'AUTODEPS') {
@@ -52100,7 +53595,7 @@ function assertValidEffectImportReference(autodepsIndex, paths, context) {
                 throwInvalidReact({
                     category: ErrorCategory.AutomaticEffectDependencies,
                     reason: 'Cannot infer dependencies of this effect. This will break your build!',
-                    description: 'To resolve, either pass a dependency array or fix reported compiler bailout diagnostics.' +
+                    description: 'To resolve, either pass a dependency array or fix reported compiler bailout diagnostics' +
                         (maybeErrorDiagnostic ? ` ${maybeErrorDiagnostic}` : ''),
                     details: [
                         {
@@ -52122,9 +53617,7 @@ function assertValidFireImportReference(paths, context) {
             category: ErrorCategory.Fire,
             reason: '[Fire] Untransformed reference to compiler-required feature.',
             description: 'Either remove this `fire` call or ensure it is successfully transformed by the compiler' +
-                maybeErrorDiagnostic
-                ? ` ${maybeErrorDiagnostic}`
-                : '',
+                (maybeErrorDiagnostic != null ? ` ${maybeErrorDiagnostic}` : ''),
             details: [
                 {
                     kind: 'error',
@@ -52171,7 +53664,14 @@ function validateImportSpecifier(specifier, importSpecifierChecks, state) {
     const binding = local.scope.getBinding(local.node.name);
     CompilerError.invariant(binding != null, {
         reason: 'Expected binding to be found for import specifier',
-        loc: (_a = local.node.loc) !== null && _a !== void 0 ? _a : null,
+        description: null,
+        details: [
+            {
+                kind: 'error',
+                loc: (_a = local.node.loc) !== null && _a !== void 0 ? _a : null,
+                message: null,
+            },
+        ],
     });
     checkFn(binding.referencePaths, state);
 }
@@ -52186,7 +53686,14 @@ function validateNamespacedImport(specifier, importSpecifierChecks, state) {
     const defaultCheckFn = importSpecifierChecks.get(DEFAULT_EXPORT);
     CompilerError.invariant(binding != null, {
         reason: 'Expected binding to be found for import specifier',
-        loc: (_a = local.node.loc) !== null && _a !== void 0 ? _a : null,
+        description: null,
+        details: [
+            {
+                kind: 'error',
+                loc: (_a = local.node.loc) !== null && _a !== void 0 ? _a : null,
+                message: null,
+            },
+        ],
     });
     const filteredReferences = new Map();
     for (const reference of binding.referencePaths) {
@@ -52644,17 +54151,40 @@ const NoUnusedDirectivesRule = {
     },
 };
 const allRules = LintRules.reduce((acc, rule) => {
-    acc[rule.name] = makeRule(rule);
+    acc[rule.name] = { rule: makeRule(rule), severity: rule.severity };
     return acc;
 }, {
-    'no-unused-directives': NoUnusedDirectivesRule,
+    'no-unused-directives': {
+        rule: NoUnusedDirectivesRule,
+        severity: ErrorSeverity.Error,
+    },
 });
 const recommendedRules = LintRules.filter(rule => rule.recommended).reduce((acc, rule) => {
-    acc[rule.name] = makeRule(rule);
+    acc[rule.name] = { rule: makeRule(rule), severity: rule.severity };
     return acc;
 }, {
-    'no-unused-directives': NoUnusedDirectivesRule,
+    'no-unused-directives': {
+        rule: NoUnusedDirectivesRule,
+        severity: ErrorSeverity.Error,
+    },
 });
+function mapErrorSeverityToESlint(severity) {
+    switch (severity) {
+        case ErrorSeverity.Error: {
+            return 'error';
+        }
+        case ErrorSeverity.Warning: {
+            return 'warn';
+        }
+        case ErrorSeverity.Hint:
+        case ErrorSeverity.Off: {
+            return 'off';
+        }
+        default: {
+            assertExhaustive(severity, `Unhandled severity: ${severity}`);
+        }
+    }
+}
 
 var assert_1;
 var hasRequiredAssert;
@@ -55919,8 +57449,13 @@ function last(array) {
     return array[array.length - 1];
 }
 
-const rules = Object.assign({ 'exhaustive-deps': rule$1, 'rules-of-hooks': rule }, allRules);
-const ruleConfigs = Object.assign({ 'react-hooks/rules-of-hooks': 'error', 'react-hooks/exhaustive-deps': 'warn' }, Object.fromEntries(Object.keys(recommendedRules).map(name => ['react-hooks/' + name, 'error'])));
+const rules = Object.assign({ 'exhaustive-deps': rule$1, 'rules-of-hooks': rule }, Object.fromEntries(Object.entries(allRules).map(([name, config]) => [name, config.rule])));
+const ruleConfigs = Object.assign({ 'react-hooks/rules-of-hooks': 'error', 'react-hooks/exhaustive-deps': 'warn' }, Object.fromEntries(Object.entries(recommendedRules).map(([name, ruleConfig]) => {
+    return [
+        'react-hooks/' + name,
+        mapErrorSeverityToESlint(ruleConfig.severity),
+    ];
+})));
 const plugin = {
     meta: {
         name: 'eslint-plugin-react-hooks',
