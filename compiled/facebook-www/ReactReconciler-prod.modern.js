@@ -413,7 +413,6 @@ module.exports = function ($$$config) {
     root.suspendedLanes = 0;
     root.pingedLanes = 0;
     root.warmLanes = 0;
-    root.indicatorLanes &= remainingLanes;
     root.expiredLanes &= remainingLanes;
     root.entangledLanes &= remainingLanes;
     root.errorRecoveryDisabledLanes &= remainingLanes;
@@ -1283,9 +1282,8 @@ module.exports = function ($$$config) {
     mightHavePendingSyncWork = didScheduleMicrotask = !1;
     var syncTransitionLanes = 0;
     0 !== currentEventTransitionLane &&
-      (syncTransitionLanes = shouldAttemptEagerTransition()
-        ? currentEventTransitionLane
-        : 32);
+      shouldAttemptEagerTransition() &&
+      (syncTransitionLanes = currentEventTransitionLane);
     for (
       var currentTime = now(), prev = null, root = firstScheduledRoot;
       null !== root;
@@ -1305,45 +1303,7 @@ module.exports = function ($$$config) {
     }
     (0 !== pendingEffectsStatus && 5 !== pendingEffectsStatus) ||
       flushSyncWorkAcrossRoots_impl(syncTransitionLanes, !1);
-    if (0 !== currentEventTransitionLane) {
-      currentEventTransitionLane = 0;
-      if (
-        needsIsomorphicIndicator &&
-        null != isomorphicDefaultTransitionIndicator &&
-        null === pendingIsomorphicIndicator
-      )
-        try {
-          pendingIsomorphicIndicator =
-            isomorphicDefaultTransitionIndicator() || noop$1;
-        } catch (x) {
-          (pendingIsomorphicIndicator = noop$1), reportGlobalError(x);
-        }
-      for (
-        syncTransitionLanes = firstScheduledRoot;
-        null !== syncTransitionLanes;
-
-      ) {
-        if (
-          0 !== syncTransitionLanes.indicatorLanes &&
-          null === syncTransitionLanes.pendingIndicator
-        )
-          if (null !== pendingIsomorphicIndicator)
-            (currentTime = syncTransitionLanes),
-              pendingEntangledRoots++,
-              (currentTime.pendingIndicator = releaseIsomorphicIndicator);
-          else
-            try {
-              var onDefaultTransitionIndicator =
-                syncTransitionLanes.onDefaultTransitionIndicator;
-              syncTransitionLanes.pendingIndicator =
-                onDefaultTransitionIndicator() || noop$1;
-            } catch (x) {
-              (syncTransitionLanes.pendingIndicator = noop$1),
-                reportGlobalError(x);
-            }
-        syncTransitionLanes = syncTransitionLanes.next;
-      }
-    }
+    0 !== currentEventTransitionLane && (currentEventTransitionLane = 0);
   }
   function scheduleTaskForRootDuringMicrotask(root, currentTime) {
     var pendingLanes = root.pendingLanes,
@@ -1485,9 +1445,6 @@ module.exports = function ($$$config) {
           entangledListeners.push(resolve);
         }
       };
-      needsIsomorphicIndicator = !0;
-      didScheduleMicrotask ||
-        ((didScheduleMicrotask = !0), scheduleImmediateRootScheduleTask());
     }
     currentEntangledPendingCount++;
     thenable.then(pingEngtangledActionScope, pingEngtangledActionScope);
@@ -1496,9 +1453,7 @@ module.exports = function ($$$config) {
   function pingEngtangledActionScope() {
     if (
       0 === --currentEntangledPendingCount &&
-      ((entangledTransitionTypes = null),
-      0 === pendingEntangledRoots && stopIsomorphicDefaultIndicator(),
-      null !== currentEntangledListeners)
+      ((entangledTransitionTypes = null), null !== currentEntangledListeners)
     ) {
       null !== currentEntangledActionThenable &&
         (currentEntangledActionThenable.status = "fulfilled");
@@ -1506,7 +1461,6 @@ module.exports = function ($$$config) {
       currentEntangledListeners = null;
       currentEntangledLane = 0;
       currentEntangledActionThenable = null;
-      needsIsomorphicIndicator = !1;
       for (var i = 0; i < listeners.length; i++) (0, listeners[i])();
     }
   }
@@ -1534,23 +1488,6 @@ module.exports = function ($$$config) {
       }
     );
     return thenableWithOverride;
-  }
-  function registerDefaultIndicator(onDefaultTransitionIndicator) {
-    void 0 === isomorphicDefaultTransitionIndicator
-      ? (isomorphicDefaultTransitionIndicator = onDefaultTransitionIndicator)
-      : isomorphicDefaultTransitionIndicator !== onDefaultTransitionIndicator &&
-        ((isomorphicDefaultTransitionIndicator = null),
-        stopIsomorphicDefaultIndicator());
-  }
-  function stopIsomorphicDefaultIndicator() {
-    if (null !== pendingIsomorphicIndicator) {
-      var cleanup = pendingIsomorphicIndicator;
-      pendingIsomorphicIndicator = null;
-      cleanup();
-    }
-  }
-  function releaseIsomorphicIndicator() {
-    0 === --pendingEntangledRoots && stopIsomorphicDefaultIndicator();
   }
   function peekCacheFromPool() {
     var cacheResumedFromPreviousRender = resumedCache.current;
@@ -7574,15 +7511,8 @@ module.exports = function ($$$config) {
     viewTransitionMutationContext = !1;
     return prev;
   }
-  function popMutationContext(prev) {
-    enableViewTransition &&
-      (viewTransitionMutationContext && (rootMutationContext = !0),
-      (viewTransitionMutationContext = prev));
-  }
   function trackHostMutation() {
-    enableViewTransition
-      ? (viewTransitionMutationContext = !0)
-      : (rootMutationContext = !0);
+    enableViewTransition && (viewTransitionMutationContext = !0);
   }
   function commitHostMount(finishedWork) {
     var type = finishedWork.type,
@@ -9224,7 +9154,6 @@ module.exports = function ($$$config) {
         }
         break;
       case 3:
-        rootMutationContext = !1;
         enableViewTransition && (viewTransitionMutationContext = !1);
         supportsResources
           ? (prepareToCommitHoistables(),
@@ -9258,11 +9187,7 @@ module.exports = function ($$$config) {
         }
         needsFormReset &&
           ((needsFormReset = !1), recursivelyResetForms(finishedWork));
-        popMutationContext(!1);
-        rootMutationContext &&
-          0 !== (lanes & 34) &&
-          ((root.indicatorLanes &= ~currentEventTransitionLane),
-          (needsIsomorphicIndicator = !1));
+        enableViewTransition && (viewTransitionMutationContext = !1);
         break;
       case 4:
         current = pushMutationContext();
@@ -9279,7 +9204,7 @@ module.exports = function ($$$config) {
         viewTransitionMutationContext &&
           inUpdateViewTransition &&
           (rootViewTransitionAffected = !0);
-        popMutationContext(current);
+        enableViewTransition && (viewTransitionMutationContext = current);
         flags & 4 &&
           supportsPersistence &&
           commitHostPortalContainerChildren(
@@ -9456,7 +9381,7 @@ module.exports = function ($$$config) {
             viewTransitionMutationContext &&
             (finishedWork.flags |= 4),
           (inUpdateViewTransition = hoistableRoot),
-          popMutationContext(flags));
+          enableViewTransition && (viewTransitionMutationContext = flags));
         break;
       case 21:
         recursivelyTraverseMutationEffects(root, finishedWork, lanes);
@@ -11179,7 +11104,6 @@ module.exports = function ($$$config) {
   }
   function markRootUpdated(root, updatedLanes) {
     root.pendingLanes |= updatedLanes;
-    root.indicatorLanes |= updatedLanes & 4194048;
     268435456 !== updatedLanes &&
       ((root.suspendedLanes = 0), (root.pingedLanes = 0), (root.warmLanes = 0));
     enableInfiniteRenderLoopDetection &&
@@ -11825,39 +11749,20 @@ module.exports = function ($$$config) {
       pendingEffectsStatus = 0;
       var root = pendingEffectsRoot,
         finishedWork = pendingFinishedWork,
-        cleanUpIndicator = root.pendingIndicator;
-      if (null !== cleanUpIndicator && 0 === root.indicatorLanes) {
-        var prevTransition = ReactSharedInternals.T;
+        rootHasLayoutEffect = 0 !== (finishedWork.flags & 8772);
+      if (0 !== (finishedWork.subtreeFlags & 8772) || rootHasLayoutEffect) {
+        rootHasLayoutEffect = ReactSharedInternals.T;
         ReactSharedInternals.T = null;
         var previousPriority = getCurrentUpdatePriority();
         setCurrentUpdatePriority(2);
         var prevExecutionContext = executionContext;
         executionContext |= 4;
-        root.pendingIndicator = null;
-        try {
-          cleanUpIndicator();
-        } catch (x) {
-          reportGlobalError(x);
-        } finally {
-          (executionContext = prevExecutionContext),
-            setCurrentUpdatePriority(previousPriority),
-            (ReactSharedInternals.T = prevTransition);
-        }
-      }
-      cleanUpIndicator = 0 !== (finishedWork.flags & 8772);
-      if (0 !== (finishedWork.subtreeFlags & 8772) || cleanUpIndicator) {
-        cleanUpIndicator = ReactSharedInternals.T;
-        ReactSharedInternals.T = null;
-        prevTransition = getCurrentUpdatePriority();
-        setCurrentUpdatePriority(2);
-        previousPriority = executionContext;
-        executionContext |= 4;
         try {
           commitLayoutEffectOnFiber(root, finishedWork.alternate, finishedWork);
         } finally {
-          (executionContext = previousPriority),
-            setCurrentUpdatePriority(prevTransition),
-            (ReactSharedInternals.T = cleanUpIndicator);
+          (executionContext = prevExecutionContext),
+            setCurrentUpdatePriority(previousPriority),
+            (ReactSharedInternals.T = rootHasLayoutEffect);
         }
       }
       pendingEffectsStatus = 3;
@@ -12507,7 +12412,6 @@ module.exports = function ($$$config) {
     this.entangledLanes =
       this.shellSuspendCounter =
       this.errorRecoveryDisabledLanes =
-      this.indicatorLanes =
       this.expiredLanes =
       this.warmLanes =
       this.pingedLanes =
@@ -12520,8 +12424,7 @@ module.exports = function ($$$config) {
     this.onUncaughtError = onUncaughtError;
     this.onCaughtError = onCaughtError;
     this.onRecoverableError = onRecoverableError;
-    this.onDefaultTransitionIndicator = onDefaultTransitionIndicator;
-    this.pooledCache = this.pendingIndicator = null;
+    this.pooledCache = null;
     this.pooledCacheLanes = 0;
     this.hydrationCallbacks = null;
     this.formState = formState;
@@ -12968,10 +12871,6 @@ module.exports = function ($$$config) {
     currentEntangledPendingCount = 0,
     currentEntangledLane = 0,
     currentEntangledActionThenable = null,
-    isomorphicDefaultTransitionIndicator = void 0,
-    pendingIsomorphicIndicator = null,
-    pendingEntangledRoots = 0,
-    needsIsomorphicIndicator = !1,
     prevOnStartTransitionFinish = ReactSharedInternals.S;
   ReactSharedInternals.S = function (transition, returnValue) {
     "object" === typeof returnValue &&
@@ -13422,7 +13321,6 @@ module.exports = function ($$$config) {
       hydrationErrors: null
     },
     emptyObject = {},
-    rootMutationContext = !1,
     viewTransitionMutationContext = !1,
     shouldStartViewTransition = !1,
     appearingViewTransitions = null,
@@ -13577,7 +13475,7 @@ module.exports = function ($$$config) {
     onDefaultTransitionIndicator,
     transitionCallbacks
   ) {
-    containerInfo = createFiberRoot(
+    return createFiberRoot(
       containerInfo,
       tag,
       !1,
@@ -13592,8 +13490,6 @@ module.exports = function ($$$config) {
       onDefaultTransitionIndicator,
       transitionCallbacks
     );
-    registerDefaultIndicator(onDefaultTransitionIndicator);
-    return containerInfo;
   };
   exports.createHasPseudoClassSelector = function (selectors) {
     return { $$typeof: HAS_PSEUDO_CLASS_TYPE, value: selectors };
@@ -13629,15 +13525,15 @@ module.exports = function ($$$config) {
       onDefaultTransitionIndicator,
       transitionCallbacks
     );
-    registerDefaultIndicator(onDefaultTransitionIndicator);
     initialChildren.context = getContextForSubtree(null);
-    onDefaultTransitionIndicator = initialChildren.current;
-    containerInfo = requestUpdateLane();
-    containerInfo = getBumpedLaneForHydrationByLane(containerInfo);
-    tag = createUpdate(containerInfo);
-    tag.callback = void 0 !== callback && null !== callback ? callback : null;
-    enqueueUpdate(onDefaultTransitionIndicator, tag, containerInfo);
-    callback = containerInfo;
+    containerInfo = initialChildren.current;
+    tag = requestUpdateLane();
+    tag = getBumpedLaneForHydrationByLane(tag);
+    hydrationCallbacks = createUpdate(tag);
+    hydrationCallbacks.callback =
+      void 0 !== callback && null !== callback ? callback : null;
+    enqueueUpdate(containerInfo, hydrationCallbacks, tag);
+    callback = tag;
     initialChildren.current.lanes = callback;
     markRootUpdated(initialChildren, callback);
     ensureRootIsScheduled(initialChildren);
@@ -13869,7 +13765,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.2.0-www-modern-7697a9f6-20250903"
+      reconcilerVersion: "19.2.0-www-modern-ac3e705a-20250902"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);
