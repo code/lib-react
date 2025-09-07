@@ -238,8 +238,7 @@ function clz32Fallback(x) {
   x >>>= 0;
   return 0 === x ? 32 : (31 - ((log(x) / LN2) | 0)) | 0;
 }
-var nextTransitionUpdateLane = 256,
-  nextTransitionDeferredLane = 262144,
+var nextTransitionLane = 256,
   nextRetryLane = 4194304;
 function getHighestPriorityLanes(lanes) {
   var pendingSyncLanes = lanes & 42;
@@ -271,12 +270,11 @@ function getHighestPriorityLanes(lanes) {
     case 32768:
     case 65536:
     case 131072:
-      return lanes & 261888;
     case 262144:
     case 524288:
     case 1048576:
     case 2097152:
-      return lanes & 3932160;
+      return lanes & 4194048;
     case 4194304:
     case 8388608:
     case 16777216:
@@ -387,6 +385,12 @@ function computeExpirationTime(lane, currentTime) {
       return -1;
   }
 }
+function claimNextTransitionLane() {
+  var lane = nextTransitionLane;
+  nextTransitionLane <<= 1;
+  0 === (nextTransitionLane & 4194048) && (nextTransitionLane = 256);
+  return lane;
+}
 function claimNextRetryLane() {
   var lane = nextRetryLane;
   nextRetryLane <<= 1;
@@ -410,7 +414,6 @@ function markRootFinished(
   root.suspendedLanes = 0;
   root.pingedLanes = 0;
   root.warmLanes = 0;
-  root.indicatorLanes &= remainingLanes;
   root.expiredLanes &= remainingLanes;
   root.entangledLanes &= remainingLanes;
   root.errorRecoveryDisabledLanes &= remainingLanes;
@@ -454,7 +457,7 @@ function markSpawnedDeferredLane(root, spawnedLane, entangledLanes) {
   root.entanglements[spawnedLaneIndex] =
     root.entanglements[spawnedLaneIndex] |
     1073741824 |
-    (entangledLanes & 261930);
+    (entangledLanes & 4194090);
 }
 function markRootEntangled(root, entangledLanes) {
   var rootEntangledLanes = (root.entangledLanes |= entangledLanes);
@@ -1351,8 +1354,6 @@ function flushSyncWorkAcrossRoots_impl(syncTransitionLanes, onlyLegacy) {
 }
 function processRootScheduleInImmediateTask() {
   mightHavePendingSyncWork = didScheduleMicrotask = !1;
-  var syncTransitionLanes = 0;
-  0 !== currentEventTransitionLane && (syncTransitionLanes = 32);
   for (
     var currentTime = now(), prev = null, root = firstScheduledRoot;
     null !== root;
@@ -1360,56 +1361,17 @@ function processRootScheduleInImmediateTask() {
   ) {
     var next = root.next,
       nextLanes = scheduleTaskForRootDuringMicrotask(root, currentTime);
-    if (0 === nextLanes)
-      (root.next = null),
+    0 === nextLanes
+      ? ((root.next = null),
         null === prev ? (firstScheduledRoot = next) : (prev.next = next),
-        null === next && (lastScheduledRoot = prev);
-    else if (
-      ((prev = root), 0 !== syncTransitionLanes || 0 !== (nextLanes & 3))
-    )
-      mightHavePendingSyncWork = !0;
+        null === next && (lastScheduledRoot = prev))
+      : ((prev = root),
+        0 !== (nextLanes & 3) && (mightHavePendingSyncWork = !0));
     root = next;
   }
   (0 !== pendingEffectsStatus && 5 !== pendingEffectsStatus) ||
-    flushSyncWorkAcrossRoots_impl(syncTransitionLanes, !1);
-  if (0 !== currentEventTransitionLane) {
-    currentEventTransitionLane = 0;
-    if (
-      needsIsomorphicIndicator &&
-      null != isomorphicDefaultTransitionIndicator &&
-      null === pendingIsomorphicIndicator
-    )
-      try {
-        pendingIsomorphicIndicator =
-          isomorphicDefaultTransitionIndicator() || noop;
-      } catch (x) {
-        (pendingIsomorphicIndicator = noop), reportGlobalError(x);
-      }
-    for (
-      syncTransitionLanes = firstScheduledRoot;
-      null !== syncTransitionLanes;
-
-    ) {
-      if (
-        0 !== syncTransitionLanes.indicatorLanes &&
-        null === syncTransitionLanes.pendingIndicator
-      )
-        if (null !== pendingIsomorphicIndicator)
-          (currentTime = syncTransitionLanes),
-            pendingEntangledRoots++,
-            (currentTime.pendingIndicator = releaseIsomorphicIndicator);
-        else
-          try {
-            var onDefaultTransitionIndicator =
-              syncTransitionLanes.onDefaultTransitionIndicator;
-            syncTransitionLanes.pendingIndicator =
-              onDefaultTransitionIndicator() || noop;
-          } catch (x) {
-            (syncTransitionLanes.pendingIndicator = noop), reportGlobalError(x);
-          }
-      syncTransitionLanes = syncTransitionLanes.next;
-    }
-  }
+    flushSyncWorkAcrossRoots_impl(0, !1);
+  0 !== currentEventTransitionLane && (currentEventTransitionLane = 0);
 }
 function scheduleTaskForRootDuringMicrotask(root, currentTime) {
   var pendingLanes = root.pendingLanes,
@@ -1519,23 +1481,15 @@ function performSyncWorkOnRoot(root, lanes) {
 function requestTransitionLane() {
   if (0 === currentEventTransitionLane) {
     var actionScopeLane = currentEntangledLane;
-    0 === actionScopeLane &&
-      ((actionScopeLane = nextTransitionUpdateLane),
-      (nextTransitionUpdateLane <<= 1),
-      0 === (nextTransitionUpdateLane & 261888) &&
-        (nextTransitionUpdateLane = 256));
-    currentEventTransitionLane = actionScopeLane;
+    currentEventTransitionLane =
+      0 !== actionScopeLane ? actionScopeLane : claimNextTransitionLane();
   }
   return currentEventTransitionLane;
 }
 var currentEntangledListeners = null,
   currentEntangledPendingCount = 0,
   currentEntangledLane = 0,
-  currentEntangledActionThenable = null,
-  isomorphicDefaultTransitionIndicator = void 0,
-  pendingIsomorphicIndicator = null,
-  pendingEntangledRoots = 0,
-  needsIsomorphicIndicator = !1;
+  currentEntangledActionThenable = null;
 function entangleAsyncAction(transition, thenable) {
   if (null === currentEntangledListeners) {
     var entangledListeners = (currentEntangledListeners = []);
@@ -1548,13 +1502,6 @@ function entangleAsyncAction(transition, thenable) {
         entangledListeners.push(resolve);
       }
     };
-    needsIsomorphicIndicator = !0;
-    didScheduleMicrotask ||
-      ((didScheduleMicrotask = !0),
-      scheduleCallback$3(
-        ImmediatePriority,
-        processRootScheduleInImmediateTask
-      ));
   }
   currentEntangledPendingCount++;
   thenable.then(pingEngtangledActionScope, pingEngtangledActionScope);
@@ -1563,9 +1510,7 @@ function entangleAsyncAction(transition, thenable) {
 function pingEngtangledActionScope() {
   if (
     0 === --currentEntangledPendingCount &&
-    ((entangledTransitionTypes = null),
-    0 === pendingEntangledRoots && stopIsomorphicDefaultIndicator(),
-    null !== currentEntangledListeners)
+    ((entangledTransitionTypes = null), null !== currentEntangledListeners)
   ) {
     null !== currentEntangledActionThenable &&
       (currentEntangledActionThenable.status = "fulfilled");
@@ -1573,7 +1518,6 @@ function pingEngtangledActionScope() {
     currentEntangledListeners = null;
     currentEntangledLane = 0;
     currentEntangledActionThenable = null;
-    needsIsomorphicIndicator = !1;
     for (var i = 0; i < listeners.length; i++) (0, listeners[i])();
   }
 }
@@ -1601,16 +1545,6 @@ function chainThenableValue(thenable, result) {
     }
   );
   return thenableWithOverride;
-}
-function stopIsomorphicDefaultIndicator() {
-  if (null !== pendingIsomorphicIndicator) {
-    var cleanup = pendingIsomorphicIndicator;
-    pendingIsomorphicIndicator = null;
-    cleanup();
-  }
-}
-function releaseIsomorphicIndicator() {
-  0 === --pendingEntangledRoots && stopIsomorphicDefaultIndicator();
 }
 var prevOnStartTransitionFinish = ReactSharedInternals.S;
 ReactSharedInternals.S = function (transition, returnValue) {
@@ -3703,11 +3637,7 @@ function updateMemo(nextCreate, deps) {
   return prevState;
 }
 function mountDeferredValueImpl(hook, value, initialValue) {
-  if (
-    void 0 === initialValue ||
-    (0 !== (renderLanes & 1073741824) &&
-      0 === (workInProgressRootRenderLanes & 261930))
-  )
+  if (void 0 === initialValue || 0 !== (renderLanes & 1073741824))
     return (hook.memoizedState = value);
   hook.memoizedState = initialValue;
   hook = requestDeferredLane();
@@ -3723,11 +3653,7 @@ function updateDeferredValueImpl(hook, prevValue, value, initialValue) {
       objectIs(hook, prevValue) || (didReceiveUpdate = !0),
       hook
     );
-  if (
-    0 === (renderLanes & 42) ||
-    (0 !== (renderLanes & 1073741824) &&
-      0 === (workInProgressRootRenderLanes & 261930))
-  )
+  if (0 === (renderLanes & 42) || 0 !== (renderLanes & 1073741824))
     return (didReceiveUpdate = !0), (hook.memoizedState = value);
   hook = requestDeferredLane();
   currentlyRenderingFiber.lanes |= hook;
@@ -7151,23 +7077,15 @@ function commitProfilerPostCommit(
     captureCommitPhaseError(finishedWork, finishedWork.return, error);
   }
 }
-var rootMutationContext = !1,
-  viewTransitionMutationContext = !1;
+var viewTransitionMutationContext = !1;
 function pushMutationContext() {
   if (!enableViewTransition) return !1;
   var prev = viewTransitionMutationContext;
   viewTransitionMutationContext = !1;
   return prev;
 }
-function popMutationContext(prev) {
-  enableViewTransition &&
-    (viewTransitionMutationContext && (rootMutationContext = !0),
-    (viewTransitionMutationContext = prev));
-}
 function trackHostMutation() {
-  enableViewTransition
-    ? (viewTransitionMutationContext = !0)
-    : (rootMutationContext = !0);
+  enableViewTransition && (viewTransitionMutationContext = !0);
 }
 function isHostParent(fiber) {
   return 5 === fiber.tag || 3 === fiber.tag || 4 === fiber.tag;
@@ -8180,21 +8098,16 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
       }
       break;
     case 3:
-      rootMutationContext = !1;
       enableViewTransition && (viewTransitionMutationContext = !1);
       recursivelyTraverseMutationEffects(root, finishedWork, lanes);
       commitReconciliationEffects(finishedWork);
-      popMutationContext(!1);
-      rootMutationContext &&
-        0 !== (lanes & 34) &&
-        ((root.indicatorLanes &= ~currentEventTransitionLane),
-        (needsIsomorphicIndicator = !1));
+      enableViewTransition && (viewTransitionMutationContext = !1);
       break;
     case 4:
       flags = pushMutationContext();
       recursivelyTraverseMutationEffects(root, finishedWork, lanes);
       commitReconciliationEffects(finishedWork);
-      popMutationContext(flags);
+      enableViewTransition && (viewTransitionMutationContext = flags);
       break;
     case 12:
       recursivelyTraverseMutationEffects(root, finishedWork, lanes);
@@ -8358,7 +8271,7 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
           null !== current &&
           viewTransitionMutationContext &&
           (finishedWork.flags |= 4),
-        popMutationContext(flags));
+        enableViewTransition && (viewTransitionMutationContext = flags));
       break;
     case 21:
       recursivelyTraverseMutationEffects(root, finishedWork, lanes);
@@ -9443,18 +9356,13 @@ function requestUpdateLane() {
       : currentUpdatePriority || 32;
 }
 function requestDeferredLane() {
-  if (0 === workInProgressDeferredLane)
-    if (0 !== (workInProgressRootRenderLanes & 536870912))
-      workInProgressDeferredLane = 536870912;
-    else {
-      var lane = nextTransitionDeferredLane;
-      nextTransitionDeferredLane <<= 1;
-      0 === (nextTransitionDeferredLane & 3932160) &&
-        (nextTransitionDeferredLane = 262144);
-      workInProgressDeferredLane = lane;
-    }
-  lane = suspenseHandlerStackCursor.current;
-  null !== lane && (lane.flags |= 32);
+  0 === workInProgressDeferredLane &&
+    (workInProgressDeferredLane =
+      0 !== (workInProgressRootRenderLanes & 536870912)
+        ? 536870912
+        : claimNextTransitionLane());
+  var suspenseHandler = suspenseHandlerStackCursor.current;
+  null !== suspenseHandler && (suspenseHandler.flags |= 32);
   return workInProgressDeferredLane;
 }
 function scheduleViewTransitionEvent(fiber, callback) {
@@ -9736,7 +9644,6 @@ function isRenderConsistentWithExternalStores(finishedWork) {
 }
 function markRootUpdated(root, updatedLanes) {
   root.pendingLanes |= updatedLanes;
-  root.indicatorLanes |= updatedLanes & 4194048;
   268435456 !== updatedLanes &&
     ((root.suspendedLanes = 0), (root.pingedLanes = 0), (root.warmLanes = 0));
   enableInfiniteRenderLoopDetection &&
@@ -10325,39 +10232,20 @@ function flushLayoutEffects() {
     pendingEffectsStatus = 0;
     var root = pendingEffectsRoot,
       finishedWork = pendingFinishedWork,
-      cleanUpIndicator = root.pendingIndicator;
-    if (null !== cleanUpIndicator && 0 === root.indicatorLanes) {
-      var prevTransition = ReactSharedInternals.T;
+      rootHasLayoutEffect = 0 !== (finishedWork.flags & 8772);
+    if (0 !== (finishedWork.subtreeFlags & 8772) || rootHasLayoutEffect) {
+      rootHasLayoutEffect = ReactSharedInternals.T;
       ReactSharedInternals.T = null;
       var previousPriority = currentUpdatePriority;
       currentUpdatePriority = 2;
       var prevExecutionContext = executionContext;
       executionContext |= 4;
-      root.pendingIndicator = null;
-      try {
-        cleanUpIndicator();
-      } catch (x) {
-        reportGlobalError(x);
-      } finally {
-        (executionContext = prevExecutionContext),
-          (currentUpdatePriority = previousPriority),
-          (ReactSharedInternals.T = prevTransition);
-      }
-    }
-    cleanUpIndicator = 0 !== (finishedWork.flags & 8772);
-    if (0 !== (finishedWork.subtreeFlags & 8772) || cleanUpIndicator) {
-      cleanUpIndicator = ReactSharedInternals.T;
-      ReactSharedInternals.T = null;
-      prevTransition = currentUpdatePriority;
-      currentUpdatePriority = 2;
-      previousPriority = executionContext;
-      executionContext |= 4;
       try {
         commitLayoutEffectOnFiber(root, finishedWork.alternate, finishedWork);
       } finally {
-        (executionContext = previousPriority),
-          (currentUpdatePriority = prevTransition),
-          (ReactSharedInternals.T = cleanUpIndicator);
+        (executionContext = prevExecutionContext),
+          (currentUpdatePriority = previousPriority),
+          (ReactSharedInternals.T = rootHasLayoutEffect);
       }
     }
     pendingEffectsStatus = 3;
@@ -10434,7 +10322,7 @@ function flushSpawnedWork() {
     passiveSubtreeMask = root.pendingLanes;
     (enableInfiniteRenderLoopDetection &&
       (didIncludeRenderPhaseUpdate || didIncludeCommitPhaseUpdate)) ||
-    (0 !== (lanes & 261930) && 0 !== (passiveSubtreeMask & 42))
+    (0 !== (lanes & 4194090) && 0 !== (passiveSubtreeMask & 42))
       ? root === rootWithNestedUpdates
         ? nestedUpdateCount++
         : ((nestedUpdateCount = 0), (rootWithNestedUpdates = root))
@@ -10953,7 +10841,6 @@ function FiberRootNode(
   this.entangledLanes =
     this.shellSuspendCounter =
     this.errorRecoveryDisabledLanes =
-    this.indicatorLanes =
     this.expiredLanes =
     this.warmLanes =
     this.pingedLanes =
@@ -10966,8 +10853,7 @@ function FiberRootNode(
   this.onUncaughtError = onUncaughtError;
   this.onCaughtError = onCaughtError;
   this.onRecoverableError = onRecoverableError;
-  this.onDefaultTransitionIndicator = onDefaultTransitionIndicator;
-  this.pooledCache = this.pendingIndicator = null;
+  this.pooledCache = null;
   this.pooledCacheLanes = 0;
   this.hydrationCallbacks = null;
   this.formState = formState;
@@ -11061,13 +10947,6 @@ var slice = Array.prototype.slice,
         cache: initialCache
       };
       initializeUpdateQueue(JSCompiler_inline_result);
-      void 0 === isomorphicDefaultTransitionIndicator
-        ? (isomorphicDefaultTransitionIndicator =
-            defaultOnDefaultTransitionIndicator)
-        : isomorphicDefaultTransitionIndicator !==
-            defaultOnDefaultTransitionIndicator &&
-          ((isomorphicDefaultTransitionIndicator = null),
-          stopIsomorphicDefaultIndicator());
       this._mountNode = _this$props;
       updateContainerSync(this.props.children, this._mountNode, this);
       flushSyncWork();
@@ -11129,24 +11008,24 @@ var slice = Array.prototype.slice,
     };
     return Text;
   })(React.Component);
-var internals$jscomp$inline_1604 = {
+var internals$jscomp$inline_1576 = {
   bundleType: 0,
-  version: "19.2.0-www-modern-3302d1f7-20250903",
+  version: "19.2.0-www-modern-6a58b800-20250902",
   rendererPackageName: "react-art",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.2.0-www-modern-3302d1f7-20250903"
+  reconcilerVersion: "19.2.0-www-modern-6a58b800-20250902"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1605 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1577 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1605.isDisabled &&
-    hook$jscomp$inline_1605.supportsFiber
+    !hook$jscomp$inline_1577.isDisabled &&
+    hook$jscomp$inline_1577.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1605.inject(
-        internals$jscomp$inline_1604
+      (rendererID = hook$jscomp$inline_1577.inject(
+        internals$jscomp$inline_1576
       )),
-        (injectedHook = hook$jscomp$inline_1605);
+        (injectedHook = hook$jscomp$inline_1577);
     } catch (err) {}
 }
 var Path = Mode$1.Path;
@@ -11160,4 +11039,4 @@ exports.RadialGradient = RadialGradient;
 exports.Shape = TYPES.SHAPE;
 exports.Surface = Surface;
 exports.Text = Text;
-exports.version = "19.2.0-www-modern-3302d1f7-20250903";
+exports.version = "19.2.0-www-modern-6a58b800-20250902";
