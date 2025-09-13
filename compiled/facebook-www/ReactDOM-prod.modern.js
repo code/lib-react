@@ -17182,8 +17182,6 @@ function startViewTransition(
                   "Skipping view transition because document visibility state has become hidden." ===
                     error.message ||
                   "Skipping view transition because viewport size changed." ===
-                    error.message ||
-                  "Transition was aborted because of invalid state" ===
                     error.message
                 )
                   error = null;
@@ -19511,14 +19509,14 @@ function getCrossOriginStringAs(as, input) {
 }
 var isomorphicReactPackageVersion$jscomp$inline_2104 = React.version;
 if (
-  "19.2.0-www-modern-bd9e6e0b-20250910" !==
+  "19.2.0-www-modern-3bf8ab43-20250909" !==
   isomorphicReactPackageVersion$jscomp$inline_2104
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2104,
-      "19.2.0-www-modern-bd9e6e0b-20250910"
+      "19.2.0-www-modern-3bf8ab43-20250909"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -19536,10 +19534,10 @@ Internals.Events = [
 ];
 var internals$jscomp$inline_2728 = {
   bundleType: 0,
-  version: "19.2.0-www-modern-bd9e6e0b-20250910",
+  version: "19.2.0-www-modern-3bf8ab43-20250909",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.2.0-www-modern-bd9e6e0b-20250910"
+  reconcilerVersion: "19.2.0-www-modern-3bf8ab43-20250909"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_2729 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -19968,4 +19966,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.2.0-www-modern-bd9e6e0b-20250910";
+exports.version = "19.2.0-www-modern-3bf8ab43-20250909";
