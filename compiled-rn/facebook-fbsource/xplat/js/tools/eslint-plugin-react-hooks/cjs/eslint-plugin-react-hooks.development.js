@@ -12,7 +12,7 @@
  * @lightSyntaxTransform
  * @preventMunge
  * @oncall react_core
- * @generated SignedSource<<d1a4a4ca9738d7c1b3ac9a79a7d0b9a8>>
+ * @generated SignedSource<<c7ac8072ccfb6b4c9e376924ad57759e>>
  */
 
 'use strict';
@@ -32145,6 +32145,7 @@ const EnvironmentConfigSchema = zod.z.object({
     lowerContextAccess: ExternalFunctionSchema.nullable().default(null),
     validateNoVoidUseMemo: zod.z.boolean().default(false),
     validateNoDynamicallyCreatedComponentsOrHooks: zod.z.boolean().default(false),
+    enableAllowSetStateFromRefsInEffects: zod.z.boolean().default(true),
 });
 class Environment {
     constructor(scope, fnType, compilerMode, config, contextIdentifiers, parentFunction, logger, filename, code, programContext) {
@@ -49448,10 +49449,44 @@ function validateNoRefAccessInRenderImpl(fn, env) {
                     case 'StartMemoize':
                     case 'FinishMemoize':
                         break;
+                    case 'LoadGlobal': {
+                        if (instr.value.binding.name === 'undefined') {
+                            env.set(instr.lvalue.identifier.id, { kind: 'Nullable' });
+                        }
+                        break;
+                    }
                     case 'Primitive': {
                         if (instr.value.value == null) {
                             env.set(instr.lvalue.identifier.id, { kind: 'Nullable' });
                         }
+                        break;
+                    }
+                    case 'UnaryExpression': {
+                        if (instr.value.operator === '!') {
+                            const value = env.get(instr.value.value.identifier.id);
+                            const refId = (value === null || value === void 0 ? void 0 : value.kind) === 'RefValue' && value.refId != null
+                                ? value.refId
+                                : null;
+                            if (refId !== null) {
+                                env.set(instr.lvalue.identifier.id, { kind: 'Guard', refId });
+                                errors.pushDiagnostic(CompilerDiagnostic.create({
+                                    category: ErrorCategory.Refs,
+                                    reason: 'Cannot access refs during render',
+                                    description: ERROR_DESCRIPTION,
+                                })
+                                    .withDetails({
+                                    kind: 'error',
+                                    loc: instr.value.value.loc,
+                                    message: `Cannot access ref value during render`,
+                                })
+                                    .withDetails({
+                                    kind: 'hint',
+                                    message: 'To initialize a ref only once, check that the ref is null with the pattern `if (ref.current == null) { ref.current = ... }`',
+                                }));
+                                break;
+                            }
+                        }
+                        validateNoRefValueAccess(errors, env, instr.value.value);
                         break;
                     }
                     case 'BinaryExpression': {
@@ -50580,7 +50615,7 @@ function emitArrayInstr(elements, env) {
     return arrayInstr;
 }
 
-function validateNoSetStateInEffects(fn) {
+function validateNoSetStateInEffects(fn, env) {
     const setStateFunctions = new Map();
     const errors = new CompilerError();
     for (const [, block] of fn.body.blocks) {
@@ -50602,7 +50637,7 @@ function validateNoSetStateInEffects(fn) {
                 case 'FunctionExpression': {
                     if ([...eachInstructionValueOperand(instr.value)].some(operand => isSetStateType(operand.identifier) ||
                         setStateFunctions.has(operand.identifier.id))) {
-                        const callee = getSetStateCall(instr.value.loweredFunc.func, setStateFunctions);
+                        const callee = getSetStateCall(instr.value.loweredFunc.func, setStateFunctions, env);
                         if (callee !== null) {
                             setStateFunctions.set(instr.lvalue.identifier.id, callee);
                         }
@@ -50646,9 +50681,29 @@ function validateNoSetStateInEffects(fn) {
     }
     return errors.asResult();
 }
-function getSetStateCall(fn, setStateFunctions) {
+function getSetStateCall(fn, setStateFunctions, env) {
+    const refDerivedValues = new Set();
+    const isDerivedFromRef = (place) => {
+        return (refDerivedValues.has(place.identifier.id) ||
+            isUseRefType(place.identifier) ||
+            isRefValueType(place.identifier));
+    };
     for (const [, block] of fn.body.blocks) {
         for (const instr of block.instructions) {
+            if (env.config.enableAllowSetStateFromRefsInEffects) {
+                const hasRefOperand = Iterable_some(eachInstructionValueOperand(instr.value), isDerivedFromRef);
+                if (hasRefOperand) {
+                    for (const lvalue of eachInstructionLValue(instr)) {
+                        refDerivedValues.add(lvalue.identifier.id);
+                    }
+                }
+                if (instr.value.kind === 'PropertyLoad' &&
+                    instr.value.property === 'current' &&
+                    (isUseRefType(instr.value.object.identifier) ||
+                        isRefValueType(instr.value.object.identifier))) {
+                    refDerivedValues.add(instr.lvalue.identifier.id);
+                }
+            }
             switch (instr.value.kind) {
                 case 'LoadLocal': {
                     if (setStateFunctions.has(instr.value.place.identifier.id)) {
@@ -50667,6 +50722,14 @@ function getSetStateCall(fn, setStateFunctions) {
                     const callee = instr.value.callee;
                     if (isSetStateType(callee.identifier) ||
                         setStateFunctions.has(callee.identifier.id)) {
+                        if (env.config.enableAllowSetStateFromRefsInEffects) {
+                            const arg = instr.value.args.at(0);
+                            if (arg !== undefined &&
+                                arg.kind === 'Identifier' &&
+                                refDerivedValues.has(arg.identifier.id)) {
+                                return null;
+                            }
+                        }
                         return callee;
                     }
                 }
@@ -52130,7 +52193,7 @@ function runWithEnvironment(func, env) {
             validateNoDerivedComputationsInEffects(hir);
         }
         if (env.config.validateNoSetStateInEffects) {
-            env.logErrors(validateNoSetStateInEffects(hir));
+            env.logErrors(validateNoSetStateInEffects(hir, env));
         }
         if (env.config.validateNoJSXInTryStatements) {
             env.logErrors(validateNoJSXInTryStatement(hir));
