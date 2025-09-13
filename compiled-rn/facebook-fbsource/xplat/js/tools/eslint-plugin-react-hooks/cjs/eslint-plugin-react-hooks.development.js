@@ -12,7 +12,7 @@
  * @lightSyntaxTransform
  * @preventMunge
  * @oncall react_core
- * @generated SignedSource<<22db850d8b8aa832a28e53bf1000c0d3>>
+ * @generated SignedSource<<c7ac8072ccfb6b4c9e376924ad57759e>>
  */
 
 'use strict';
@@ -18615,33 +18615,41 @@ function makeTemporaryIdentifier(id, loc) {
 function forkTemporaryIdentifier(id, source) {
     return Object.assign(Object.assign({}, source), { mutableRange: { start: makeInstructionId(0), end: makeInstructionId(0) }, id });
 }
-function makeIdentifierName(name) {
+function validateIdentifierName(name) {
     if (isReservedWord(name)) {
-        CompilerError.throwInvalidJS({
+        const error = new CompilerError();
+        error.pushDiagnostic(CompilerDiagnostic.create({
+            category: ErrorCategory.Syntax,
             reason: 'Expected a non-reserved identifier name',
-            loc: GeneratedSource,
             description: `\`${name}\` is a reserved word in JavaScript and cannot be used as an identifier name`,
             suggestions: null,
-        });
+        }).withDetails({
+            kind: 'error',
+            loc: GeneratedSource,
+            message: 'reserved word',
+        }));
+        return Err(error);
     }
-    else {
-        CompilerError.invariant(libExports$1.isValidIdentifier(name), {
+    else if (!libExports$1.isValidIdentifier(name)) {
+        const error = new CompilerError();
+        error.pushDiagnostic(CompilerDiagnostic.create({
+            category: ErrorCategory.Syntax,
             reason: `Expected a valid identifier name`,
             description: `\`${name}\` is not a valid JavaScript identifier`,
-            details: [
-                {
-                    kind: 'error',
-                    loc: GeneratedSource,
-                    message: null,
-                },
-            ],
             suggestions: null,
-        });
+        }).withDetails({
+            kind: 'error',
+            loc: GeneratedSource,
+            message: 'reserved word',
+        }));
     }
-    return {
+    return Ok({
         kind: 'named',
         value: name,
-    };
+    });
+}
+function makeIdentifierName(name) {
+    return validateIdentifierName(name).unwrap();
 }
 function promoteTemporary(identifier) {
     CompilerError.invariant(identifier.name === null, {
@@ -19025,6 +19033,9 @@ function printFunction(fn) {
     }
     else {
         definition += '<<anonymous>>';
+    }
+    if (fn.nameHint != null) {
+        definition += ` ${fn.nameHint}`;
     }
     if (fn.params.length !== 0) {
         definition +=
@@ -23028,6 +23039,16 @@ function lower(func, env, bindings = null, capturedRefs = new Map()) {
             message: 'Expected a block statement or expression',
         }));
     }
+    let validatedId = null;
+    if (id != null) {
+        const idResult = validateIdentifierName(id);
+        if (idResult.isErr()) {
+            builder.errors.merge(idResult.unwrapErr());
+        }
+        else {
+            validatedId = idResult.unwrap().value;
+        }
+    }
     if (builder.errors.hasAnyErrors()) {
         return Err(builder.errors);
     }
@@ -23044,7 +23065,8 @@ function lower(func, env, bindings = null, capturedRefs = new Map()) {
         effects: null,
     }, null);
     return Ok({
-        id,
+        id: validatedId,
+        nameHint: null,
         params,
         fnType: bindings == null ? env.fnType : 'Other',
         returnTypeAnnotation: null,
@@ -25843,20 +25865,17 @@ function trimJsxText(original) {
     }
 }
 function lowerFunctionToValue(builder, expr) {
-    var _a, _b, _c, _d;
+    var _a;
     const exprNode = expr.node;
     const exprLoc = (_a = exprNode.loc) !== null && _a !== void 0 ? _a : GeneratedSource;
-    let name = null;
-    if (expr.isFunctionExpression()) {
-        name = (_d = (_c = (_b = expr.get('id')) === null || _b === void 0 ? void 0 : _b.node) === null || _c === void 0 ? void 0 : _c.name) !== null && _d !== void 0 ? _d : null;
-    }
     const loweredFunc = lowerFunction(builder, expr);
     if (!loweredFunc) {
         return { kind: 'UnsupportedNode', node: exprNode, loc: exprLoc };
     }
     return {
         kind: 'FunctionExpression',
-        name,
+        name: loweredFunc.func.id,
+        nameHint: null,
         type: expr.node.type,
         loc: exprLoc,
         loweredFunc,
@@ -32085,6 +32104,7 @@ const EnvironmentConfigSchema = zod.z.object({
     flowTypeProvider: zod.z.nullable(zod.z.function().args(zod.z.string())).default(null),
     enableOptionalDependencies: zod.z.boolean().default(true),
     enableFire: zod.z.boolean().default(false),
+    enableNameAnonymousFunctions: zod.z.boolean().default(false),
     inferEffectDependencies: zod.z
         .nullable(zod.z.array(zod.z.object({
         function: ExternalFunctionSchema,
@@ -32125,6 +32145,7 @@ const EnvironmentConfigSchema = zod.z.object({
     lowerContextAccess: ExternalFunctionSchema.nullable().default(null),
     validateNoVoidUseMemo: zod.z.boolean().default(false),
     validateNoDynamicallyCreatedComponentsOrHooks: zod.z.boolean().default(false),
+    enableAllowSetStateFromRefsInEffects: zod.z.boolean().default(true),
 });
 class Environment {
     constructor(scope, fnType, compilerMode, config, contextIdentifiers, parentFunction, logger, filename, code, programContext) {
@@ -35793,6 +35814,7 @@ function buildReactiveFunction(fn) {
     return {
         loc: fn.loc,
         id: fn.id,
+        nameHint: fn.nameHint,
         params: fn.params,
         generator: fn.generator,
         async: fn.async,
@@ -37389,6 +37411,7 @@ function codegenReactiveFunction(cx, fn) {
         type: 'CodegenFunction',
         loc: fn.loc,
         id: fn.id !== null ? libExports$1.identifier(fn.id) : null,
+        nameHint: fn.nameHint,
         params,
         body,
         generator: fn.generator,
@@ -38458,7 +38481,7 @@ function codegenInstructionValueToExpression(cx, instrValue) {
     return convertValueToExpression(value);
 }
 function codegenInstructionValue(cx, instrValue) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a, _b, _c, _d, _e, _f, _g;
     let value;
     switch (instrValue.kind) {
         case 'ArrayExpression': {
@@ -38787,7 +38810,13 @@ function codegenInstructionValue(cx, instrValue) {
                 value = libExports$1.arrowFunctionExpression(fn.params, body, fn.async);
             }
             else {
-                value = libExports$1.functionExpression((_h = fn.id) !== null && _h !== void 0 ? _h : (instrValue.name != null ? libExports$1.identifier(instrValue.name) : null), fn.params, fn.body, fn.generator, fn.async);
+                value = libExports$1.functionExpression(instrValue.name != null ? libExports$1.identifier(instrValue.name) : null, fn.params, fn.body, fn.generator, fn.async);
+            }
+            if (cx.env.config.enableNameAnonymousFunctions &&
+                instrValue.name == null &&
+                instrValue.nameHint != null) {
+                const name = instrValue.nameHint;
+                value = libExports$1.memberExpression(libExports$1.objectExpression([libExports$1.objectProperty(libExports$1.stringLiteral(name), value)]), libExports$1.stringLiteral(name), true, false);
             }
             break;
         }
@@ -40843,9 +40872,12 @@ function applyEffect(context, state, _effect, initialized, effects) {
         case 'MaybeAlias':
         case 'Alias':
         case 'Capture': {
-            CompilerError.invariant(effect.kind === 'Capture' || initialized.has(effect.into.identifier.id), {
-                reason: `Expected destination value to already be initialized within this instruction for Alias effect`,
-                description: `Destination ${printPlace(effect.into)} is not initialized in this instruction`,
+            CompilerError.invariant(effect.kind === 'Capture' ||
+                effect.kind === 'MaybeAlias' ||
+                initialized.has(effect.into.identifier.id), {
+                reason: `Expected destination to already be initialized within this instruction`,
+                description: `Destination ${printPlace(effect.into)} is not initialized in this ` +
+                    `instruction for effect ${printAliasingEffect(effect)}`,
                 details: [
                     {
                         kind: 'error',
@@ -40855,43 +40887,52 @@ function applyEffect(context, state, _effect, initialized, effects) {
                 ],
             });
             const intoKind = state.kind(effect.into).kind;
-            let isMutableDesination;
+            let destinationType = null;
             switch (intoKind) {
-                case ValueKind.Context:
-                case ValueKind.Mutable:
-                case ValueKind.MaybeFrozen: {
-                    isMutableDesination = true;
+                case ValueKind.Context: {
+                    destinationType = 'context';
                     break;
                 }
-                default: {
-                    isMutableDesination = false;
+                case ValueKind.Mutable:
+                case ValueKind.MaybeFrozen: {
+                    destinationType = 'mutable';
                     break;
                 }
             }
             const fromKind = state.kind(effect.from).kind;
-            let isMutableReferenceType;
+            let sourceType = null;
             switch (fromKind) {
+                case ValueKind.Context: {
+                    sourceType = 'context';
+                    break;
+                }
                 case ValueKind.Global:
                 case ValueKind.Primitive: {
-                    isMutableReferenceType = false;
                     break;
                 }
                 case ValueKind.Frozen: {
-                    isMutableReferenceType = false;
-                    applyEffect(context, state, {
-                        kind: 'ImmutableCapture',
-                        from: effect.from,
-                        into: effect.into,
-                    }, initialized, effects);
+                    sourceType = 'frozen';
                     break;
                 }
                 default: {
-                    isMutableReferenceType = true;
+                    sourceType = 'mutable';
                     break;
                 }
             }
-            if (isMutableDesination && isMutableReferenceType) {
+            if (sourceType === 'frozen') {
+                applyEffect(context, state, {
+                    kind: 'ImmutableCapture',
+                    from: effect.from,
+                    into: effect.into,
+                }, initialized, effects);
+            }
+            else if ((sourceType === 'mutable' && destinationType === 'mutable') ||
+                effect.kind === 'MaybeAlias') {
                 effects.push(effect);
+            }
+            else if ((sourceType === 'context' && destinationType != null) ||
+                (sourceType === 'mutable' && destinationType === 'context')) {
+                applyEffect(context, state, { kind: 'MaybeAlias', from: effect.from, into: effect.into }, initialized, effects);
             }
             break;
         }
@@ -44092,7 +44133,12 @@ class AliasingState {
                 if (edge.index >= index) {
                     break;
                 }
-                queue.push({ place: edge.node, transitive, direction: 'forwards', kind });
+                queue.push({
+                    place: edge.node,
+                    transitive,
+                    direction: 'forwards',
+                    kind: edge.kind === 'maybeAlias' ? MutationKind.Conditional : kind,
+                });
             }
             for (const [alias, when] of node.createdFrom) {
                 if (when >= index) {
@@ -44110,7 +44156,12 @@ class AliasingState {
                     if (when >= index) {
                         continue;
                     }
-                    queue.push({ place: alias, transitive, direction: 'backwards', kind });
+                    queue.push({
+                        place: alias,
+                        transitive,
+                        direction: 'backwards',
+                        kind,
+                    });
                 }
                 for (const [alias, when] of node.maybeAliases) {
                     if (when >= index) {
@@ -49398,10 +49449,44 @@ function validateNoRefAccessInRenderImpl(fn, env) {
                     case 'StartMemoize':
                     case 'FinishMemoize':
                         break;
+                    case 'LoadGlobal': {
+                        if (instr.value.binding.name === 'undefined') {
+                            env.set(instr.lvalue.identifier.id, { kind: 'Nullable' });
+                        }
+                        break;
+                    }
                     case 'Primitive': {
                         if (instr.value.value == null) {
                             env.set(instr.lvalue.identifier.id, { kind: 'Nullable' });
                         }
+                        break;
+                    }
+                    case 'UnaryExpression': {
+                        if (instr.value.operator === '!') {
+                            const value = env.get(instr.value.value.identifier.id);
+                            const refId = (value === null || value === void 0 ? void 0 : value.kind) === 'RefValue' && value.refId != null
+                                ? value.refId
+                                : null;
+                            if (refId !== null) {
+                                env.set(instr.lvalue.identifier.id, { kind: 'Guard', refId });
+                                errors.pushDiagnostic(CompilerDiagnostic.create({
+                                    category: ErrorCategory.Refs,
+                                    reason: 'Cannot access refs during render',
+                                    description: ERROR_DESCRIPTION,
+                                })
+                                    .withDetails({
+                                    kind: 'error',
+                                    loc: instr.value.value.loc,
+                                    message: `Cannot access ref value during render`,
+                                })
+                                    .withDetails({
+                                    kind: 'hint',
+                                    message: 'To initialize a ref only once, check that the ref is null with the pattern `if (ref.current == null) { ref.current = ... }`',
+                                }));
+                                break;
+                            }
+                        }
+                        validateNoRefValueAccess(errors, env, instr.value.value);
                         break;
                     }
                     case 'BinaryExpression': {
@@ -49849,41 +49934,43 @@ class Visitor extends ReactiveFunctionVisitor {
                 for (const instr of value.instructions) {
                     this.visitInstruction(instr, state);
                 }
-                const result = this.recordDepsInValue(value.value, state);
-                return result;
+                this.recordDepsInValue(value.value, state);
+                break;
             }
             case 'OptionalExpression': {
-                return this.recordDepsInValue(value.value, state);
+                this.recordDepsInValue(value.value, state);
+                break;
             }
             case 'ConditionalExpression': {
                 this.recordDepsInValue(value.test, state);
                 this.recordDepsInValue(value.consequent, state);
                 this.recordDepsInValue(value.alternate, state);
-                return null;
+                break;
             }
             case 'LogicalExpression': {
                 this.recordDepsInValue(value.left, state);
                 this.recordDepsInValue(value.right, state);
-                return null;
+                break;
             }
             default: {
-                const dep = collectMaybeMemoDependencies(value, this.temporaries, false);
-                if (value.kind === 'StoreLocal' || value.kind === 'StoreContext') {
-                    const storeTarget = value.lvalue.place;
-                    (_a = state.manualMemoState) === null || _a === void 0 ? void 0 : _a.decls.add(storeTarget.identifier.declarationId);
-                    if (((_b = storeTarget.identifier.name) === null || _b === void 0 ? void 0 : _b.kind) === 'named' && dep == null) {
-                        const dep = {
-                            root: {
-                                kind: 'NamedLocal',
-                                value: storeTarget,
-                            },
-                            path: [],
-                        };
-                        this.temporaries.set(storeTarget.identifier.id, dep);
-                        return dep;
+                collectMaybeMemoDependencies(value, this.temporaries, false);
+                if (value.kind === 'StoreLocal' ||
+                    value.kind === 'StoreContext' ||
+                    value.kind === 'Destructure') {
+                    for (const storeTarget of eachInstructionValueLValue(value)) {
+                        (_a = state.manualMemoState) === null || _a === void 0 ? void 0 : _a.decls.add(storeTarget.identifier.declarationId);
+                        if (((_b = storeTarget.identifier.name) === null || _b === void 0 ? void 0 : _b.kind) === 'named') {
+                            this.temporaries.set(storeTarget.identifier.id, {
+                                root: {
+                                    kind: 'NamedLocal',
+                                    value: storeTarget,
+                                },
+                                path: [],
+                            });
+                        }
                     }
                 }
-                return dep;
+                break;
             }
         }
     }
@@ -49899,20 +49986,15 @@ class Visitor extends ReactiveFunctionVisitor {
         if (lvalue !== null && isNamedLocal && state.manualMemoState != null) {
             state.manualMemoState.decls.add(lvalue.identifier.declarationId);
         }
-        const maybeDep = this.recordDepsInValue(value, state);
-        if (lvalId != null) {
-            if (maybeDep != null) {
-                temporaries.set(lvalId, maybeDep);
-            }
-            else if (isNamedLocal) {
-                temporaries.set(lvalId, {
-                    root: {
-                        kind: 'NamedLocal',
-                        value: Object.assign({}, instr.lvalue),
-                    },
-                    path: [],
-                });
-            }
+        this.recordDepsInValue(value, state);
+        if (lvalue != null) {
+            temporaries.set(lvalue.identifier.id, {
+                root: {
+                    kind: 'NamedLocal',
+                    value: Object.assign({}, lvalue),
+                },
+                path: [],
+            });
         }
     }
     visitScope(scopeBlock, state) {
@@ -50284,6 +50366,7 @@ function getContextReassignment(fn, contextVariables, isFunctionExpression, isAs
 }
 
 function outlineFunctions(fn, fbtOperands) {
+    var _a;
     for (const [, block] of fn.body.blocks) {
         for (const instr of block.instructions) {
             const { value, lvalue } = instr;
@@ -50296,7 +50379,7 @@ function outlineFunctions(fn, fbtOperands) {
                 value.loweredFunc.func.id === null &&
                 !fbtOperands.has(lvalue.identifier.id)) {
                 const loweredFunc = value.loweredFunc.func;
-                const id = fn.env.generateGloballyUniqueIdentifierName(loweredFunc.id);
+                const id = fn.env.generateGloballyUniqueIdentifierName((_a = loweredFunc.id) !== null && _a !== void 0 ? _a : loweredFunc.nameHint);
                 loweredFunc.id = id.value;
                 fn.env.outlineFunction(loweredFunc, null);
                 instr.value = {
@@ -50477,6 +50560,7 @@ function emitSelectorFn(env, keys) {
     const fn = {
         loc: GeneratedSource,
         id: null,
+        nameHint: null,
         fnType: 'Other',
         env,
         params: [obj],
@@ -50501,6 +50585,7 @@ function emitSelectorFn(env, keys) {
         value: {
             kind: 'FunctionExpression',
             name: null,
+            nameHint: null,
             loweredFunc: {
                 func: fn,
             },
@@ -50530,7 +50615,7 @@ function emitArrayInstr(elements, env) {
     return arrayInstr;
 }
 
-function validateNoSetStateInEffects(fn) {
+function validateNoSetStateInEffects(fn, env) {
     const setStateFunctions = new Map();
     const errors = new CompilerError();
     for (const [, block] of fn.body.blocks) {
@@ -50552,7 +50637,7 @@ function validateNoSetStateInEffects(fn) {
                 case 'FunctionExpression': {
                     if ([...eachInstructionValueOperand(instr.value)].some(operand => isSetStateType(operand.identifier) ||
                         setStateFunctions.has(operand.identifier.id))) {
-                        const callee = getSetStateCall(instr.value.loweredFunc.func, setStateFunctions);
+                        const callee = getSetStateCall(instr.value.loweredFunc.func, setStateFunctions, env);
                         if (callee !== null) {
                             setStateFunctions.set(instr.lvalue.identifier.id, callee);
                         }
@@ -50596,9 +50681,29 @@ function validateNoSetStateInEffects(fn) {
     }
     return errors.asResult();
 }
-function getSetStateCall(fn, setStateFunctions) {
+function getSetStateCall(fn, setStateFunctions, env) {
+    const refDerivedValues = new Set();
+    const isDerivedFromRef = (place) => {
+        return (refDerivedValues.has(place.identifier.id) ||
+            isUseRefType(place.identifier) ||
+            isRefValueType(place.identifier));
+    };
     for (const [, block] of fn.body.blocks) {
         for (const instr of block.instructions) {
+            if (env.config.enableAllowSetStateFromRefsInEffects) {
+                const hasRefOperand = Iterable_some(eachInstructionValueOperand(instr.value), isDerivedFromRef);
+                if (hasRefOperand) {
+                    for (const lvalue of eachInstructionLValue(instr)) {
+                        refDerivedValues.add(lvalue.identifier.id);
+                    }
+                }
+                if (instr.value.kind === 'PropertyLoad' &&
+                    instr.value.property === 'current' &&
+                    (isUseRefType(instr.value.object.identifier) ||
+                        isRefValueType(instr.value.object.identifier))) {
+                    refDerivedValues.add(instr.lvalue.identifier.id);
+                }
+            }
             switch (instr.value.kind) {
                 case 'LoadLocal': {
                     if (setStateFunctions.has(instr.value.place.identifier.id)) {
@@ -50617,6 +50722,14 @@ function getSetStateCall(fn, setStateFunctions) {
                     const callee = instr.value.callee;
                     if (isSetStateType(callee.identifier) ||
                         setStateFunctions.has(callee.identifier.id)) {
+                        if (env.config.enableAllowSetStateFromRefsInEffects) {
+                            const arg = instr.value.args.at(0);
+                            if (arg !== undefined &&
+                                arg.kind === 'Identifier' &&
+                                refDerivedValues.has(arg.identifier.id)) {
+                                return null;
+                            }
+                        }
                         return callee;
                     }
                 }
@@ -50909,6 +51022,7 @@ function emitOutlinedFn(env, jsx, oldProps, globals) {
     const fn = {
         loc: GeneratedSource,
         id: null,
+        nameHint: null,
         fnType: 'Other',
         env,
         params: [propsObj],
@@ -51842,6 +51956,137 @@ function validateEffect(effectFunction, effectDeps, errors) {
     }
 }
 
+function nameAnonymousFunctions(fn) {
+    if (fn.id == null) {
+        return;
+    }
+    const parentName = fn.id;
+    const functions = nameAnonymousFunctionsImpl(fn);
+    function visit(node, prefix) {
+        var _a, _b;
+        if (node.generatedName != null) {
+            const name = `${prefix}${node.generatedName}]`;
+            node.fn.nameHint = name;
+            node.fn.loweredFunc.func.nameHint = name;
+        }
+        const nextPrefix = `${prefix}${(_b = (_a = node.generatedName) !== null && _a !== void 0 ? _a : node.fn.name) !== null && _b !== void 0 ? _b : '<anonymous>'} > `;
+        for (const inner of node.inner) {
+            visit(inner, nextPrefix);
+        }
+    }
+    for (const node of functions) {
+        visit(node, `${parentName}[`);
+    }
+}
+function nameAnonymousFunctionsImpl(fn) {
+    var _a, _b;
+    const functions = new Map();
+    const names = new Map();
+    const nodes = [];
+    for (const block of fn.body.blocks.values()) {
+        for (const instr of block.instructions) {
+            const { lvalue, value } = instr;
+            switch (value.kind) {
+                case 'LoadGlobal': {
+                    names.set(lvalue.identifier.id, value.binding.name);
+                    break;
+                }
+                case 'LoadContext':
+                case 'LoadLocal': {
+                    const name = value.place.identifier.name;
+                    if (name != null && name.kind === 'named') {
+                        names.set(lvalue.identifier.id, name.value);
+                    }
+                    break;
+                }
+                case 'PropertyLoad': {
+                    const objectName = names.get(value.object.identifier.id);
+                    if (objectName != null) {
+                        names.set(lvalue.identifier.id, `${objectName}.${String(value.property)}`);
+                    }
+                    break;
+                }
+                case 'FunctionExpression': {
+                    const inner = nameAnonymousFunctionsImpl(value.loweredFunc.func);
+                    const node = {
+                        fn: value,
+                        generatedName: null,
+                        inner,
+                    };
+                    nodes.push(node);
+                    if (value.name == null) {
+                        functions.set(lvalue.identifier.id, node);
+                    }
+                    break;
+                }
+                case 'StoreContext':
+                case 'StoreLocal': {
+                    const node = functions.get(value.value.identifier.id);
+                    const variableName = value.lvalue.place.identifier.name;
+                    if (node != null &&
+                        variableName != null &&
+                        variableName.kind === 'named') {
+                        node.generatedName = variableName.value;
+                        functions.delete(value.value.identifier.id);
+                    }
+                    break;
+                }
+                case 'CallExpression':
+                case 'MethodCall': {
+                    const callee = value.kind === 'MethodCall' ? value.property : value.callee;
+                    const hookKind = getHookKind(fn.env, callee.identifier);
+                    let calleeName = null;
+                    if (hookKind != null && hookKind !== 'Custom') {
+                        calleeName = hookKind;
+                    }
+                    else {
+                        calleeName = (_a = names.get(callee.identifier.id)) !== null && _a !== void 0 ? _a : '(anonymous)';
+                    }
+                    let fnArgCount = 0;
+                    for (const arg of value.args) {
+                        if (arg.kind === 'Identifier' && functions.has(arg.identifier.id)) {
+                            fnArgCount++;
+                        }
+                    }
+                    for (let i = 0; i < value.args.length; i++) {
+                        const arg = value.args[i];
+                        if (arg.kind === 'Spread') {
+                            continue;
+                        }
+                        const node = functions.get(arg.identifier.id);
+                        if (node != null) {
+                            const generatedName = fnArgCount > 1 ? `${calleeName}(arg${i})` : `${calleeName}()`;
+                            node.generatedName = generatedName;
+                            functions.delete(arg.identifier.id);
+                        }
+                    }
+                    break;
+                }
+                case 'JsxExpression': {
+                    for (const attr of value.props) {
+                        if (attr.kind === 'JsxSpreadAttribute') {
+                            continue;
+                        }
+                        const node = functions.get(attr.place.identifier.id);
+                        if (node != null) {
+                            const elementName = value.tag.kind === 'BuiltinTag'
+                                ? value.tag.name
+                                : ((_b = names.get(value.tag.identifier.id)) !== null && _b !== void 0 ? _b : null);
+                            const propName = elementName == null
+                                ? attr.name
+                                : `<${elementName}>.${attr.name}`;
+                            node.generatedName = `${propName}`;
+                            functions.delete(attr.place.identifier.id);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    return nodes;
+}
+
 function run(func, config, fnType, mode, programContext, logger, filename, code) {
     var _a, _b;
     const contextIdentifiers = findContextIdentifiers(func);
@@ -51948,7 +52193,7 @@ function runWithEnvironment(func, env) {
             validateNoDerivedComputationsInEffects(hir);
         }
         if (env.config.validateNoSetStateInEffects) {
-            env.logErrors(validateNoSetStateInEffects(hir));
+            env.logErrors(validateNoSetStateInEffects(hir, env));
         }
         if (env.config.validateNoJSXInTryStatements) {
             env.logErrors(validateNoJSXInTryStatement(hir));
@@ -51981,6 +52226,14 @@ function runWithEnvironment(func, env) {
     });
     if (env.config.enableJsxOutlining) {
         outlineJSX(hir);
+    }
+    if (env.config.enableNameAnonymousFunctions) {
+        nameAnonymousFunctions(hir);
+        log({
+            kind: 'hir',
+            name: 'NameAnonymousFunctions',
+            value: hir,
+        });
     }
     if (env.config.enableFunctionOutlining) {
         outlineFunctions(hir, fbtOperands);
