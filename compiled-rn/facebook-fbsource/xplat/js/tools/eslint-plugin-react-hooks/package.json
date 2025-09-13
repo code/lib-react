@@ -1,7 +1,7 @@
 {
   "name": "eslint-plugin-react-hooks",
   "description": "ESLint rules for React Hooks",
-  "version": "0.0.0-experimental-b1c519f3-20250911",
+  "version": "0.0.0-experimental-e2ba45bb-20250910",
   "repository": {
     "type": "git",
     "url": "https://github.com/facebook/react.git",
