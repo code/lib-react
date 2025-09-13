@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<a83a9bf8dc4674084e3a204e0e1afa8f>>
+ * @generated SignedSource<<05ba3d674ab8eb84d023ee023b1f254a>>
  */
 
 /*
@@ -29580,11 +29580,11 @@ __DEV__ &&
     };
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.2.0-native-fb-d4374b3a-20250908" !== isomorphicReactPackageVersion)
+      if ("19.2.0-native-fb-b2cff474-20250909" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.2.0-native-fb-d4374b3a-20250908\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.2.0-native-fb-b2cff474-20250909\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -29621,10 +29621,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.2.0-native-fb-d4374b3a-20250908",
+          version: "19.2.0-native-fb-b2cff474-20250909",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.2.0-native-fb-d4374b3a-20250908"
+          reconcilerVersion: "19.2.0-native-fb-b2cff474-20250909"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -29773,5 +29773,5 @@ __DEV__ &&
       listenToAllSupportedEvents(container);
       return new ReactDOMHydrationRoot(initialChildren);
     };
-    exports.version = "19.2.0-native-fb-d4374b3a-20250908";
+    exports.version = "19.2.0-native-fb-b2cff474-20250909";
   })();
