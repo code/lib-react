@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<26d793e775dd17f0fec615a47df5d2dd>>
+ * @generated SignedSource<<3e1e45f7cb04b7f2b639a1274970ceb9>>
  */
 
 "use strict";
@@ -13537,8 +13537,7 @@ __DEV__ &&
         null
       );
       1 === tag ? ((tag = 1), !0 === isStrictMode && (tag |= 24)) : (tag = 0);
-      isDevToolsPresent && (tag |= 2);
-      isStrictMode = createFiber(3, null, null, tag);
+      isStrictMode = createFiber(3, null, null, tag | 2);
       containerInfo.current = isStrictMode;
       isStrictMode.stateNode = containerInfo;
       tag = createCache();
@@ -13900,7 +13899,6 @@ __DEV__ &&
       injectedHook = null,
       injectedProfilingHooks = null,
       hasLoggedError = !1,
-      isDevToolsPresent = "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__,
       clz32 = Math.clz32 ? Math.clz32 : clz32Fallback,
       log = Math.log,
       LN2 = Math.LN2,
@@ -15881,10 +15879,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.2.0-native-fb-a9ad64c8-20250911",
+        version: "19.2.0-native-fb-0e10ee90-20250912",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.2.0-native-fb-a9ad64c8-20250911"
+        reconcilerVersion: "19.2.0-native-fb-0e10ee90-20250912"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -16029,5 +16027,5 @@ __DEV__ &&
             flushSyncWorkAcrossRoots_impl(0, !0));
       }
     };
-    exports.version = "19.2.0-native-fb-a9ad64c8-20250911";
+    exports.version = "19.2.0-native-fb-0e10ee90-20250912";
   })();
