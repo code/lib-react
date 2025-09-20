@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<efd142d0919388d67f97407a31d73a19>>
+ * @generated SignedSource<<315fc3d1abe8092be7696710c69feca3>>
  */
 
 "use strict";
@@ -2983,6 +2983,7 @@ function releaseIsomorphicIndicator() {
 }
 var prevOnStartTransitionFinish = ReactSharedInternals.S;
 ReactSharedInternals.S = function (transition, returnValue) {
+  globalMostRecentTransitionTime = now();
   "object" === typeof returnValue &&
     null !== returnValue &&
     "function" === typeof returnValue.then &&
@@ -9875,6 +9876,7 @@ var DefaultAsyncDispatcher = {
   workInProgressRootRecoverableErrors = null,
   workInProgressRootDidIncludeRecursiveRenderUpdate = !1,
   globalMostRecentFallbackTime = 0,
+  globalMostRecentTransitionTime = 0,
   workInProgressRootRenderTargetTime = Infinity,
   workInProgressTransitions = null,
   legacyErrorBoundariesThatAlreadyFailed = null,
@@ -10113,8 +10115,13 @@ function commitRootWhenReady(
 ) {
   root.timeoutHandle = -1;
   var subtreeFlags = finishedWork.subtreeFlags;
-  (subtreeFlags & 8192 || 16785408 === (subtreeFlags & 16785408)) &&
-    accumulateSuspenseyCommitOnFiber(finishedWork);
+  if (subtreeFlags & 8192 || 16785408 === (subtreeFlags & 16785408))
+    accumulateSuspenseyCommitOnFiber(finishedWork),
+      (lanes & 62914560) === lanes
+        ? globalMostRecentFallbackTime - now()
+        : (lanes & 4194048) === lanes
+          ? globalMostRecentTransitionTime - now()
+          : 0;
   commitRoot(
     root,
     finishedWork,
@@ -11370,11 +11377,11 @@ function updateContainer(element, container, parentComponent, callback) {
   return lane;
 }
 var isomorphicReactPackageVersion = React.version;
-if ("19.2.0-native-fb-8a8e9a7e-20250912" !== isomorphicReactPackageVersion)
+if ("19.2.0-native-fb-348a4e2d-20250915" !== isomorphicReactPackageVersion)
   throw Error(
     'Incompatible React versions: The "react" and "react-native-renderer" packages must have the exact same version. Instead got:\n  - react:                  ' +
       (isomorphicReactPackageVersion +
-        "\n  - react-native-renderer:  19.2.0-native-fb-8a8e9a7e-20250912\nLearn more: https://react.dev/warnings/version-mismatch")
+        "\n  - react-native-renderer:  19.2.0-native-fb-348a4e2d-20250915\nLearn more: https://react.dev/warnings/version-mismatch")
   );
 if (
   "function" !==
@@ -11422,26 +11429,26 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1324 = {
+  internals$jscomp$inline_1326 = {
     bundleType: 0,
-    version: "19.2.0-native-fb-8a8e9a7e-20250912",
+    version: "19.2.0-native-fb-348a4e2d-20250915",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.2.0-native-fb-8a8e9a7e-20250912"
+    reconcilerVersion: "19.2.0-native-fb-348a4e2d-20250915"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1324.rendererConfig = extraDevToolsConfig);
+  (internals$jscomp$inline_1326.rendererConfig = extraDevToolsConfig);
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1687 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1689 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1687.isDisabled &&
-    hook$jscomp$inline_1687.supportsFiber
+    !hook$jscomp$inline_1689.isDisabled &&
+    hook$jscomp$inline_1689.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1687.inject(
-        internals$jscomp$inline_1324
+      (rendererID = hook$jscomp$inline_1689.inject(
+        internals$jscomp$inline_1326
       )),
-        (injectedHook = hook$jscomp$inline_1687);
+        (injectedHook = hook$jscomp$inline_1689);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {
