@@ -14853,6 +14853,7 @@ __DEV__ &&
                 workInProgressRootInterleavedUpdatedLanes,
                 workInProgressSuspendedRetryLanes,
                 startTime,
+                null,
                 IMMEDIATE_COMMIT,
                 renderStartTime,
                 forceSync
@@ -14937,13 +14938,19 @@ __DEV__ &&
     ) {
       root.timeoutHandle = -1;
       didSkipSuspendedSiblings = finishedWork.subtreeFlags;
+      var suspendedState = null;
       if (
         (enableViewTransition && (lanes & 335544064) === lanes) ||
         didSkipSuspendedSiblings & 8192 ||
         16785408 === (didSkipSuspendedSiblings & 16785408)
       )
-        (appearingViewTransitions = null),
-          accumulateSuspenseyCommitOnFiber(finishedWork);
+        (appearingViewTransitions = suspendedState = null),
+          accumulateSuspenseyCommitOnFiber(finishedWork),
+          (lanes & 62914560) === lanes
+            ? globalMostRecentFallbackTime - now$1()
+            : (lanes & 4194048) === lanes
+              ? globalMostRecentTransitionTime - now$1()
+              : 0;
       commitRoot(
         root,
         finishedWork,
@@ -14955,6 +14962,7 @@ __DEV__ &&
         updatedLanes,
         suspendedRetryLanes,
         exitStatus,
+        suspendedState,
         suspendedCommitReason,
         completedRenderStartTime,
         completedRenderEndTime
@@ -15989,6 +15997,7 @@ __DEV__ &&
       updatedLanes,
       suspendedRetryLanes,
       exitStatus,
+      suspendedState,
       suspendedCommitReason,
       completedRenderStartTime,
       completedRenderEndTime
@@ -17835,6 +17844,7 @@ __DEV__ &&
       needsIsomorphicIndicator = !1,
       prevOnStartTransitionFinish = ReactSharedInternals.S;
     ReactSharedInternals.S = function (transition, returnValue) {
+      globalMostRecentTransitionTime = now$1();
       if (
         "object" === typeof returnValue &&
         null !== returnValue &&
@@ -19485,6 +19495,7 @@ __DEV__ &&
       workInProgressRootDidIncludeRecursiveRenderUpdate = !1,
       didIncludeCommitPhaseUpdate = !1,
       globalMostRecentFallbackTime = 0,
+      globalMostRecentTransitionTime = 0,
       FALLBACK_THROTTLE_MS = 300,
       workInProgressRootRenderTargetTime = Infinity,
       RENDER_TIMEOUT_MS = 500,
@@ -19754,10 +19765,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.2.0-www-classic-47664deb-20250913",
+        version: "19.2.0-www-classic-348a4e2d-20250915",
         rendererPackageName: "react-art",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.2.0-www-classic-47664deb-20250913"
+        reconcilerVersion: "19.2.0-www-classic-348a4e2d-20250915"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -19791,7 +19802,7 @@ __DEV__ &&
     exports.Shape = Shape;
     exports.Surface = Surface;
     exports.Text = Text;
-    exports.version = "19.2.0-www-classic-47664deb-20250913";
+    exports.version = "19.2.0-www-classic-348a4e2d-20250915";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&
