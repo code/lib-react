@@ -11848,7 +11848,8 @@ module.exports = function ($$$config) {
             flushAfterMutationEffects,
             flushSpawnedWork,
             flushPassiveEffects,
-            reportViewTransitionError
+            reportViewTransitionError,
+            null
           ))
         : (flushMutationEffects(), flushLayoutEffects(), flushSpawnedWork());
     }
@@ -13950,7 +13951,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.2.0-www-modern-84af9085-20250917"
+      reconcilerVersion: "19.2.0-www-modern-115e3ec1-20250920"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);
