@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<728d048742769a50678e6cf3d8b36c97>>
+ * @generated SignedSource<<ae8187f986eb790d19bf7ed27a17e1e1>>
  */
 
 "use strict";
@@ -8939,6 +8939,7 @@ function performWorkOnRoot(root$jscomp$0, lanes, forceSync) {
             !workInProgressRootDidSkipSuspendedSiblings
           );
           if (0 !== getNextLanes(shouldTimeSlice, 0, !0)) break a;
+          pendingEffectsLanes = lanes;
           shouldTimeSlice.timeoutHandle = scheduleTimeout(
             commitRootWhenReady.bind(
               null,
@@ -8953,7 +8954,7 @@ function performWorkOnRoot(root$jscomp$0, lanes, forceSync) {
               workInProgressSuspendedRetryLanes,
               workInProgressRootDidSkipSuspendedSiblings,
               renderWasConcurrent,
-              2,
+              "Throttled",
               -0,
               0
             ),
@@ -9108,6 +9109,7 @@ function prepareFreshStack(root, lanes) {
   timeoutHandle = root.cancelPendingCommit;
   null !== timeoutHandle &&
     ((root.cancelPendingCommit = null), timeoutHandle());
+  pendingEffectsLanes = 0;
   resetWorkInProgressStack();
   workInProgressRoot = root;
   workInProgress = timeoutHandle = createWorkInProgress(root.current, null);
@@ -10671,12 +10673,12 @@ function wrapFiber(fiber) {
     fiberToWrapper.set(fiber, wrapper));
   return wrapper;
 }
-var internals$jscomp$inline_1273 = {
+var internals$jscomp$inline_1267 = {
   bundleType: 0,
-  version: "19.2.0-native-fb-115e3ec1-20250920",
+  version: "19.2.0-native-fb-d91d28c8-20250920",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.2.0-native-fb-115e3ec1-20250920",
+  reconcilerVersion: "19.2.0-native-fb-d91d28c8-20250920",
   getLaneLabelMap: function () {
     for (
       var map = new Map(), lane = 1, index$145 = 0;
@@ -10701,7 +10703,7 @@ if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   )
     try {
       (rendererID = hook$jscomp$inline_1548.inject(
-        internals$jscomp$inline_1273
+        internals$jscomp$inline_1267
       )),
         (injectedHook = hook$jscomp$inline_1548);
     } catch (err) {}
@@ -10827,4 +10829,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.2.0-native-fb-115e3ec1-20250920";
+exports.version = "19.2.0-native-fb-d91d28c8-20250920";

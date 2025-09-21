@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<f077fdd733ba44f390584e4d75b7aeb1>>
+ * @generated SignedSource<<7f09ae51de60d10d83b0c405eb6aad30>>
  */
 
 /*
@@ -11658,6 +11658,7 @@ function performWorkOnRoot(root$jscomp$0, lanes, forceSync) {
             !workInProgressRootDidSkipSuspendedSiblings
           );
           if (0 !== getNextLanes(shouldTimeSlice, 0, !0)) break a;
+          pendingEffectsLanes = lanes;
           shouldTimeSlice.timeoutHandle = scheduleTimeout(
             commitRootWhenReady.bind(
               null,
@@ -11672,7 +11673,7 @@ function performWorkOnRoot(root$jscomp$0, lanes, forceSync) {
               workInProgressSuspendedRetryLanes,
               workInProgressRootDidSkipSuspendedSiblings,
               renderWasConcurrent,
-              2,
+              "Throttled",
               -0,
               0
             ),
@@ -11692,7 +11693,7 @@ function performWorkOnRoot(root$jscomp$0, lanes, forceSync) {
           workInProgressSuspendedRetryLanes,
           workInProgressRootDidSkipSuspendedSiblings,
           renderWasConcurrent,
-          0,
+          null,
           -0,
           0
         );
@@ -11731,6 +11732,7 @@ function commitRootWhenReady(
       imgBytes: 0,
       suspenseyImages: [],
       waitingForImages: !0,
+      waitingForViewTransition: !1,
       unsuspend: noop$1
     };
     accumulateSuspenseyCommitOnFiber(
@@ -11749,6 +11751,7 @@ function commitRootWhenReady(
       timeoutOffset
     );
     if (null !== timeoutOffset) {
+      pendingEffectsLanes = lanes;
       root.cancelPendingCommit = timeoutOffset(
         commitRoot.bind(
           null,
@@ -11763,7 +11766,7 @@ function commitRootWhenReady(
           suspendedRetryLanes,
           exitStatus,
           suspendedCommitReason,
-          1,
+          null,
           completedRenderStartTime,
           completedRenderEndTime
         )
@@ -11868,6 +11871,7 @@ function prepareFreshStack(root, lanes) {
   timeoutHandle = root.cancelPendingCommit;
   null !== timeoutHandle &&
     ((root.cancelPendingCommit = null), timeoutHandle());
+  pendingEffectsLanes = 0;
   resetWorkInProgressStack();
   workInProgressRoot = root;
   workInProgress = timeoutHandle = createWorkInProgress(root.current, null);
@@ -13187,20 +13191,20 @@ function debounceScrollEnd(targetInst, nativeEvent, nativeEventTarget) {
     (nativeEventTarget[internalScrollTimer] = targetInst));
 }
 for (
-  var i$jscomp$inline_1664 = 0;
-  i$jscomp$inline_1664 < simpleEventPluginEvents.length;
-  i$jscomp$inline_1664++
+  var i$jscomp$inline_1644 = 0;
+  i$jscomp$inline_1644 < simpleEventPluginEvents.length;
+  i$jscomp$inline_1644++
 ) {
-  var eventName$jscomp$inline_1665 =
-      simpleEventPluginEvents[i$jscomp$inline_1664],
-    domEventName$jscomp$inline_1666 =
-      eventName$jscomp$inline_1665.toLowerCase(),
-    capitalizedEvent$jscomp$inline_1667 =
-      eventName$jscomp$inline_1665[0].toUpperCase() +
-      eventName$jscomp$inline_1665.slice(1);
+  var eventName$jscomp$inline_1645 =
+      simpleEventPluginEvents[i$jscomp$inline_1644],
+    domEventName$jscomp$inline_1646 =
+      eventName$jscomp$inline_1645.toLowerCase(),
+    capitalizedEvent$jscomp$inline_1647 =
+      eventName$jscomp$inline_1645[0].toUpperCase() +
+      eventName$jscomp$inline_1645.slice(1);
   registerSimpleEvent(
-    domEventName$jscomp$inline_1666,
-    "on" + capitalizedEvent$jscomp$inline_1667
+    domEventName$jscomp$inline_1646,
+    "on" + capitalizedEvent$jscomp$inline_1647
   );
 }
 registerSimpleEvent(ANIMATION_END, "onAnimationEnd");
@@ -17534,16 +17538,16 @@ ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function (target) {
     0 === i && attemptExplicitHydrationTarget(target);
   }
 };
-var isomorphicReactPackageVersion$jscomp$inline_2073 = React.version;
+var isomorphicReactPackageVersion$jscomp$inline_2053 = React.version;
 if (
-  "19.2.0-native-fb-115e3ec1-20250920" !==
-  isomorphicReactPackageVersion$jscomp$inline_2073
+  "19.2.0-native-fb-d91d28c8-20250920" !==
+  isomorphicReactPackageVersion$jscomp$inline_2053
 )
   throw Error(
     formatProdErrorMessage(
       527,
-      isomorphicReactPackageVersion$jscomp$inline_2073,
-      "19.2.0-native-fb-115e3ec1-20250920"
+      isomorphicReactPackageVersion$jscomp$inline_2053,
+      "19.2.0-native-fb-d91d28c8-20250920"
     )
   );
 ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
@@ -17563,24 +17567,24 @@ ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
     null === componentOrElement ? null : componentOrElement.stateNode;
   return componentOrElement;
 };
-var internals$jscomp$inline_2648 = {
+var internals$jscomp$inline_2628 = {
   bundleType: 0,
-  version: "19.2.0-native-fb-115e3ec1-20250920",
+  version: "19.2.0-native-fb-d91d28c8-20250920",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.2.0-native-fb-115e3ec1-20250920"
+  reconcilerVersion: "19.2.0-native-fb-d91d28c8-20250920"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2649 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2629 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2649.isDisabled &&
-    hook$jscomp$inline_2649.supportsFiber
+    !hook$jscomp$inline_2629.isDisabled &&
+    hook$jscomp$inline_2629.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2649.inject(
-        internals$jscomp$inline_2648
+      (rendererID = hook$jscomp$inline_2629.inject(
+        internals$jscomp$inline_2628
       )),
-        (injectedHook = hook$jscomp$inline_2649);
+        (injectedHook = hook$jscomp$inline_2629);
     } catch (err) {}
 }
 function getCrossOriginStringAs(as, input) {
@@ -17828,4 +17832,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.2.0-native-fb-115e3ec1-20250920";
+exports.version = "19.2.0-native-fb-d91d28c8-20250920";

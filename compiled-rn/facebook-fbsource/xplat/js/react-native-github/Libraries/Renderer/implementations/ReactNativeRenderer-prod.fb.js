@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<0e66e5907ea6751d6b0eeb208845dbce>>
+ * @generated SignedSource<<0d23d0c36dc7c6990d9e9ebd0a5c6cb1>>
  */
 
 "use strict";
@@ -10063,6 +10063,7 @@ function performWorkOnRoot(root$jscomp$0, lanes, forceSync) {
             !workInProgressRootDidSkipSuspendedSiblings
           );
           if (0 !== getNextLanes(shouldTimeSlice, 0, !0)) break a;
+          pendingEffectsLanes = lanes;
           shouldTimeSlice.timeoutHandle = scheduleTimeout(
             commitRootWhenReady.bind(
               null,
@@ -10077,7 +10078,7 @@ function performWorkOnRoot(root$jscomp$0, lanes, forceSync) {
               workInProgressSuspendedRetryLanes,
               workInProgressRootDidSkipSuspendedSiblings,
               renderWasConcurrent,
-              2,
+              "Throttled",
               -0,
               0
             ),
@@ -10213,6 +10214,7 @@ function prepareFreshStack(root, lanes) {
   timeoutHandle = root.cancelPendingCommit;
   null !== timeoutHandle &&
     ((root.cancelPendingCommit = null), timeoutHandle());
+  pendingEffectsLanes = 0;
   resetWorkInProgressStack();
   workInProgressRoot = root;
   workInProgress = timeoutHandle = createWorkInProgress(root.current, null);
@@ -11377,11 +11379,11 @@ function updateContainer(element, container, parentComponent, callback) {
   return lane;
 }
 var isomorphicReactPackageVersion = React.version;
-if ("19.2.0-native-fb-115e3ec1-20250920" !== isomorphicReactPackageVersion)
+if ("19.2.0-native-fb-d91d28c8-20250920" !== isomorphicReactPackageVersion)
   throw Error(
     'Incompatible React versions: The "react" and "react-native-renderer" packages must have the exact same version. Instead got:\n  - react:                  ' +
       (isomorphicReactPackageVersion +
-        "\n  - react-native-renderer:  19.2.0-native-fb-115e3ec1-20250920\nLearn more: https://react.dev/warnings/version-mismatch")
+        "\n  - react-native-renderer:  19.2.0-native-fb-d91d28c8-20250920\nLearn more: https://react.dev/warnings/version-mismatch")
   );
 if (
   "function" !==
@@ -11429,15 +11431,15 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1325 = {
+  internals$jscomp$inline_1319 = {
     bundleType: 0,
-    version: "19.2.0-native-fb-115e3ec1-20250920",
+    version: "19.2.0-native-fb-d91d28c8-20250920",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.2.0-native-fb-115e3ec1-20250920"
+    reconcilerVersion: "19.2.0-native-fb-d91d28c8-20250920"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1325.rendererConfig = extraDevToolsConfig);
+  (internals$jscomp$inline_1319.rendererConfig = extraDevToolsConfig);
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_1688 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
@@ -11446,7 +11448,7 @@ if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   )
     try {
       (rendererID = hook$jscomp$inline_1688.inject(
-        internals$jscomp$inline_1325
+        internals$jscomp$inline_1319
       )),
         (injectedHook = hook$jscomp$inline_1688);
     } catch (err) {}

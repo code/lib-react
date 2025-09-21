@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<17a72420e02b48d7bec04f6db9cb56d6>>
+ * @generated SignedSource<<574b918999c97c8597a7be2afa60cf40>>
  */
 
 /*
@@ -11658,6 +11658,7 @@ function performWorkOnRoot(root$jscomp$0, lanes, forceSync) {
             !workInProgressRootDidSkipSuspendedSiblings
           );
           if (0 !== getNextLanes(shouldTimeSlice, 0, !0)) break a;
+          pendingEffectsLanes = lanes;
           shouldTimeSlice.timeoutHandle = scheduleTimeout(
             commitRootWhenReady.bind(
               null,
@@ -11672,7 +11673,7 @@ function performWorkOnRoot(root$jscomp$0, lanes, forceSync) {
               workInProgressSuspendedRetryLanes,
               workInProgressRootDidSkipSuspendedSiblings,
               renderWasConcurrent,
-              2,
+              "Throttled",
               -0,
               0
             ),
@@ -11692,7 +11693,7 @@ function performWorkOnRoot(root$jscomp$0, lanes, forceSync) {
           workInProgressSuspendedRetryLanes,
           workInProgressRootDidSkipSuspendedSiblings,
           renderWasConcurrent,
-          0,
+          null,
           -0,
           0
         );
@@ -11731,6 +11732,7 @@ function commitRootWhenReady(
       imgBytes: 0,
       suspenseyImages: [],
       waitingForImages: !0,
+      waitingForViewTransition: !1,
       unsuspend: noop$1
     };
     accumulateSuspenseyCommitOnFiber(
@@ -11749,6 +11751,7 @@ function commitRootWhenReady(
       timeoutOffset
     );
     if (null !== timeoutOffset) {
+      pendingEffectsLanes = lanes;
       root.cancelPendingCommit = timeoutOffset(
         commitRoot.bind(
           null,
@@ -11763,7 +11766,7 @@ function commitRootWhenReady(
           suspendedRetryLanes,
           exitStatus,
           suspendedCommitReason,
-          1,
+          null,
           completedRenderStartTime,
           completedRenderEndTime
         )
@@ -11868,6 +11871,7 @@ function prepareFreshStack(root, lanes) {
   timeoutHandle = root.cancelPendingCommit;
   null !== timeoutHandle &&
     ((root.cancelPendingCommit = null), timeoutHandle());
+  pendingEffectsLanes = 0;
   resetWorkInProgressStack();
   workInProgressRoot = root;
   workInProgress = timeoutHandle = createWorkInProgress(root.current, null);
@@ -13187,20 +13191,20 @@ function debounceScrollEnd(targetInst, nativeEvent, nativeEventTarget) {
     (nativeEventTarget[internalScrollTimer] = targetInst));
 }
 for (
-  var i$jscomp$inline_1663 = 0;
-  i$jscomp$inline_1663 < simpleEventPluginEvents.length;
-  i$jscomp$inline_1663++
+  var i$jscomp$inline_1643 = 0;
+  i$jscomp$inline_1643 < simpleEventPluginEvents.length;
+  i$jscomp$inline_1643++
 ) {
-  var eventName$jscomp$inline_1664 =
-      simpleEventPluginEvents[i$jscomp$inline_1663],
-    domEventName$jscomp$inline_1665 =
-      eventName$jscomp$inline_1664.toLowerCase(),
-    capitalizedEvent$jscomp$inline_1666 =
-      eventName$jscomp$inline_1664[0].toUpperCase() +
-      eventName$jscomp$inline_1664.slice(1);
+  var eventName$jscomp$inline_1644 =
+      simpleEventPluginEvents[i$jscomp$inline_1643],
+    domEventName$jscomp$inline_1645 =
+      eventName$jscomp$inline_1644.toLowerCase(),
+    capitalizedEvent$jscomp$inline_1646 =
+      eventName$jscomp$inline_1644[0].toUpperCase() +
+      eventName$jscomp$inline_1644.slice(1);
   registerSimpleEvent(
-    domEventName$jscomp$inline_1665,
-    "on" + capitalizedEvent$jscomp$inline_1666
+    domEventName$jscomp$inline_1645,
+    "on" + capitalizedEvent$jscomp$inline_1646
   );
 }
 registerSimpleEvent(ANIMATION_END, "onAnimationEnd");
@@ -17523,16 +17527,16 @@ ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function (target) {
     0 === i && attemptExplicitHydrationTarget(target);
   }
 };
-var isomorphicReactPackageVersion$jscomp$inline_2072 = React.version;
+var isomorphicReactPackageVersion$jscomp$inline_2052 = React.version;
 if (
-  "19.2.0-native-fb-115e3ec1-20250920" !==
-  isomorphicReactPackageVersion$jscomp$inline_2072
+  "19.2.0-native-fb-d91d28c8-20250920" !==
+  isomorphicReactPackageVersion$jscomp$inline_2052
 )
   throw Error(
     formatProdErrorMessage(
       527,
-      isomorphicReactPackageVersion$jscomp$inline_2072,
-      "19.2.0-native-fb-115e3ec1-20250920"
+      isomorphicReactPackageVersion$jscomp$inline_2052,
+      "19.2.0-native-fb-d91d28c8-20250920"
     )
   );
 ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
@@ -17552,24 +17556,24 @@ ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
     null === componentOrElement ? null : componentOrElement.stateNode;
   return componentOrElement;
 };
-var internals$jscomp$inline_2645 = {
+var internals$jscomp$inline_2625 = {
   bundleType: 0,
-  version: "19.2.0-native-fb-115e3ec1-20250920",
+  version: "19.2.0-native-fb-d91d28c8-20250920",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.2.0-native-fb-115e3ec1-20250920"
+  reconcilerVersion: "19.2.0-native-fb-d91d28c8-20250920"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2646 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2626 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2646.isDisabled &&
-    hook$jscomp$inline_2646.supportsFiber
+    !hook$jscomp$inline_2626.isDisabled &&
+    hook$jscomp$inline_2626.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2646.inject(
-        internals$jscomp$inline_2645
+      (rendererID = hook$jscomp$inline_2626.inject(
+        internals$jscomp$inline_2625
       )),
-        (injectedHook = hook$jscomp$inline_2646);
+        (injectedHook = hook$jscomp$inline_2626);
     } catch (err) {}
 }
 exports.createRoot = function (container, options) {
@@ -17664,4 +17668,4 @@ exports.hydrateRoot = function (container, initialChildren, options) {
   listenToAllSupportedEvents(container);
   return new ReactDOMHydrationRoot(initialChildren);
 };
-exports.version = "19.2.0-native-fb-115e3ec1-20250920";
+exports.version = "19.2.0-native-fb-d91d28c8-20250920";
