@@ -593,6 +593,9 @@ __DEV__ &&
           );
       }
     }
+    function includesSyncLane(lanes) {
+      return 0 !== (lanes & 3);
+    }
     function claimNextRetryLane() {
       var lane = nextRetryLane;
       nextRetryLane <<= 1;
@@ -1649,14 +1652,14 @@ __DEV__ &&
               "error"
             ));
     }
-    function logSuspenseThrottlePhase(startTime, endTime, debugTask) {
+    function logSuspendedCommitPhase(startTime, endTime, reason, debugTask) {
       !supportsUserTiming ||
         endTime <= startTime ||
         (debugTask
           ? debugTask.run(
               console.timeStamp.bind(
                 console,
-                "Throttled",
+                reason,
                 startTime,
                 endTime,
                 currentTrack,
@@ -1665,31 +1668,7 @@ __DEV__ &&
               )
             )
           : console.timeStamp(
-              "Throttled",
-              startTime,
-              endTime,
-              currentTrack,
-              "Scheduler \u269b",
-              "secondary-light"
-            ));
-    }
-    function logSuspendedCommitPhase(startTime, endTime, debugTask) {
-      !supportsUserTiming ||
-        endTime <= startTime ||
-        (debugTask
-          ? debugTask.run(
-              console.timeStamp.bind(
-                console,
-                "Suspended on CSS or Images",
-                startTime,
-                endTime,
-                currentTrack,
-                "Scheduler \u269b",
-                "secondary-light"
-              )
-            )
-          : console.timeStamp(
-              "Suspended on CSS or Images",
+              reason,
               startTime,
               endTime,
               currentTrack,
@@ -1842,7 +1821,7 @@ __DEV__ &&
                 endTime,
                 currentTrack,
                 "Scheduler \u269b",
-                "secondary"
+                "secondary-dark"
               )
             )
           : console.timeStamp(
@@ -1851,7 +1830,7 @@ __DEV__ &&
               endTime,
               currentTrack,
               "Scheduler \u269b",
-              "secondary"
+              "secondary-dark"
             ));
     }
     function logPassiveCommitPhase(startTime, endTime, errors, debugTask) {
@@ -3558,8 +3537,8 @@ __DEV__ &&
                     null !== root.cancelPendingCommit ||
                       root.timeoutHandle !== noTimeout
                   )),
-                  0 === (nextLanes & 3) ||
-                    checkIfRootIsPrerendering(root, nextLanes) ||
+                  includesSyncLane(nextLanes) &&
+                    !checkIfRootIsPrerendering(root, nextLanes) &&
                     ((didPerformSomeWork = !0),
                     performSyncWorkOnRoot(root, nextLanes));
             root = root.next;
@@ -3594,7 +3573,8 @@ __DEV__ &&
             null === prev ? (firstScheduledRoot = next) : (prev.next = next),
             null === next && (lastScheduledRoot = prev);
         else if (
-          ((prev = root), 0 !== syncTransitionLanes || 0 !== (nextLanes & 3))
+          ((prev = root),
+          0 !== syncTransitionLanes || includesSyncLane(nextLanes))
         )
           mightHavePendingSyncWork = !0;
         root = next;
@@ -3684,7 +3664,7 @@ __DEV__ &&
           (root.callbackPriority = 0)
         );
       if (
-        0 !== (suspendedLanes & 3) &&
+        includesSyncLane(suspendedLanes) &&
         !checkIfRootIsPrerendering(root, suspendedLanes)
       )
         return (
@@ -12633,20 +12613,26 @@ __DEV__ &&
       return prevChildren;
     }
     function applyViewTransitionToHostInstances(
-      child,
+      fiber,
       name,
       className,
       collectMeasurements,
       stopAtNestedViewTransitions
     ) {
       viewTransitionHostInstanceIdx = 0;
-      return applyViewTransitionToHostInstancesRecursive(
-        child,
+      name = applyViewTransitionToHostInstancesRecursive(
+        fiber.child,
         name,
         className,
         collectMeasurements,
         stopAtNestedViewTransitions
       );
+      enableComponentPerformanceTrack &&
+        name &&
+        null != fiber._debugTask &&
+        null === animatingTask &&
+        (animatingTask = fiber._debugTask);
+      return name;
     }
     function applyViewTransitionToHostInstancesRecursive(
       child,
@@ -12726,7 +12712,7 @@ __DEV__ &&
               props = getViewTransitionClassName(props.default, props.share);
               "none" !== props &&
                 (applyViewTransitionToHostInstances(
-                  placement.child,
+                  placement,
                   name,
                   props,
                   null,
@@ -12748,7 +12734,7 @@ __DEV__ &&
           );
         "none" !== className
           ? applyViewTransitionToHostInstances(
-              placement.child,
+              placement,
               name,
               className,
               null,
@@ -12787,7 +12773,7 @@ __DEV__ &&
                     );
                     "none" !== className &&
                       (applyViewTransitionToHostInstances(
-                        deletion.child,
+                        deletion,
                         name,
                         className,
                         null,
@@ -12826,7 +12812,7 @@ __DEV__ &&
           );
         "none" !== className &&
           (applyViewTransitionToHostInstances(
-            deletion.child,
+            deletion,
             name,
             className,
             null,
@@ -12858,7 +12844,7 @@ __DEV__ &&
           changedParent.flags &= -5;
           "none" !== props &&
             applyViewTransitionToHostInstances(
-              changedParent.child,
+              changedParent,
               name,
               props,
               (changedParent.memoizedState = []),
@@ -13202,7 +13188,7 @@ __DEV__ &&
                 )),
                 "none" !== current &&
                   applyViewTransitionToHostInstances(
-                    isViewTransitionEligible.child,
+                    isViewTransitionEligible,
                     finishedWork,
                     current,
                     (isViewTransitionEligible.memoizedState = []),
@@ -16950,7 +16936,8 @@ __DEV__ &&
                   finalizeRender(lanes, forceSync),
                   (yieldedFiber = lanes),
                   enableComponentPerformanceTrack &&
-                    (0 !== (yieldedFiber & 3) || 0 !== (yieldedFiber & 124)
+                    (includesSyncLane(yieldedFiber) ||
+                    0 !== (yieldedFiber & 124)
                       ? (blockingSuspendedTime = forceSync)
                       : 0 !== (yieldedFiber & 4194048) &&
                         (transitionSuspendedTime = forceSync)));
@@ -16983,7 +16970,7 @@ __DEV__ &&
                 workInProgressSuspendedRetryLanes,
                 startTime,
                 null,
-                IMMEDIATE_COMMIT,
+                null,
                 renderStartTime,
                 forceSync
               );
@@ -17004,6 +16991,7 @@ __DEV__ &&
                   !workInProgressRootDidSkipSuspendedSiblings
                 );
                 if (0 !== getNextLanes(yieldEndTime, 0, !0)) break a;
+                pendingEffectsLanes = lanes;
                 yieldEndTime.timeoutHandle = scheduleTimeout(
                   commitRootWhenReady.bind(
                     null,
@@ -17018,7 +17006,7 @@ __DEV__ &&
                     workInProgressSuspendedRetryLanes,
                     workInProgressRootDidSkipSuspendedSiblings,
                     startTime,
-                    THROTTLED_COMMIT,
+                    "Throttled",
                     renderStartTime,
                     forceSync
                   ),
@@ -17038,7 +17026,7 @@ __DEV__ &&
                 workInProgressSuspendedRetryLanes,
                 workInProgressRootDidSkipSuspendedSiblings,
                 startTime,
-                IMMEDIATE_COMMIT,
+                null,
                 renderStartTime,
                 forceSync
               );
@@ -17090,6 +17078,7 @@ __DEV__ &&
           (subtreeFlags = waitForCommitToBeReady(suspendedState, subtreeFlags)),
           null !== subtreeFlags)
         ) {
+          pendingEffectsLanes = lanes;
           root.cancelPendingCommit = subtreeFlags(
             commitRoot.bind(
               null,
@@ -17104,7 +17093,7 @@ __DEV__ &&
               suspendedRetryLanes,
               exitStatus,
               suspendedState,
-              SUSPENDED_COMMIT,
+              getSuspendedCommitReason(suspendedState, root.containerInfo),
               completedRenderStartTime,
               completedRenderEndTime
             )
@@ -17230,12 +17219,18 @@ __DEV__ &&
     }
     function finalizeRender(lanes, finalizationTime) {
       enableComponentPerformanceTrack &&
-        ((0 !== (lanes & 3) || 0 !== (lanes & 124)) &&
+        ((includesSyncLane(lanes) || 0 !== (lanes & 124)) &&
           enableComponentPerformanceTrack &&
           (blockingClampTime = finalizationTime),
         0 !== (lanes & 4194048) &&
           enableComponentPerformanceTrack &&
-          (transitionClampTime = finalizationTime));
+          (transitionClampTime = finalizationTime),
+        0 !== (lanes & 62914560) &&
+          enableComponentPerformanceTrack &&
+          (retryClampTime = finalizationTime),
+        0 !== (lanes & 2080374784) &&
+          enableComponentPerformanceTrack &&
+          (idleClampTime = finalizationTime));
     }
     function prepareFreshStack(root, lanes) {
       if (enableComponentPerformanceTrack) {
@@ -17327,10 +17322,11 @@ __DEV__ &&
           }
           finalizeRender(workInProgressRootRenderLanes, renderStartTime);
         }
+        previousRenderStartTime = workInProgressUpdateTask;
         workInProgressUpdateTask = null;
-        if (0 !== (lanes & 3) || 0 !== (lanes & 124)) {
+        if (includesSyncLane(lanes) || 0 !== (lanes & 124)) {
           workInProgressUpdateTask = blockingUpdateTask;
-          previousRenderStartTime =
+          debugTask =
             0 <= blockingUpdateTime && blockingUpdateTime < blockingClampTime
               ? blockingClampTime
               : blockingUpdateTime;
@@ -17338,18 +17334,27 @@ __DEV__ &&
             0 <= blockingEventTime && blockingEventTime < blockingClampTime
               ? blockingClampTime
               : blockingEventTime;
-          0 <= blockingSuspendedTime &&
-            (setCurrentTrackFromLanes(lanes),
-            logSuspendedWithDelayPhase(
-              blockingSuspendedTime,
-              0 <= endTime
-                ? endTime
-                : 0 <= previousRenderStartTime
-                  ? previousRenderStartTime
-                  : renderStartTime,
-              lanes,
-              workInProgressUpdateTask
-            ));
+          color =
+            0 <= endTime
+              ? endTime
+              : 0 <= debugTask
+                ? debugTask
+                : renderStartTime;
+          if (0 <= blockingSuspendedTime)
+            setCurrentTrackFromLanes(2),
+              logSuspendedWithDelayPhase(
+                blockingSuspendedTime,
+                color,
+                lanes,
+                previousRenderStartTime
+              );
+          else if (
+            includesSyncLane(animatingLanes) ||
+            0 !== (animatingLanes & 124)
+          )
+            setCurrentTrackFromLanes(2),
+              logAnimatingPhase(blockingClampTime, color, animatingTask);
+          previousRenderStartTime = debugTask;
           var eventTime = endTime,
             eventType = blockingEventType,
             eventIsRepeat = blockingEventIsRepeat,
@@ -17459,18 +17464,23 @@ __DEV__ &&
             transitionEventTime < transitionClampTime
               ? transitionClampTime
               : transitionEventTime),
-          0 <= transitionSuspendedTime &&
-            (setCurrentTrackFromLanes(lanes),
-            logSuspendedWithDelayPhase(
-              transitionSuspendedTime,
-              0 <= endTime
-                ? endTime
-                : 0 <= previousRenderStartTime
-                  ? previousRenderStartTime
-                  : renderStartTime,
-              lanes,
-              workInProgressUpdateTask
-            )),
+          (color =
+            0 <= endTime
+              ? endTime
+              : 0 <= previousRenderStartTime
+                ? previousRenderStartTime
+                : renderStartTime),
+          0 <= transitionSuspendedTime
+            ? (setCurrentTrackFromLanes(256),
+              logSuspendedWithDelayPhase(
+                transitionSuspendedTime,
+                color,
+                lanes,
+                workInProgressUpdateTask
+              ))
+            : 0 !== (animatingLanes & 4194048) &&
+              (setCurrentTrackFromLanes(256),
+              logAnimatingPhase(transitionClampTime, color, animatingTask)),
           (isPingedUpdate = endTime),
           (eventTime = transitionEventType),
           (eventType = transitionEventIsRepeat),
@@ -17572,6 +17582,14 @@ __DEV__ &&
           (transitionSuspendedTime = -1.1),
           (transitionEventIsRepeat = !0),
           (transitionClampTime = now()));
+        0 !== (lanes & 62914560) &&
+          0 !== (animatingLanes & 62914560) &&
+          (setCurrentTrackFromLanes(4194304),
+          logAnimatingPhase(retryClampTime, renderStartTime, animatingTask));
+        0 !== (lanes & 2080374784) &&
+          0 !== (animatingLanes & 2080374784) &&
+          (setCurrentTrackFromLanes(268435456),
+          logAnimatingPhase(idleClampTime, renderStartTime, animatingTask));
       }
       previousRenderStartTime = root.timeoutHandle;
       previousRenderStartTime !== noTimeout &&
@@ -17580,6 +17598,7 @@ __DEV__ &&
       previousRenderStartTime = root.cancelPendingCommit;
       null !== previousRenderStartTime &&
         ((root.cancelPendingCommit = null), previousRenderStartTime());
+      pendingEffectsLanes = 0;
       resetWorkInProgressStack();
       workInProgressRoot = root;
       workInProgress = previousRenderStartTime = createWorkInProgress(
@@ -18298,18 +18317,13 @@ __DEV__ &&
         commitErrors = null;
         commitStartTime = now();
         enableComponentPerformanceTrack &&
-          (suspendedCommitReason === SUSPENDED_COMMIT
-            ? logSuspendedCommitPhase(
-                completedRenderEndTime,
-                commitStartTime,
-                workInProgressUpdateTask
-              )
-            : suspendedCommitReason === THROTTLED_COMMIT &&
-              logSuspenseThrottlePhase(
-                completedRenderEndTime,
-                commitStartTime,
-                workInProgressUpdateTask
-              ));
+          null !== suspendedCommitReason &&
+          logSuspendedCommitPhase(
+            completedRenderEndTime,
+            commitStartTime,
+            suspendedCommitReason,
+            workInProgressUpdateTask
+          );
         shouldStartViewTransition = !1;
         suspendedCommitReason = 0 !== (finishedWork.flags & 13878);
         if (
@@ -18333,7 +18347,9 @@ __DEV__ &&
         finishedWork = shouldStartViewTransition;
         pendingEffectsStatus = PENDING_MUTATION_PHASE;
         enableViewTransition && finishedWork
-          ? (pendingViewTransition = startViewTransition(
+          ? (enableComponentPerformanceTrack &&
+              ((animatingLanes |= lanes), (animatingTask = null)),
+            (pendingViewTransition = startViewTransition(
               suspendedState,
               root.containerInfo,
               pendingTransitionTypes,
@@ -18343,8 +18359,9 @@ __DEV__ &&
               flushSpawnedWork,
               flushPassiveEffects,
               reportViewTransitionError,
-              suspendedViewTransition
-            ))
+              suspendedViewTransition,
+              finishedViewTransition.bind(null, lanes)
+            )))
           : (flushMutationEffects(), flushLayoutEffects(), flushSpawnedWork());
       }
     }
@@ -18358,7 +18375,7 @@ __DEV__ &&
       enableComponentPerformanceTrack &&
         ((commitEndTime = now()),
         logCommitPhase(
-          pendingSuspendedCommitReason === IMMEDIATE_COMMIT
+          null === pendingSuspendedCommitReason
             ? pendingEffectsRenderEndTime
             : commitStartTime,
           commitEndTime,
@@ -18366,8 +18383,37 @@ __DEV__ &&
           pendingDelayedCommitReason === ABORTED_VIEW_TRANSITION_COMMIT,
           workInProgressUpdateTask
         ),
-        (pendingSuspendedViewTransitionReason = reason),
-        (pendingSuspendedCommitReason = SUSPENDED_COMMIT));
+        (pendingSuspendedCommitReason = pendingSuspendedViewTransitionReason =
+          reason));
+    }
+    function finishedViewTransition(lanes) {
+      if (enableComponentPerformanceTrack && 0 !== (animatingLanes & lanes)) {
+        var task = animatingTask;
+        animatingLanes &= ~lanes;
+        animatingTask = null;
+        (!includesSyncLane(lanes) && 0 === (lanes & 124)) ||
+          includesSyncLane(workInProgressRootRenderLanes) ||
+          0 !== (workInProgressRootRenderLanes & 124) ||
+          includesSyncLane(pendingEffectsLanes) ||
+          0 !== (pendingEffectsLanes & 124) ||
+          (setCurrentTrackFromLanes(2),
+          logAnimatingPhase(blockingClampTime, now$1(), task));
+        0 !== (lanes & 4194048) &&
+          0 === (workInProgressRootRenderLanes & 4194048) &&
+          0 === (pendingEffectsLanes & 4194048) &&
+          (setCurrentTrackFromLanes(256),
+          logAnimatingPhase(transitionClampTime, now$1(), task));
+        0 !== (lanes & 62914560) &&
+          0 === (workInProgressRootRenderLanes & 62914560) &&
+          0 === (pendingEffectsLanes & 62914560) &&
+          (setCurrentTrackFromLanes(4194304),
+          logAnimatingPhase(retryClampTime, now$1(), task));
+        0 !== (lanes & 2080374784) &&
+          0 === (workInProgressRootRenderLanes & 2080374784) &&
+          0 === (pendingEffectsLanes & 2080374784) &&
+          (setCurrentTrackFromLanes(268435456),
+          logAnimatingPhase(idleClampTime, now$1(), task));
+      }
     }
     function flushAfterMutationEffects() {
       pendingEffectsStatus === PENDING_AFTER_MUTATION_PHASE &&
@@ -18427,8 +18473,8 @@ __DEV__ &&
               endTime = commitStartTime;
             !supportsUserTiming ||
               endTime <= startTime ||
-              (workInProgressUpdateTask
-                ? workInProgressUpdateTask.run(
+              (animatingTask
+                ? animatingTask.run(
                     console.timeStamp.bind(
                       console,
                       suspendedViewTransitionReason,
@@ -18515,7 +18561,7 @@ __DEV__ &&
         enableComponentPerformanceTrack &&
           ((commitEndTime = now()),
           logCommitPhase(
-            startTime === IMMEDIATE_COMMIT
+            null === startTime
               ? suspendedViewTransitionReason
               : commitStartTime,
             commitEndTime,
@@ -18541,7 +18587,7 @@ __DEV__ &&
             startViewTransitionStartTime,
             commitEndTime,
             pendingDelayedCommitReason === ABORTED_VIEW_TRANSITION_COMMIT,
-            workInProgressUpdateTask
+            animatingTask
           );
           pendingDelayedCommitReason !== ABORTED_VIEW_TRANSITION_COMMIT &&
             (pendingDelayedCommitReason = ANIMATION_STARTED_COMMIT);
@@ -18623,7 +18669,7 @@ __DEV__ &&
             errorInfo++
           )
             (0, onRecoverableError[errorInfo])(recoverableError);
-        0 !== (pendingEffectsLanes & 3) && flushPendingEffects();
+        includesSyncLane(pendingEffectsLanes) && flushPendingEffects();
         ensureRootIsScheduled(startViewTransitionStartTime);
         remainingLanes = startViewTransitionStartTime.pendingLanes;
         (enableInfiniteRenderLoopDetection &&
@@ -18736,7 +18782,7 @@ __DEV__ &&
           ? logAnimatingPhase(
               commitEndTime,
               passiveEffectStartTime,
-              workInProgressUpdateTask
+              animatingTask
             )
           : logPaintYieldPhase(
               commitEndTime,
@@ -18909,7 +18955,7 @@ __DEV__ &&
         throwIfInfiniteUpdateLoopDetected());
       enableComponentPerformanceTrack &&
         enableComponentPerformanceTrack &&
-        (0 !== (pingedLanes & 3) || 0 !== (pingedLanes & 124)
+        (includesSyncLane(pingedLanes) || 0 !== (pingedLanes & 124)
           ? 0 > blockingUpdateTime &&
             ((blockingClampTime = blockingUpdateTime = now()),
             (blockingUpdateTask = createTask("Promise Resolved")),
@@ -19948,6 +19994,7 @@ __DEV__ &&
       suspendInstance = $$$config.suspendInstance,
       suspendOnActiveViewTransition = $$$config.suspendOnActiveViewTransition,
       waitForCommitToBeReady = $$$config.waitForCommitToBeReady,
+      getSuspendedCommitReason = $$$config.getSuspendedCommitReason,
       NotPendingTransition = $$$config.NotPendingTransition,
       HostTransitionContext = $$$config.HostTransitionContext,
       resetFormInstance = $$$config.resetFormInstance,
@@ -20295,6 +20342,10 @@ __DEV__ &&
       transitionEventType = null,
       transitionEventIsRepeat = !1,
       transitionSuspendedTime = -1.1,
+      retryClampTime = -0,
+      idleClampTime = -0,
+      animatingLanes = 0,
+      animatingTask = null,
       yieldReason = 0,
       yieldStartTime = -1.1,
       currentUpdateIsNested = !1,
@@ -22057,8 +22108,6 @@ __DEV__ &&
       currentEndTime = null,
       legacyErrorBoundariesThatAlreadyFailed = null,
       IMMEDIATE_COMMIT = 0,
-      SUSPENDED_COMMIT = 1,
-      THROTTLED_COMMIT = 2,
       ABORTED_VIEW_TRANSITION_COMMIT = 1,
       DELAYED_PASSIVE_COMMIT = 2,
       ANIMATION_STARTED_COMMIT = 3,
@@ -22080,7 +22129,7 @@ __DEV__ &&
       pendingViewTransitionEvents = null,
       pendingTransitionTypes = null,
       pendingDidIncludeRenderPhaseUpdate = !1,
-      pendingSuspendedCommitReason = IMMEDIATE_COMMIT,
+      pendingSuspendedCommitReason = null,
       pendingDelayedCommitReason = IMMEDIATE_COMMIT,
       pendingSuspendedViewTransitionReason = null,
       NESTED_UPDATE_LIMIT = 50,
@@ -22630,7 +22679,7 @@ __DEV__ &&
         version: rendererVersion,
         rendererPackageName: rendererPackageName,
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.2.0-www-modern-115e3ec1-20250920"
+        reconcilerVersion: "19.2.0-www-modern-d91d28c8-20250920"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);

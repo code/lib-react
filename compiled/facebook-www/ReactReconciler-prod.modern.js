@@ -7822,7 +7822,7 @@ module.exports = function ($$$config) {
     return prevChildren;
   }
   function applyViewTransitionToHostInstances(
-    child,
+    fiber,
     name,
     className,
     collectMeasurements,
@@ -7830,7 +7830,7 @@ module.exports = function ($$$config) {
   ) {
     viewTransitionHostInstanceIdx = 0;
     return applyViewTransitionToHostInstancesRecursive(
-      child,
+      fiber.child,
       name,
       className,
       collectMeasurements,
@@ -7913,7 +7913,7 @@ module.exports = function ($$$config) {
             props = getViewTransitionClassName(props.default, props.share);
             "none" !== props &&
               (applyViewTransitionToHostInstances(
-                placement.child,
+                placement,
                 name,
                 props,
                 null,
@@ -7935,7 +7935,7 @@ module.exports = function ($$$config) {
         );
       "none" !== className
         ? applyViewTransitionToHostInstances(
-            placement.child,
+            placement,
             name,
             className,
             null,
@@ -7974,7 +7974,7 @@ module.exports = function ($$$config) {
                   );
                   "none" !== className &&
                     (applyViewTransitionToHostInstances(
-                      deletion.child,
+                      deletion,
                       name,
                       className,
                       null,
@@ -8012,13 +8012,7 @@ module.exports = function ($$$config) {
           void 0 !== pair ? props.share : props.exit
         );
       "none" !== className &&
-        (applyViewTransitionToHostInstances(
-          deletion.child,
-          name,
-          className,
-          null,
-          !1
-        )
+        (applyViewTransitionToHostInstances(deletion, name, className, null, !1)
           ? void 0 !== pair
             ? ((className = deletion.stateNode),
               (pair.paired = className),
@@ -8045,7 +8039,7 @@ module.exports = function ($$$config) {
         changedParent.flags &= -5;
         "none" !== props &&
           applyViewTransitionToHostInstances(
-            changedParent.child,
+            changedParent,
             name,
             props,
             (changedParent.memoizedState = []),
@@ -8343,7 +8337,7 @@ module.exports = function ($$$config) {
               (flags = getViewTransitionClassName(flags.default, flags.update)),
               "none" !== flags &&
                 applyViewTransitionToHostInstances(
-                  current.child,
+                  current,
                   isViewTransitionEligible,
                   flags,
                   (current.memoizedState = []),
@@ -11087,6 +11081,7 @@ module.exports = function ($$$config) {
               !workInProgressRootDidSkipSuspendedSiblings
             );
             if (0 !== getNextLanes(shouldTimeSlice, 0, !0)) break a;
+            pendingEffectsLanes = lanes;
             shouldTimeSlice.timeoutHandle = scheduleTimeout(
               commitRootWhenReady.bind(
                 null,
@@ -11101,7 +11096,7 @@ module.exports = function ($$$config) {
                 workInProgressSuspendedRetryLanes,
                 workInProgressRootDidSkipSuspendedSiblings,
                 renderWasConcurrent,
-                2,
+                "Throttled",
                 -0,
                 0
               ),
@@ -11121,7 +11116,7 @@ module.exports = function ($$$config) {
             workInProgressSuspendedRetryLanes,
             workInProgressRootDidSkipSuspendedSiblings,
             renderWasConcurrent,
-            0,
+            null,
             -0,
             0
           );
@@ -11182,6 +11177,7 @@ module.exports = function ($$$config) {
         )),
         null !== subtreeFlags)
       ) {
+        pendingEffectsLanes = lanes;
         root.cancelPendingCommit = subtreeFlags(
           commitRoot.bind(
             null,
@@ -11196,7 +11192,7 @@ module.exports = function ($$$config) {
             suspendedRetryLanes,
             exitStatus,
             suspendedCommitReason,
-            1,
+            null,
             completedRenderStartTime,
             completedRenderEndTime
           )
@@ -11313,6 +11309,7 @@ module.exports = function ($$$config) {
     timeoutHandle = root.cancelPendingCommit;
     null !== timeoutHandle &&
       ((root.cancelPendingCommit = null), timeoutHandle());
+    pendingEffectsLanes = 0;
     resetWorkInProgressStack();
     workInProgressRoot = root;
     workInProgress = timeoutHandle = createWorkInProgress(root.current, null);
@@ -11849,6 +11846,7 @@ module.exports = function ($$$config) {
             flushSpawnedWork,
             flushPassiveEffects,
             reportViewTransitionError,
+            null,
             null
           ))
         : (flushMutationEffects(), flushLayoutEffects(), flushSpawnedWork());
@@ -12799,8 +12797,9 @@ module.exports = function ($$$config) {
     startSuspendingCommit = $$$config.startSuspendingCommit,
     suspendInstance = $$$config.suspendInstance,
     suspendOnActiveViewTransition = $$$config.suspendOnActiveViewTransition,
-    waitForCommitToBeReady = $$$config.waitForCommitToBeReady,
-    NotPendingTransition = $$$config.NotPendingTransition,
+    waitForCommitToBeReady = $$$config.waitForCommitToBeReady;
+  $$$config.getSuspendedCommitReason;
+  var NotPendingTransition = $$$config.NotPendingTransition,
     HostTransitionContext = $$$config.HostTransitionContext,
     resetFormInstance = $$$config.resetFormInstance;
   $$$config.bindToConsole;
@@ -13951,7 +13950,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.2.0-www-modern-115e3ec1-20250920"
+      reconcilerVersion: "19.2.0-www-modern-d91d28c8-20250920"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);
