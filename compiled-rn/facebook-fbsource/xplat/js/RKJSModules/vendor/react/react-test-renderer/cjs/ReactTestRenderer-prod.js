@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<88e9a5d0636ed39143b187e64069b221>>
+ * @generated SignedSource<<cfc0bf9b1feaa56b723fba182586dddd>>
  */
 
 "use strict";
@@ -1450,7 +1450,7 @@ function performWorkOnRootViaSchedulerTask(root, didTimeout) {
   if (0 !== pendingEffectsStatus && 5 !== pendingEffectsStatus)
     return (root.callbackNode = null), (root.callbackPriority = 0), null;
   var originalCallbackNode = root.callbackNode;
-  if (flushPendingEffects() && root.callbackNode !== originalCallbackNode)
+  if (flushPendingEffects(!0) && root.callbackNode !== originalCallbackNode)
     return null;
   var workInProgressRootRenderLanes$jscomp$0 = workInProgressRootRenderLanes;
   workInProgressRootRenderLanes$jscomp$0 = getNextLanes(
@@ -9082,7 +9082,7 @@ function commitRoot(
       ? ((root.callbackNode = null),
         (root.callbackPriority = 0),
         scheduleCallback(NormalPriority$1, function () {
-          flushPassiveEffects();
+          flushPassiveEffects(!0);
           return null;
         }))
       : ((root.callbackNode = null), (root.callbackPriority = 0));
@@ -9242,11 +9242,11 @@ function releaseRootPooledCache(root, remainingLanes) {
     null != remainingLanes &&
       ((root.pooledCache = null), releaseCache(remainingLanes)));
 }
-function flushPendingEffects() {
+function flushPendingEffects(wasDelayedCommit) {
   flushMutationEffects();
   flushLayoutEffects();
   flushSpawnedWork();
-  return flushPassiveEffects();
+  return flushPassiveEffects(wasDelayedCommit);
 }
 function flushPassiveEffects() {
   if (5 !== pendingEffectsStatus) return !1;
@@ -10050,24 +10050,24 @@ function wrapFiber(fiber) {
     fiberToWrapper.set(fiber, wrapper));
   return wrapper;
 }
-var internals$jscomp$inline_1482 = {
+var internals$jscomp$inline_1483 = {
   bundleType: 0,
-  version: "19.2.0-native-fb-6eda5347-20250918",
+  version: "19.2.0-native-fb-a51f9252-20250916",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.2.0-native-fb-6eda5347-20250918"
+  reconcilerVersion: "19.2.0-native-fb-a51f9252-20250916"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1483 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1484 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1483.isDisabled &&
-    hook$jscomp$inline_1483.supportsFiber
+    !hook$jscomp$inline_1484.isDisabled &&
+    hook$jscomp$inline_1484.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1483.inject(
-        internals$jscomp$inline_1482
+      (rendererID = hook$jscomp$inline_1484.inject(
+        internals$jscomp$inline_1483
       )),
-        (injectedHook = hook$jscomp$inline_1483);
+        (injectedHook = hook$jscomp$inline_1484);
     } catch (err) {}
 }
 exports._Scheduler = Scheduler;
@@ -10191,4 +10191,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.2.0-native-fb-6eda5347-20250918";
+exports.version = "19.2.0-native-fb-a51f9252-20250916";
