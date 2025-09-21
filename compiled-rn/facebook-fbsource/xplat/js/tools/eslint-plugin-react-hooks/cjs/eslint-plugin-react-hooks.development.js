@@ -12,7 +12,7 @@
  * @lightSyntaxTransform
  * @preventMunge
  * @oncall react_core
- * @generated SignedSource<<1c24fa08b2dab423d92d058c24b11494>>
+ * @generated SignedSource<<60518f860ab77ca91f3dd6ff778aeac6>>
  */
 
 'use strict';
@@ -25490,6 +25490,10 @@ function isReorderableExpression(builder, expr, allowLocalIdentifiers) {
                 return true;
             }
         }
+        case 'TSInstantiationExpression': {
+            const innerExpr = expr.get('expression');
+            return isReorderableExpression(builder, innerExpr, allowLocalIdentifiers);
+        }
         case 'RegExpLiteral':
         case 'StringLiteral':
         case 'NumericLiteral':
@@ -41667,7 +41671,9 @@ function computeSignatureForInstruction(context, env, instr) {
         }
         case 'PropertyStore':
         case 'ComputedStore': {
-            const mutationReason = value.kind === 'PropertyStore' && value.property === 'current'
+            const mutationReason = value.kind === 'PropertyStore' &&
+                value.property === 'current' &&
+                value.object.identifier.type.kind === 'Type'
                 ? { kind: 'AssignCurrentProperty' }
                 : null;
             effects.push({

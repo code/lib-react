@@ -6,7 +6,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
- * @generated SignedSource<<4e94780a3025f6e3cfddffbf0c6d761e>>
+ * @generated SignedSource<<1bcdbec6f4e7881ef00582a5c118da84>>
  */
 
 'use strict';
@@ -25475,6 +25475,10 @@ function isReorderableExpression(builder, expr, allowLocalIdentifiers) {
                 return true;
             }
         }
+        case 'TSInstantiationExpression': {
+            const innerExpr = expr.get('expression');
+            return isReorderableExpression(builder, innerExpr, allowLocalIdentifiers);
+        }
         case 'RegExpLiteral':
         case 'StringLiteral':
         case 'NumericLiteral':
@@ -41446,7 +41450,9 @@ function computeSignatureForInstruction(context, env, instr) {
         }
         case 'PropertyStore':
         case 'ComputedStore': {
-            const mutationReason = value.kind === 'PropertyStore' && value.property === 'current'
+            const mutationReason = value.kind === 'PropertyStore' &&
+                value.property === 'current' &&
+                value.object.identifier.type.kind === 'Type'
                 ? { kind: 'AssignCurrentProperty' }
                 : null;
             effects.push({

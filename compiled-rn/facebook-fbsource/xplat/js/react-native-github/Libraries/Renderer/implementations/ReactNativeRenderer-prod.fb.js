@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<d040d7e45fc26e0a181fca38b3d5e68e>>
+ * @generated SignedSource<<0948130b69fab43d56c415c8c04f5a13>>
  */
 
 "use strict";
@@ -2867,7 +2867,7 @@ function performWorkOnRootViaSchedulerTask(root, didTimeout) {
   if (0 !== pendingEffectsStatus && 5 !== pendingEffectsStatus)
     return (root.callbackNode = null), (root.callbackPriority = 0), null;
   var originalCallbackNode = root.callbackNode;
-  if (flushPendingEffects(!0) && root.callbackNode !== originalCallbackNode)
+  if (flushPendingEffects() && root.callbackNode !== originalCallbackNode)
     return null;
   var workInProgressRootRenderLanes$jscomp$0 = workInProgressRootRenderLanes;
   workInProgressRootRenderLanes$jscomp$0 = getNextLanes(
@@ -10684,7 +10684,7 @@ function commitRoot(
       ? ((root.callbackNode = null),
         (root.callbackPriority = 0),
         scheduleCallback(NormalPriority$1, function () {
-          flushPassiveEffects(!0);
+          flushPassiveEffects();
           return null;
         }))
       : ((root.callbackNode = null), (root.callbackPriority = 0));
@@ -10844,11 +10844,11 @@ function releaseRootPooledCache(root, remainingLanes) {
     null != remainingLanes &&
       ((root.pooledCache = null), releaseCache(remainingLanes)));
 }
-function flushPendingEffects(wasDelayedCommit) {
+function flushPendingEffects() {
   flushMutationEffects();
   flushLayoutEffects();
   flushSpawnedWork();
-  return flushPassiveEffects(wasDelayedCommit);
+  return flushPassiveEffects();
 }
 function flushPassiveEffects() {
   if (5 !== pendingEffectsStatus) return !1;
@@ -11377,11 +11377,11 @@ function updateContainer(element, container, parentComponent, callback) {
   return lane;
 }
 var isomorphicReactPackageVersion = React.version;
-if ("19.2.0-native-fb-78997291-20250916" !== isomorphicReactPackageVersion)
+if ("19.2.0-native-fb-03a96c75-20250918" !== isomorphicReactPackageVersion)
   throw Error(
     'Incompatible React versions: The "react" and "react-native-renderer" packages must have the exact same version. Instead got:\n  - react:                  ' +
       (isomorphicReactPackageVersion +
-        "\n  - react-native-renderer:  19.2.0-native-fb-78997291-20250916\nLearn more: https://react.dev/warnings/version-mismatch")
+        "\n  - react-native-renderer:  19.2.0-native-fb-03a96c75-20250918\nLearn more: https://react.dev/warnings/version-mismatch")
   );
 if (
   "function" !==
@@ -11429,26 +11429,26 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1326 = {
+  internals$jscomp$inline_1325 = {
     bundleType: 0,
-    version: "19.2.0-native-fb-78997291-20250916",
+    version: "19.2.0-native-fb-03a96c75-20250918",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.2.0-native-fb-78997291-20250916"
+    reconcilerVersion: "19.2.0-native-fb-03a96c75-20250918"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1326.rendererConfig = extraDevToolsConfig);
+  (internals$jscomp$inline_1325.rendererConfig = extraDevToolsConfig);
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1689 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1688 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1689.isDisabled &&
-    hook$jscomp$inline_1689.supportsFiber
+    !hook$jscomp$inline_1688.isDisabled &&
+    hook$jscomp$inline_1688.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1689.inject(
-        internals$jscomp$inline_1326
+      (rendererID = hook$jscomp$inline_1688.inject(
+        internals$jscomp$inline_1325
       )),
-        (injectedHook = hook$jscomp$inline_1689);
+        (injectedHook = hook$jscomp$inline_1688);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {

@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<a51b93f69c5801a47c5d868be3971a3f>>
+ * @generated SignedSource<<b55dc526e9a2df10216ca91274af89ad>>
  */
 
 "use strict";
@@ -2444,7 +2444,7 @@ function performWorkOnRootViaSchedulerTask(root, didTimeout) {
   if (0 !== pendingEffectsStatus && 5 !== pendingEffectsStatus)
     return (root.callbackNode = null), (root.callbackPriority = 0), null;
   var originalCallbackNode = root.callbackNode;
-  if (flushPendingEffects(!0) && root.callbackNode !== originalCallbackNode)
+  if (flushPendingEffects() && root.callbackNode !== originalCallbackNode)
     return null;
   var workInProgressRootRenderLanes$jscomp$0 = workInProgressRootRenderLanes;
   workInProgressRootRenderLanes$jscomp$0 = getNextLanes(
@@ -10189,7 +10189,7 @@ function commitRoot(
       ? ((root.callbackNode = null),
         (root.callbackPriority = 0),
         scheduleCallback(NormalPriority$1, function () {
-          flushPassiveEffects(!0);
+          flushPassiveEffects();
           return null;
         }))
       : ((root.callbackNode = null), (root.callbackPriority = 0));
@@ -10349,11 +10349,11 @@ function releaseRootPooledCache(root, remainingLanes) {
     null != remainingLanes &&
       ((root.pooledCache = null), releaseCache(remainingLanes)));
 }
-function flushPendingEffects(wasDelayedCommit) {
+function flushPendingEffects() {
   flushMutationEffects();
   flushLayoutEffects();
   flushSpawnedWork();
-  return flushPassiveEffects(wasDelayedCommit);
+  return flushPassiveEffects();
 }
 function flushPassiveEffects() {
   if (5 !== pendingEffectsStatus) return !1;
@@ -11216,26 +11216,26 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1295 = {
+  internals$jscomp$inline_1294 = {
     bundleType: 0,
-    version: "19.2.0-native-fb-78997291-20250916",
+    version: "19.2.0-native-fb-03a96c75-20250918",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.2.0-native-fb-78997291-20250916"
+    reconcilerVersion: "19.2.0-native-fb-03a96c75-20250918"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1295.rendererConfig = extraDevToolsConfig);
+  (internals$jscomp$inline_1294.rendererConfig = extraDevToolsConfig);
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1625 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1624 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1625.isDisabled &&
-    hook$jscomp$inline_1625.supportsFiber
+    !hook$jscomp$inline_1624.isDisabled &&
+    hook$jscomp$inline_1624.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1625.inject(
-        internals$jscomp$inline_1295
+      (rendererID = hook$jscomp$inline_1624.inject(
+        internals$jscomp$inline_1294
       )),
-        (injectedHook = hook$jscomp$inline_1625);
+        (injectedHook = hook$jscomp$inline_1624);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {
