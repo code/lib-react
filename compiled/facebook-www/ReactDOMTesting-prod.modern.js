@@ -2491,7 +2491,7 @@ function performWorkOnRootViaSchedulerTask(root, didTimeout) {
   if (0 !== pendingEffectsStatus && 5 !== pendingEffectsStatus)
     return (root.callbackNode = null), (root.callbackPriority = 0), null;
   var originalCallbackNode = root.callbackNode;
-  if (flushPendingEffects() && root.callbackNode !== originalCallbackNode)
+  if (flushPendingEffects(!0) && root.callbackNode !== originalCallbackNode)
     return null;
   var workInProgressRootRenderLanes$jscomp$0 = workInProgressRootRenderLanes;
   workInProgressRootRenderLanes$jscomp$0 = getNextLanes(
@@ -13305,7 +13305,7 @@ function commitRoot(
       ? ((root.callbackNode = null),
         (root.callbackPriority = 0),
         scheduleCallback(NormalPriority$1, function () {
-          flushPassiveEffects();
+          flushPassiveEffects(!0);
           return null;
         }))
       : ((root.callbackNode = null), (root.callbackPriority = 0));
@@ -13338,8 +13338,7 @@ function commitRoot(
           flushAfterMutationEffects,
           flushSpawnedWork,
           flushPassiveEffects,
-          reportViewTransitionError,
-          null
+          reportViewTransitionError
         ))
       : (flushMutationEffects(), flushLayoutEffects(), flushSpawnedWork());
   }
@@ -13630,16 +13629,16 @@ function releaseRootPooledCache(root, remainingLanes) {
     null != remainingLanes &&
       ((root.pooledCache = null), releaseCache(remainingLanes)));
 }
-function flushPendingEffects() {
+function flushPendingEffects(wasDelayedCommit) {
   enableViewTransition &&
     null !== pendingViewTransition &&
     (pendingViewTransition.skipTransition(), (pendingViewTransition = null));
   flushMutationEffects();
   flushLayoutEffects();
   flushSpawnedWork();
-  return flushPassiveEffects();
+  return flushPassiveEffects(wasDelayedCommit);
 }
-function flushPassiveEffects() {
+function flushPassiveEffects(wasDelayedCommit) {
   if (5 !== pendingEffectsStatus) return !1;
   var root = pendingEffectsRoot,
     remainingLanes = pendingEffectsRemainingLanes;
@@ -13651,7 +13650,7 @@ function flushPassiveEffects() {
     return (
       (Internals.p = 32 > renderPriority ? 32 : renderPriority),
       (ReactSharedInternals.T = null),
-      flushPassiveEffectsImpl()
+      flushPassiveEffectsImpl(wasDelayedCommit)
     );
   } finally {
     (Internals.p = previousPriority),
@@ -17488,16 +17487,16 @@ function startViewTransition(
           (forceLayout(ownerDocument),
           "loading" === ownerDocument.fonts.status &&
             blockingPromises.push(ownerDocument.fonts.ready));
-        previousFontLoadingStatus = blockingPromises.length;
-        if (null !== suspendedState)
+        if (null !== suspendedState) {
+          previousFontLoadingStatus = suspendedState.suspenseyImages;
           for (
-            var suspenseyImages = suspendedState.suspenseyImages,
+            var blockingIndexSnapshot = blockingPromises.length,
               imgBytes = 0,
               i = 0;
-            i < suspenseyImages.length;
+            i < previousFontLoadingStatus.length;
             i++
           ) {
-            var suspenseyImage = suspenseyImages[i];
+            var suspenseyImage = previousFontLoadingStatus[i];
             if (!suspenseyImage.complete) {
               var rect = suspenseyImage.getBoundingClientRect();
               if (
@@ -17508,7 +17507,7 @@ function startViewTransition(
               ) {
                 imgBytes += estimateImageBytes(suspenseyImage);
                 if (imgBytes > estimatedBytesWithinLimit) {
-                  blockingPromises.length = previousFontLoadingStatus;
+                  blockingPromises.length = blockingIndexSnapshot;
                   break;
                 }
                 suspenseyImage = new Promise(
@@ -17518,6 +17517,7 @@ function startViewTransition(
               }
             }
           }
+        }
         if (0 < blockingPromises.length)
           return (
             (ownerWindow = Promise.race([
@@ -20015,14 +20015,14 @@ function getCrossOriginStringAs(as, input) {
 }
 var isomorphicReactPackageVersion$jscomp$inline_2146 = React.version;
 if (
-  "19.2.0-www-modern-6eda5347-20250918" !==
+  "19.2.0-www-modern-a51f9252-20250916" !==
   isomorphicReactPackageVersion$jscomp$inline_2146
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2146,
-      "19.2.0-www-modern-6eda5347-20250918"
+      "19.2.0-www-modern-a51f9252-20250916"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -20040,10 +20040,10 @@ Internals.Events = [
 ];
 var internals$jscomp$inline_2775 = {
   bundleType: 0,
-  version: "19.2.0-www-modern-6eda5347-20250918",
+  version: "19.2.0-www-modern-a51f9252-20250916",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.2.0-www-modern-6eda5347-20250918"
+  reconcilerVersion: "19.2.0-www-modern-a51f9252-20250916"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_2776 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -20623,4 +20623,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.2.0-www-modern-6eda5347-20250918";
+exports.version = "19.2.0-www-modern-a51f9252-20250916";

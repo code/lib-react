@@ -1421,7 +1421,7 @@ module.exports = function ($$$config) {
     if (0 !== pendingEffectsStatus && 5 !== pendingEffectsStatus)
       return (root.callbackNode = null), (root.callbackPriority = 0), null;
     var originalCallbackNode = root.callbackNode;
-    if (flushPendingEffects() && root.callbackNode !== originalCallbackNode)
+    if (flushPendingEffects(!0) && root.callbackNode !== originalCallbackNode)
       return null;
     var workInProgressRootRenderLanes$jscomp$0 = workInProgressRootRenderLanes;
     workInProgressRootRenderLanes$jscomp$0 = getNextLanes(
@@ -11815,7 +11815,7 @@ module.exports = function ($$$config) {
         ? ((root.callbackNode = null),
           (root.callbackPriority = 0),
           scheduleCallback(NormalPriority$1, function () {
-            flushPassiveEffects();
+            flushPassiveEffects(!0);
             return null;
           }))
         : ((root.callbackNode = null), (root.callbackPriority = 0));
@@ -11848,8 +11848,7 @@ module.exports = function ($$$config) {
             flushAfterMutationEffects,
             flushSpawnedWork,
             flushPassiveEffects,
-            reportViewTransitionError,
-            null
+            reportViewTransitionError
           ))
         : (flushMutationEffects(), flushLayoutEffects(), flushSpawnedWork());
     }
@@ -12039,7 +12038,7 @@ module.exports = function ($$$config) {
       null != remainingLanes &&
         ((root.pooledCache = null), releaseCache(remainingLanes)));
   }
-  function flushPendingEffects() {
+  function flushPendingEffects(wasDelayedCommit) {
     enableViewTransition &&
       null !== pendingViewTransition &&
       (stopViewTransition(pendingViewTransition),
@@ -12047,9 +12046,9 @@ module.exports = function ($$$config) {
     flushMutationEffects();
     flushLayoutEffects();
     flushSpawnedWork();
-    return flushPassiveEffects();
+    return flushPassiveEffects(wasDelayedCommit);
   }
-  function flushPassiveEffects() {
+  function flushPassiveEffects(wasDelayedCommit) {
     if (5 !== pendingEffectsStatus) return !1;
     var root = pendingEffectsRoot,
       remainingLanes = pendingEffectsRemainingLanes;
@@ -12062,7 +12061,7 @@ module.exports = function ($$$config) {
       return (
         setCurrentUpdatePriority(renderPriority),
         (ReactSharedInternals.T = null),
-        flushPassiveEffectsImpl()
+        flushPassiveEffectsImpl(wasDelayedCommit)
       );
     } finally {
       setCurrentUpdatePriority(previousPriority),
@@ -13951,7 +13950,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.2.0-www-modern-6eda5347-20250918"
+      reconcilerVersion: "19.2.0-www-modern-a51f9252-20250916"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);

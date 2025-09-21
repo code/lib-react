@@ -25489,10 +25489,6 @@ function isReorderableExpression(builder, expr, allowLocalIdentifiers) {
                 return true;
             }
         }
-        case 'TSInstantiationExpression': {
-            const innerExpr = expr.get('expression');
-            return isReorderableExpression(builder, innerExpr, allowLocalIdentifiers);
-        }
         case 'RegExpLiteral':
         case 'StringLiteral':
         case 'NumericLiteral':
@@ -32159,7 +32155,6 @@ const EnvironmentConfigSchema = zod.z.object({
     enableCustomTypeDefinitionForReanimated: zod.z.boolean().default(false),
     hookPattern: zod.z.string().nullable().default(null),
     enableTreatRefLikeIdentifiersAsRefs: zod.z.boolean().default(true),
-    enableTreatSetIdentifiersAsStateSetters: zod.z.boolean().default(false),
     lowerContextAccess: ExternalFunctionSchema.nullable().default(null),
     validateNoVoidUseMemo: zod.z.boolean().default(false),
     validateNoDynamicallyCreatedComponentsOrHooks: zod.z.boolean().default(false),
@@ -41670,9 +41665,7 @@ function computeSignatureForInstruction(context, env, instr) {
         }
         case 'PropertyStore':
         case 'ComputedStore': {
-            const mutationReason = value.kind === 'PropertyStore' &&
-                value.property === 'current' &&
-                value.object.identifier.type.kind === 'Type'
+            const mutationReason = value.kind === 'PropertyStore' && value.property === 'current'
                 ? { kind: 'AssignCurrentProperty' }
                 : null;
             effects.push({
@@ -48015,16 +48008,9 @@ function* generateInstructionTypes(env, names, instr) {
         }
         case 'CallExpression': {
             const returnType = makeType();
-            let shapeId = null;
-            if (env.config.enableTreatSetIdentifiersAsStateSetters) {
-                const name = getName(names, value.callee.identifier.id);
-                if (name.startsWith('set')) {
-                    shapeId = BuiltInSetStateId;
-                }
-            }
             yield equation(value.callee.identifier.type, {
                 kind: 'Function',
-                shapeId,
+                shapeId: null,
                 return: returnType,
                 isConstructor: false,
             });
