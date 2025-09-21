@@ -25489,6 +25489,10 @@ function isReorderableExpression(builder, expr, allowLocalIdentifiers) {
                 return true;
             }
         }
+        case 'TSInstantiationExpression': {
+            const innerExpr = expr.get('expression');
+            return isReorderableExpression(builder, innerExpr, allowLocalIdentifiers);
+        }
         case 'RegExpLiteral':
         case 'StringLiteral':
         case 'NumericLiteral':
@@ -41666,7 +41670,9 @@ function computeSignatureForInstruction(context, env, instr) {
         }
         case 'PropertyStore':
         case 'ComputedStore': {
-            const mutationReason = value.kind === 'PropertyStore' && value.property === 'current'
+            const mutationReason = value.kind === 'PropertyStore' &&
+                value.property === 'current' &&
+                value.object.identifier.type.kind === 'Type'
                 ? { kind: 'AssignCurrentProperty' }
                 : null;
             effects.push({
