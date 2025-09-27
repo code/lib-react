@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<ae8187f986eb790d19bf7ed27a17e1e1>>
+ * @generated SignedSource<<ba2c212c3905f1c0337a02c5814547da>>
  */
 
 "use strict";
@@ -10675,10 +10675,10 @@ function wrapFiber(fiber) {
 }
 var internals$jscomp$inline_1267 = {
   bundleType: 0,
-  version: "19.2.0-native-fb-d91d28c8-20250920",
+  version: "19.2.0-native-fb-cad813ac-20250923",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.2.0-native-fb-d91d28c8-20250920",
+  reconcilerVersion: "19.2.0-native-fb-cad813ac-20250923",
   getLaneLabelMap: function () {
     for (
       var map = new Map(), lane = 1, index$145 = 0;
@@ -10829,4 +10829,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.2.0-native-fb-d91d28c8-20250920";
+exports.version = "19.2.0-native-fb-cad813ac-20250923";
