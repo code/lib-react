@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<01cc68ffeff2a366da428dc1af7d7fc1>>
+ * @generated SignedSource<<ff4893d3a443bd3ec827464a57fcd8dd>>
  */
 
 "use strict";
@@ -310,9 +310,6 @@ function lazyInitializer(payload) {
 function useMemoCache(size) {
   return ReactSharedInternals.H.useMemoCache(size);
 }
-function useEffectEvent(callback) {
-  return ReactSharedInternals.H.useEffectEvent(callback);
-}
 var reportGlobalError =
     "function" === typeof reportError
       ? reportError
@@ -467,7 +464,9 @@ exports.createElement = function (type, config, children) {
 exports.createRef = function () {
   return { current: null };
 };
-exports.experimental_useEffectEvent = useEffectEvent;
+exports.experimental_useEffectEvent = function (callback) {
+  return ReactSharedInternals.H.useEffectEvent(callback);
+};
 exports.forwardRef = function (render) {
   return { $$typeof: REACT_FORWARD_REF_TYPE, render: render };
 };
@@ -545,7 +544,6 @@ exports.useDeferredValue = function (value, initialValue) {
 exports.useEffect = function (create, deps) {
   return ReactSharedInternals.H.useEffect(create, deps);
 };
-exports.useEffectEvent = useEffectEvent;
 exports.useId = function () {
   return ReactSharedInternals.H.useId();
 };
@@ -587,7 +585,7 @@ exports.useSyncExternalStore = function (
 exports.useTransition = function () {
   return ReactSharedInternals.H.useTransition();
 };
-exports.version = "19.2.0-native-fb-df38ac9a-20250926";
+exports.version = "19.2.0-native-fb-047715c4-20250925";
 "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
   "function" ===
     typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&

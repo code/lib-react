@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<bc5097e080c6c89160d63695971c4731>>
+ * @generated SignedSource<<45850dcd533648ef5040ed3ce1421337>>
  */
 
 "use strict";
@@ -3692,31 +3692,6 @@ function mountEffect(create, deps) {
 function updateEffect(create, deps) {
   updateEffectImpl(2048, 8, create, deps);
 }
-function useEffectEventImpl(payload) {
-  currentlyRenderingFiber.flags |= 4;
-  var componentUpdateQueue = currentlyRenderingFiber.updateQueue;
-  if (null === componentUpdateQueue)
-    (componentUpdateQueue = createFunctionComponentUpdateQueue()),
-      (currentlyRenderingFiber.updateQueue = componentUpdateQueue),
-      (componentUpdateQueue.events = [payload]);
-  else {
-    var events = componentUpdateQueue.events;
-    null === events
-      ? (componentUpdateQueue.events = [payload])
-      : events.push(payload);
-  }
-}
-function updateEvent(callback) {
-  var ref = updateWorkInProgressHook().memoizedState;
-  useEffectEventImpl({ ref: ref, nextImpl: callback });
-  return function () {
-    if (0 !== (executionContext & 2))
-      throw Error(
-        "A function wrapped in useEffectEvent can't be called during rendering."
-      );
-    return ref.impl.apply(void 0, arguments);
-  };
-}
 function updateInsertionEffect(create, deps) {
   return updateEffectImpl(4, 2, create, deps);
 }
@@ -3997,32 +3972,31 @@ function entangleTransitionUpdate(root, queue, lane) {
   }
 }
 var ContextOnlyDispatcher = {
-  readContext: readContext,
-  use: use,
-  useCallback: throwInvalidHookError,
-  useContext: throwInvalidHookError,
-  useEffect: throwInvalidHookError,
-  useImperativeHandle: throwInvalidHookError,
-  useLayoutEffect: throwInvalidHookError,
-  useInsertionEffect: throwInvalidHookError,
-  useMemo: throwInvalidHookError,
-  useReducer: throwInvalidHookError,
-  useRef: throwInvalidHookError,
-  useState: throwInvalidHookError,
-  useDebugValue: throwInvalidHookError,
-  useDeferredValue: throwInvalidHookError,
-  useTransition: throwInvalidHookError,
-  useSyncExternalStore: throwInvalidHookError,
-  useId: throwInvalidHookError,
-  useHostTransitionStatus: throwInvalidHookError,
-  useFormState: throwInvalidHookError,
-  useActionState: throwInvalidHookError,
-  useOptimistic: throwInvalidHookError,
-  useMemoCache: throwInvalidHookError,
-  useCacheRefresh: throwInvalidHookError
-};
-ContextOnlyDispatcher.useEffectEvent = throwInvalidHookError;
-var HooksDispatcherOnMount = {
+    readContext: readContext,
+    use: use,
+    useCallback: throwInvalidHookError,
+    useContext: throwInvalidHookError,
+    useEffect: throwInvalidHookError,
+    useImperativeHandle: throwInvalidHookError,
+    useLayoutEffect: throwInvalidHookError,
+    useInsertionEffect: throwInvalidHookError,
+    useMemo: throwInvalidHookError,
+    useReducer: throwInvalidHookError,
+    useRef: throwInvalidHookError,
+    useState: throwInvalidHookError,
+    useDebugValue: throwInvalidHookError,
+    useDeferredValue: throwInvalidHookError,
+    useTransition: throwInvalidHookError,
+    useSyncExternalStore: throwInvalidHookError,
+    useId: throwInvalidHookError,
+    useHostTransitionStatus: throwInvalidHookError,
+    useFormState: throwInvalidHookError,
+    useActionState: throwInvalidHookError,
+    useOptimistic: throwInvalidHookError,
+    useMemoCache: throwInvalidHookError,
+    useCacheRefresh: throwInvalidHookError
+  },
+  HooksDispatcherOnMount = {
     readContext: readContext,
     use: use,
     useCallback: function (callback, deps) {
@@ -4184,18 +4158,6 @@ var HooksDispatcherOnMount = {
         null,
         currentlyRenderingFiber
       ));
-    },
-    useEffectEvent: function (callback) {
-      var hook = mountWorkInProgressHook(),
-        ref = { impl: callback };
-      hook.memoizedState = ref;
-      return function () {
-        if (0 !== (executionContext & 2))
-          throw Error(
-            "A function wrapped in useEffectEvent can't be called during rendering."
-          );
-        return ref.impl.apply(void 0, arguments);
-      };
     }
   },
   HooksDispatcherOnUpdate = {
@@ -4244,61 +4206,59 @@ var HooksDispatcherOnMount = {
     },
     useMemoCache: useMemoCache,
     useCacheRefresh: updateRefresh
+  },
+  HooksDispatcherOnRerender = {
+    readContext: readContext,
+    use: use,
+    useCallback: updateCallback,
+    useContext: readContext,
+    useEffect: updateEffect,
+    useImperativeHandle: updateImperativeHandle,
+    useInsertionEffect: updateInsertionEffect,
+    useLayoutEffect: updateLayoutEffect,
+    useMemo: updateMemo,
+    useReducer: rerenderReducer,
+    useRef: updateRef,
+    useState: function () {
+      return rerenderReducer(basicStateReducer);
+    },
+    useDebugValue: mountDebugValue,
+    useDeferredValue: function (value, initialValue) {
+      var hook = updateWorkInProgressHook();
+      return null === currentHook
+        ? mountDeferredValueImpl(hook, value, initialValue)
+        : updateDeferredValueImpl(
+            hook,
+            currentHook.memoizedState,
+            value,
+            initialValue
+          );
+    },
+    useTransition: function () {
+      var booleanOrThenable = rerenderReducer(basicStateReducer)[0],
+        start = updateWorkInProgressHook().memoizedState;
+      return [
+        "boolean" === typeof booleanOrThenable
+          ? booleanOrThenable
+          : useThenable(booleanOrThenable),
+        start
+      ];
+    },
+    useSyncExternalStore: updateSyncExternalStore,
+    useId: updateId,
+    useHostTransitionStatus: useHostTransitionStatus,
+    useFormState: rerenderActionState,
+    useActionState: rerenderActionState,
+    useOptimistic: function (passthrough, reducer) {
+      var hook = updateWorkInProgressHook();
+      if (null !== currentHook)
+        return updateOptimisticImpl(hook, currentHook, passthrough, reducer);
+      hook.baseState = passthrough;
+      return [passthrough, hook.queue.dispatch];
+    },
+    useMemoCache: useMemoCache,
+    useCacheRefresh: updateRefresh
   };
-HooksDispatcherOnUpdate.useEffectEvent = updateEvent;
-var HooksDispatcherOnRerender = {
-  readContext: readContext,
-  use: use,
-  useCallback: updateCallback,
-  useContext: readContext,
-  useEffect: updateEffect,
-  useImperativeHandle: updateImperativeHandle,
-  useInsertionEffect: updateInsertionEffect,
-  useLayoutEffect: updateLayoutEffect,
-  useMemo: updateMemo,
-  useReducer: rerenderReducer,
-  useRef: updateRef,
-  useState: function () {
-    return rerenderReducer(basicStateReducer);
-  },
-  useDebugValue: mountDebugValue,
-  useDeferredValue: function (value, initialValue) {
-    var hook = updateWorkInProgressHook();
-    return null === currentHook
-      ? mountDeferredValueImpl(hook, value, initialValue)
-      : updateDeferredValueImpl(
-          hook,
-          currentHook.memoizedState,
-          value,
-          initialValue
-        );
-  },
-  useTransition: function () {
-    var booleanOrThenable = rerenderReducer(basicStateReducer)[0],
-      start = updateWorkInProgressHook().memoizedState;
-    return [
-      "boolean" === typeof booleanOrThenable
-        ? booleanOrThenable
-        : useThenable(booleanOrThenable),
-      start
-    ];
-  },
-  useSyncExternalStore: updateSyncExternalStore,
-  useId: updateId,
-  useHostTransitionStatus: useHostTransitionStatus,
-  useFormState: rerenderActionState,
-  useActionState: rerenderActionState,
-  useOptimistic: function (passthrough, reducer) {
-    var hook = updateWorkInProgressHook();
-    if (null !== currentHook)
-      return updateOptimisticImpl(hook, currentHook, passthrough, reducer);
-    hook.baseState = passthrough;
-    return [passthrough, hook.queue.dispatch];
-  },
-  useMemoCache: useMemoCache,
-  useCacheRefresh: updateRefresh
-};
-HooksDispatcherOnRerender.useEffectEvent = updateEvent;
 function applyDerivedStateFromProps(
   workInProgress,
   ctor,
@@ -7300,7 +7260,7 @@ function commitBeforeMutationEffects(root, firstChild) {
     if (
       ((root = nextEffect),
       (firstChild = root.child),
-      0 !== (root.subtreeFlags & 1028) && null !== firstChild)
+      0 !== (root.subtreeFlags & 1024) && null !== firstChild)
     )
       (firstChild.return = root), (nextEffect = firstChild);
     else
@@ -7310,16 +7270,6 @@ function commitBeforeMutationEffects(root, firstChild) {
         firstChild = root.flags;
         switch (root.tag) {
           case 0:
-            if (
-              0 !== (firstChild & 4) &&
-              ((firstChild = root.updateQueue),
-              (firstChild = null !== firstChild ? firstChild.events : null),
-              null !== firstChild)
-            )
-              for (var ii = 0; ii < firstChild.length; ii++) {
-                var _eventPayloads$ii = firstChild[ii];
-                _eventPayloads$ii.ref.impl = _eventPayloads$ii.nextImpl;
-              }
             break;
           case 11:
           case 15:
@@ -7327,14 +7277,14 @@ function commitBeforeMutationEffects(root, firstChild) {
           case 1:
             if (0 !== (firstChild & 1024) && null !== current) {
               firstChild = void 0;
-              ii = root;
-              _eventPayloads$ii = current.memoizedProps;
+              var finishedWork = root,
+                prevProps = current.memoizedProps;
               current = current.memoizedState;
-              var instance = ii.stateNode;
+              var instance = finishedWork.stateNode;
               try {
                 var resolvedPrevProps = resolveClassComponentProps(
-                  ii.type,
-                  _eventPayloads$ii
+                  finishedWork.type,
+                  prevProps
                 );
                 firstChild = instance.getSnapshotBeforeUpdate(
                   resolvedPrevProps,
@@ -7342,7 +7292,11 @@ function commitBeforeMutationEffects(root, firstChild) {
                 );
                 instance.__reactInternalSnapshotBeforeUpdate = firstChild;
               } catch (error) {
-                captureCommitPhaseError(ii, ii.return, error);
+                captureCommitPhaseError(
+                  finishedWork,
+                  finishedWork.return,
+                  error
+                );
               }
             }
             break;
@@ -10719,12 +10673,12 @@ function wrapFiber(fiber) {
     fiberToWrapper.set(fiber, wrapper));
   return wrapper;
 }
-var internals$jscomp$inline_1273 = {
+var internals$jscomp$inline_1267 = {
   bundleType: 0,
-  version: "19.2.0-native-fb-df38ac9a-20250926",
+  version: "19.2.0-native-fb-047715c4-20250925",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.2.0-native-fb-df38ac9a-20250926",
+  reconcilerVersion: "19.2.0-native-fb-047715c4-20250925",
   getLaneLabelMap: function () {
     for (
       var map = new Map(), lane = 1, index$145 = 0;
@@ -10742,16 +10696,16 @@ var internals$jscomp$inline_1273 = {
   }
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1558 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1548 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1558.isDisabled &&
-    hook$jscomp$inline_1558.supportsFiber
+    !hook$jscomp$inline_1548.isDisabled &&
+    hook$jscomp$inline_1548.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1558.inject(
-        internals$jscomp$inline_1273
+      (rendererID = hook$jscomp$inline_1548.inject(
+        internals$jscomp$inline_1267
       )),
-        (injectedHook = hook$jscomp$inline_1558);
+        (injectedHook = hook$jscomp$inline_1548);
     } catch (err) {}
 }
 exports._Scheduler = Scheduler;
@@ -10875,4 +10829,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.2.0-native-fb-df38ac9a-20250926";
+exports.version = "19.2.0-native-fb-047715c4-20250925";

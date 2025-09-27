@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<38d8164373c1da932fa9a59aa110a5c8>>
+ * @generated SignedSource<<da3d070cb2770f7f4498d716656a423c>>
  */
 
 "use strict";
@@ -582,9 +582,6 @@ __DEV__ &&
     function useMemoCache(size) {
       return resolveDispatcher().useMemoCache(size);
     }
-    function useEffectEvent(callback) {
-      return resolveDispatcher().useEffectEvent(callback);
-    }
     function releaseAsyncTransition() {
       ReactSharedInternals.asyncTransitions--;
     }
@@ -1141,7 +1138,9 @@ __DEV__ &&
       Object.seal(refObject);
       return refObject;
     };
-    exports.experimental_useEffectEvent = useEffectEvent;
+    exports.experimental_useEffectEvent = function (callback) {
+      return resolveDispatcher().useEffectEvent(callback);
+    };
     exports.forwardRef = function (render) {
       null != render && render.$$typeof === REACT_MEMO_TYPE
         ? console.error(
@@ -1350,7 +1349,6 @@ __DEV__ &&
         );
       return resolveDispatcher().useEffect(create, deps);
     };
-    exports.useEffectEvent = useEffectEvent;
     exports.useId = function () {
       return resolveDispatcher().useId();
     };
@@ -1400,7 +1398,7 @@ __DEV__ &&
     exports.useTransition = function () {
       return resolveDispatcher().useTransition();
     };
-    exports.version = "19.2.0-native-fb-df38ac9a-20250926";
+    exports.version = "19.2.0-native-fb-047715c4-20250925";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&
