@@ -6,7 +6,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
- * @generated SignedSource<<815a751adc2a53417f7afb7d2beeffaf>>
+ * @generated SignedSource<<11abba96d50bb5629c894f59b82b85ee>>
  */
 
 'use strict';
@@ -51771,7 +51771,7 @@ function nameAnonymousFunctions(fn) {
     const functions = nameAnonymousFunctionsImpl(fn);
     function visit(node, prefix) {
         var _a, _b;
-        if (node.generatedName != null) {
+        if (node.generatedName != null && node.fn.nameHint == null) {
             const name = `${prefix}${node.generatedName}]`;
             node.fn.nameHint = name;
             node.fn.loweredFunc.func.nameHint = name;
@@ -51804,6 +51804,10 @@ function nameAnonymousFunctionsImpl(fn) {
                     if (name != null && name.kind === 'named') {
                         names.set(lvalue.identifier.id, name.value);
                     }
+                    const func = functions.get(value.place.identifier.id);
+                    if (func != null) {
+                        functions.set(lvalue.identifier.id, func);
+                    }
                     break;
                 }
                 case 'PropertyLoad': {
@@ -51831,6 +51835,7 @@ function nameAnonymousFunctionsImpl(fn) {
                     const node = functions.get(value.value.identifier.id);
                     const variableName = value.lvalue.place.identifier.name;
                     if (node != null &&
+                        node.generatedName == null &&
                         variableName != null &&
                         variableName.kind === 'named') {
                         node.generatedName = variableName.value;
@@ -51861,7 +51866,7 @@ function nameAnonymousFunctionsImpl(fn) {
                             continue;
                         }
                         const node = functions.get(arg.identifier.id);
-                        if (node != null) {
+                        if (node != null && node.generatedName == null) {
                             const generatedName = fnArgCount > 1 ? `${calleeName}(arg${i})` : `${calleeName}()`;
                             node.generatedName = generatedName;
                             functions.delete(arg.identifier.id);
@@ -51875,7 +51880,7 @@ function nameAnonymousFunctionsImpl(fn) {
                             continue;
                         }
                         const node = functions.get(attr.place.identifier.id);
-                        if (node != null) {
+                        if (node != null && node.generatedName == null) {
                             const elementName = value.tag.kind === 'BuiltinTag'
                                 ? value.tag.name
                                 : ((_b = names.get(value.tag.identifier.id)) !== null && _b !== void 0 ? _b : null);
@@ -53430,7 +53435,18 @@ function addImportsToProgram(path, programContext) {
             maybeExistingImports.pushContainer('specifiers', importSpecifiers);
         }
         else {
-            stmts.push(libExports$1.importDeclaration(importSpecifiers, libExports$1.stringLiteral(moduleName)));
+            if (path.node.sourceType === 'module') {
+                stmts.push(libExports$1.importDeclaration(importSpecifiers, libExports$1.stringLiteral(moduleName)));
+            }
+            else {
+                stmts.push(libExports$1.variableDeclaration('const', [
+                    libExports$1.variableDeclarator(libExports$1.objectPattern(sortedImport.map(specifier => {
+                        return libExports$1.objectProperty(libExports$1.identifier(specifier.imported), libExports$1.identifier(specifier.name));
+                    })), libExports$1.callExpression(libExports$1.identifier('require'), [
+                        libExports$1.stringLiteral(moduleName),
+                    ])),
+                ]));
+            }
         }
     }
     path.unshiftContainer('body', stmts);
@@ -57139,8 +57155,8 @@ function getNodeWithoutReactNamespace(node) {
     }
     return node;
 }
-function isUseEffectIdentifier(node) {
-    return node.type === 'Identifier' && node.name === 'useEffect';
+function isEffectIdentifier(node) {
+    return node.type === 'Identifier' && (node.name === 'useEffect' || node.name === 'useLayoutEffect' || node.name === 'useInsertionEffect');
 }
 function isUseEffectEventIdentifier(node) {
     {
@@ -57440,7 +57456,7 @@ const rule = {
                     reactHooks.push(node.callee);
                 }
                 const nodeWithoutNamespace = getNodeWithoutReactNamespace(node.callee);
-                if ((isUseEffectIdentifier(nodeWithoutNamespace) ||
+                if ((isEffectIdentifier(nodeWithoutNamespace) ||
                     isUseEffectEventIdentifier(nodeWithoutNamespace)) &&
                     node.arguments.length > 0) {
                     lastEffect = node;
