@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<94e4a74c76f3485d082b792f26ea9f34>>
+ * @generated SignedSource<<c462ad7dbe600bb0a4bbfc948fa97d72>>
  */
 
 "use strict";
@@ -6703,24 +6703,23 @@ __DEV__ &&
         });
       if ("hidden" === nextProps.mode) {
         if (0 !== (workInProgress.flags & 128)) {
-          prevState =
+          nextProps =
             null !== prevState
               ? prevState.baseLanes | renderLanes
               : renderLanes;
           if (null !== current) {
-            nextProps = workInProgress.child = current.child;
-            for (nextChildren = 0; null !== nextProps; )
-              (nextChildren =
-                nextChildren | nextProps.lanes | nextProps.childLanes),
-                (nextProps = nextProps.sibling);
-            nextProps = nextChildren & ~prevState;
-          } else (nextProps = 0), (workInProgress.child = null);
+            nextChildren = workInProgress.child = current.child;
+            for (prevState = 0; null !== nextChildren; )
+              (prevState =
+                prevState | nextChildren.lanes | nextChildren.childLanes),
+                (nextChildren = nextChildren.sibling);
+            workInProgress.childLanes = prevState & ~nextProps;
+          } else (workInProgress.childLanes = 0), (workInProgress.child = null);
           return deferHiddenOffscreenComponent(
             current,
             workInProgress,
-            prevState,
-            renderLanes,
-            nextProps
+            nextProps,
+            renderLanes
           );
         }
         if (0 === (workInProgress.mode & 1))
@@ -6741,15 +6740,14 @@ __DEV__ &&
             pushOffscreenSuspenseHandler(workInProgress);
         else
           return (
-            (nextProps = workInProgress.lanes = 536870912),
+            (workInProgress.lanes = workInProgress.childLanes = 536870912),
             deferHiddenOffscreenComponent(
               current,
               workInProgress,
               null !== prevState
                 ? prevState.baseLanes | renderLanes
                 : renderLanes,
-              renderLanes,
-              nextProps
+              renderLanes
             )
           );
       } else
@@ -6779,8 +6777,7 @@ __DEV__ &&
       current,
       workInProgress,
       nextBaseLanes,
-      renderLanes,
-      remainingChildLanes
+      renderLanes
     ) {
       var JSCompiler_inline_result = peekCacheFromPool();
       JSCompiler_inline_result =
@@ -6799,7 +6796,6 @@ __DEV__ &&
       pushOffscreenSuspenseHandler(workInProgress);
       null !== current &&
         propagateParentContextChanges(current, workInProgress, renderLanes, !0);
-      workInProgress.childLanes = remainingChildLanes;
       return null;
     }
     function mountActivityChildren(workInProgress, nextProps) {
@@ -11044,7 +11040,7 @@ __DEV__ &&
                   finishedWork,
                   committedLanes,
                   committedTransitions,
-                  0 !== (finishedWork.subtreeFlags & 10256) || !1
+                  0 !== (finishedWork.subtreeFlags & 10256)
                 ));
           flags & 2048 &&
             commitOffscreenPassiveMountEffects(_current, finishedWork);
@@ -11078,7 +11074,7 @@ __DEV__ &&
     ) {
       includeWorkInProgressEffects =
         includeWorkInProgressEffects &&
-        (0 !== (parentFiber.subtreeFlags & 10256) || !1);
+        0 !== (parentFiber.subtreeFlags & 10256);
       for (parentFiber = parentFiber.child; null !== parentFiber; )
         reconnectPassiveEffects(
           finishedRoot,
@@ -16015,10 +16011,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-19f65ff1-20251002",
+        version: "19.2.0-native-fb-554a373d-20250930",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-19f65ff1-20251002"
+        reconcilerVersion: "19.2.0-native-fb-554a373d-20250930"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -16164,5 +16160,5 @@ __DEV__ &&
             flushSyncWorkAcrossRoots_impl(0, !0));
       }
     };
-    exports.version = "19.3.0-native-fb-19f65ff1-20251002";
+    exports.version = "19.2.0-native-fb-554a373d-20250930";
   })();
