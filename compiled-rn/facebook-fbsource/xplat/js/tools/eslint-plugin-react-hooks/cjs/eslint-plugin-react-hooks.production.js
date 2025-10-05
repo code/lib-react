@@ -6,7 +6,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
- * @generated SignedSource<<11abba96d50bb5629c894f59b82b85ee>>
+ * @generated SignedSource<<4e4a1e86e0614b95a7debf3a95619ba4>>
  */
 
 'use strict';
@@ -19,6 +19,17 @@ var crypto = require('crypto');
 var PluginProposalPrivateMethods = require('@babel/plugin-proposal-private-methods');
 var HermesParser = require('hermes-parser');
 var util = require('util');
+
+const SETTINGS_KEY = 'react-hooks';
+const SETTINGS_ADDITIONAL_EFFECT_HOOKS_KEY = 'additionalEffectHooks';
+function getAdditionalEffectHooksFromSettings(settings) {
+    var _a;
+    const additionalHooks = (_a = settings[SETTINGS_KEY]) === null || _a === void 0 ? void 0 : _a[SETTINGS_ADDITIONAL_EFFECT_HOOKS_KEY];
+    if (additionalHooks != null && typeof additionalHooks === 'string') {
+        return new RegExp(additionalHooks);
+    }
+    return undefined;
+}
 
 const rule$1 = {
     meta: {
@@ -50,23 +61,24 @@ const rule$1 = {
                     },
                     requireExplicitEffectDeps: {
                         type: 'boolean',
-                    }
+                    },
                 },
             },
         ],
     },
     create(context) {
         const rawOptions = context.options && context.options[0];
+        const settings = context.settings || {};
         const additionalHooks = rawOptions && rawOptions.additionalHooks
             ? new RegExp(rawOptions.additionalHooks)
-            : undefined;
+            : getAdditionalEffectHooksFromSettings(settings);
         const enableDangerousAutofixThisMayCauseInfiniteLoops = (rawOptions &&
             rawOptions.enableDangerousAutofixThisMayCauseInfiniteLoops) ||
             false;
         const experimental_autoDependenciesHooks = rawOptions && Array.isArray(rawOptions.experimental_autoDependenciesHooks)
             ? rawOptions.experimental_autoDependenciesHooks
             : [];
-        const requireExplicitEffectDeps = rawOptions && rawOptions.requireExplicitEffectDeps || false;
+        const requireExplicitEffectDeps = (rawOptions && rawOptions.requireExplicitEffectDeps) || false;
         const options = {
             additionalHooks,
             experimental_autoDependenciesHooks,
@@ -935,7 +947,7 @@ const rule$1 = {
                 reportProblem({
                     node: reactiveHook,
                     message: `React Hook ${reactiveHookName} always requires dependencies. ` +
-                        `Please add a dependency array or an explicit \`undefined\``
+                        `Please add a dependency array or an explicit \`undefined\``,
                 });
             }
             const isAutoDepsHook = options.experimental_autoDependenciesHooks.includes(reactiveHookName);
@@ -1437,9 +1449,7 @@ function isAncestorNodeOf(a, b) {
         a.range[1] >= b.range[1]);
 }
 function isUseEffectEventIdentifier$1(node) {
-    {
-        return node.type === 'Identifier' && node.name === 'useEffectEvent';
-    }
+    return node.type === 'Identifier' && node.name === 'useEffectEvent';
 }
 function getUnknownDependenciesMessage(reactiveHookName) {
     return (`React Hook ${reactiveHookName} received a function whose dependencies ` +
@@ -31893,7 +31903,7 @@ const EnvironmentConfigSchema = zod.z.object({
     moduleTypeProvider: zod.z.nullable(zod.z.function().args(zod.z.string())).default(null),
     customMacros: zod.z.nullable(zod.z.array(MacroSchema)).default(null),
     enableResetCacheOnSourceFileChanges: zod.z.nullable(zod.z.boolean()).default(null),
-    enablePreserveExistingMemoizationGuarantees: zod.z.boolean().default(false),
+    enablePreserveExistingMemoizationGuarantees: zod.z.boolean().default(true),
     validatePreserveExistingMemoizationGuarantees: zod.z.boolean().default(true),
     enablePreserveExistingManualUseMemo: zod.z.boolean().default(false),
     enableForest: zod.z.boolean().default(false),
@@ -45133,6 +45143,29 @@ function collectNonNullsInBlocks(fn, context) {
                     }
                 }
             }
+            else if (fn.env.config.enablePreserveExistingMemoizationGuarantees &&
+                instr.value.kind === 'StartMemoize' &&
+                instr.value.deps != null) {
+                for (const dep of instr.value.deps) {
+                    if (dep.root.kind === 'NamedLocal') {
+                        if (!isImmutableAtInstr(dep.root.value.identifier, instr.id, context)) {
+                            continue;
+                        }
+                        for (let i = 0; i < dep.path.length; i++) {
+                            const pathEntry = dep.path[i];
+                            if (pathEntry.optional) {
+                                break;
+                            }
+                            const depNode = context.registry.getOrCreateProperty({
+                                identifier: dep.root.value.identifier,
+                                path: dep.path.slice(0, i),
+                                reactive: dep.root.value.reactive,
+                            });
+                            assumedNonNullObjects.add(depNode);
+                        }
+                    }
+                }
+            }
         }
         nodes.set(block.id, {
             block,
@@ -54244,7 +54277,7 @@ const allRules = LintRules.reduce((acc, rule) => {
         severity: ErrorSeverity.Error,
     },
 });
-const recommendedRules = LintRules.filter(rule => rule.recommended).reduce((acc, rule) => {
+LintRules.filter(rule => rule.recommended).reduce((acc, rule) => {
     acc[rule.name] = { rule: makeRule(rule), severity: rule.severity };
     return acc;
 }, {
@@ -54253,23 +54286,6 @@ const recommendedRules = LintRules.filter(rule => rule.recommended).reduce((acc,
         severity: ErrorSeverity.Error,
     },
 });
-function mapErrorSeverityToESlint(severity) {
-    switch (severity) {
-        case ErrorSeverity.Error: {
-            return 'error';
-        }
-        case ErrorSeverity.Warning: {
-            return 'warn';
-        }
-        case ErrorSeverity.Hint:
-        case ErrorSeverity.Off: {
-            return 'off';
-        }
-        default: {
-            assertExhaustive(severity, `Unhandled severity: ${severity}`);
-        }
-    }
-}
 
 var assert_1;
 var hasRequiredAssert;
@@ -57155,13 +57171,26 @@ function getNodeWithoutReactNamespace(node) {
     }
     return node;
 }
-function isEffectIdentifier(node) {
-    return node.type === 'Identifier' && (node.name === 'useEffect' || node.name === 'useLayoutEffect' || node.name === 'useInsertionEffect');
+function isEffectIdentifier(node, additionalHooks) {
+    const isBuiltInEffect = node.type === 'Identifier' &&
+        (node.name === 'useEffect' ||
+            node.name === 'useLayoutEffect' ||
+            node.name === 'useInsertionEffect');
+    if (isBuiltInEffect) {
+        return true;
+    }
+    if (additionalHooks && node.type === 'Identifier') {
+        return additionalHooks.test(node.name);
+    }
+    return false;
 }
 function isUseEffectEventIdentifier(node) {
-    {
-        return node.type === 'Identifier' && node.name === 'useEffectEvent';
-    }
+    return node.type === 'Identifier' && node.name === 'useEffectEvent';
+}
+function useEffectEventError(fn, called) {
+    return (`\`${fn}\` is a function created with React Hook "useEffectEvent", and can only be called from ` +
+        'Effects and Effect Events in the same component.' +
+        (called ? '' : ' It cannot be assigned to a variable or passed down.'));
 }
 function isUseIdentifier(node) {
     return isReactFunction(node, 'use');
@@ -57174,8 +57203,21 @@ const rule = {
             recommended: true,
             url: 'https://react.dev/reference/rules/rules-of-hooks',
         },
+        schema: [
+            {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                    additionalHooks: {
+                        type: 'string',
+                    },
+                },
+            },
+        ],
     },
     create(context) {
+        const settings = context.settings || {};
+        const additionalEffectHooks = getAdditionalEffectHooksFromSettings(settings);
         let lastEffect = null;
         const codePathReactHooksMapStack = [];
         const codePathSegmentStack = [];
@@ -57456,7 +57498,7 @@ const rule = {
                     reactHooks.push(node.callee);
                 }
                 const nodeWithoutNamespace = getNodeWithoutReactNamespace(node.callee);
-                if ((isEffectIdentifier(nodeWithoutNamespace) ||
+                if ((isEffectIdentifier(nodeWithoutNamespace, additionalEffectHooks) ||
                     isUseEffectEventIdentifier(nodeWithoutNamespace)) &&
                     node.arguments.length > 0) {
                     lastEffect = node;
@@ -57464,11 +57506,7 @@ const rule = {
             },
             Identifier(node) {
                 if (lastEffect == null && useEffectEventFunctions.has(node)) {
-                    const message = `\`${getSourceCode().getText(node)}\` is a function created with React Hook "useEffectEvent", and can only be called from ` +
-                        'the same component.' +
-                        (node.parent.type === 'CallExpression'
-                            ? ''
-                            : ' They cannot be assigned to variables or passed down.');
+                    const message = useEffectEventError(getSourceCode().getText(node), node.parent.type === 'CallExpression');
                     context.report({
                         node,
                         message,
@@ -57535,12 +57573,10 @@ function last(array) {
 }
 
 const rules = Object.assign({ 'exhaustive-deps': rule$1, 'rules-of-hooks': rule }, Object.fromEntries(Object.entries(allRules).map(([name, config]) => [name, config.rule])));
-const ruleConfigs = Object.assign({ 'react-hooks/rules-of-hooks': 'error', 'react-hooks/exhaustive-deps': 'warn' }, Object.fromEntries(Object.entries(recommendedRules).map(([name, ruleConfig]) => {
-    return [
-        'react-hooks/' + name,
-        mapErrorSeverityToESlint(ruleConfig.severity),
-    ];
-})));
+const ruleConfigs = {
+    'react-hooks/rules-of-hooks': 'error',
+    'react-hooks/exhaustive-deps': 'warn',
+};
 const plugin = {
     meta: {
         name: 'eslint-plugin-react-hooks',
