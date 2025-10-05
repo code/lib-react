@@ -604,4 +604,4 @@ exports.useSyncExternalStore = function (
 exports.useTransition = function () {
   return ReactSharedInternals.H.useTransition();
 };
-exports.version = "19.2.0-www-modern-554a373d-20250930";
+exports.version = "19.2.0-www-modern-bbc2d596-20251001";
