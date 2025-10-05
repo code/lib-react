@@ -6,7 +6,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
- * @generated SignedSource<<4e4a1e86e0614b95a7debf3a95619ba4>>
+ * @generated SignedSource<<9ac8d6e015d5bc44a9937c7d207117d8>>
  */
 
 'use strict';
@@ -53978,20 +53978,6 @@ function getFlowSuppressions(sourceCode) {
     }
     return results;
 }
-function filterUnusedOptOutDirectives(directives) {
-    const results = [];
-    for (const directive of directives) {
-        if (OPT_OUT_DIRECTIVES.has(directive.value.value) &&
-            directive.loc != null) {
-            results.push({
-                loc: directive.loc,
-                directive: directive.value.value,
-                range: [directive.start, directive.end],
-            });
-        }
-    }
-    return results;
-}
 function runReactCompilerImpl({ sourceCode, filename, userOpts, }) {
     var _a, _b;
     const options = parsePluginOptions(Object.assign(Object.assign(Object.assign({}, COMPILER_OPTIONS), userOpts), { environment: Object.assign(Object.assign({}, COMPILER_OPTIONS.environment), userOpts.environment) }));
@@ -54000,7 +53986,6 @@ function runReactCompilerImpl({ sourceCode, filename, userOpts, }) {
         filename,
         userOpts,
         flowSuppressions: [],
-        unusedOptOutDirectives: [],
         events: [],
     };
     const userLogger = options.logger;
@@ -54055,21 +54040,6 @@ function runReactCompilerImpl({ sourceCode, filename, userOpts, }) {
                 configFile: false,
                 babelrc: false,
             });
-            if (results.events.filter(e => e.kind === 'CompileError').length === 0) {
-                core$1.traverse(babelAST, {
-                    FunctionDeclaration(path) {
-                        results.unusedOptOutDirectives.push(...filterUnusedOptOutDirectives(path.node.body.directives));
-                    },
-                    ArrowFunctionExpression(path) {
-                        if (path.node.body.type === 'BlockStatement') {
-                            results.unusedOptOutDirectives.push(...filterUnusedOptOutDirectives(path.node.body.directives));
-                        }
-                    },
-                    FunctionExpression(path) {
-                        results.unusedOptOutDirectives.push(...filterUnusedOptOutDirectives(path.node.body.directives));
-                    },
-                });
-            }
         }
         catch (err) {
         }
@@ -54239,53 +54209,31 @@ function makeRule(rule) {
         create,
     };
 }
-const NoUnusedDirectivesRule = {
-    meta: {
-        type: 'suggestion',
-        docs: {
-            recommended: true,
-        },
-        fixable: 'code',
-        hasSuggestions: true,
-        schema: [{ type: 'object', additionalProperties: true }],
-    },
-    create(context) {
-        const results = getReactCompilerResult(context);
-        for (const directive of results.unusedOptOutDirectives) {
-            context.report({
-                message: `Unused '${directive.directive}' directive`,
-                loc: directive.loc,
-                suggest: [
-                    {
-                        desc: 'Remove the directive',
-                        fix(fixer) {
-                            return fixer.removeRange(directive.range);
-                        },
-                    },
-                ],
-            });
-        }
-        return {};
-    },
-};
 const allRules = LintRules.reduce((acc, rule) => {
     acc[rule.name] = { rule: makeRule(rule), severity: rule.severity };
     return acc;
-}, {
-    'no-unused-directives': {
-        rule: NoUnusedDirectivesRule,
-        severity: ErrorSeverity.Error,
-    },
-});
-LintRules.filter(rule => rule.recommended).reduce((acc, rule) => {
+}, {});
+const recommendedRules = LintRules.filter(rule => rule.recommended).reduce((acc, rule) => {
     acc[rule.name] = { rule: makeRule(rule), severity: rule.severity };
     return acc;
-}, {
-    'no-unused-directives': {
-        rule: NoUnusedDirectivesRule,
-        severity: ErrorSeverity.Error,
-    },
-});
+}, {});
+function mapErrorSeverityToESlint(severity) {
+    switch (severity) {
+        case ErrorSeverity.Error: {
+            return 'error';
+        }
+        case ErrorSeverity.Warning: {
+            return 'warn';
+        }
+        case ErrorSeverity.Hint:
+        case ErrorSeverity.Off: {
+            return 'off';
+        }
+        default: {
+            assertExhaustive(severity, `Unhandled severity: ${severity}`);
+        }
+    }
+}
 
 var assert_1;
 var hasRequiredAssert;
@@ -57573,28 +57521,39 @@ function last(array) {
 }
 
 const rules = Object.assign({ 'exhaustive-deps': rule$1, 'rules-of-hooks': rule }, Object.fromEntries(Object.entries(allRules).map(([name, config]) => [name, config.rule])));
-const ruleConfigs = {
+const basicRuleConfigs = {
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
 };
+const compilerRuleConfigs = Object.fromEntries(Object.entries(recommendedRules).map(([name, ruleConfig]) => {
+    return [
+        `react-hooks/${name}`,
+        mapErrorSeverityToESlint(ruleConfig.severity),
+    ];
+}));
+const allRuleConfigs = Object.assign(Object.assign({}, basicRuleConfigs), compilerRuleConfigs);
 const plugin = {
     meta: {
         name: 'eslint-plugin-react-hooks',
     },
-    configs: {},
     rules,
+    configs: {},
 };
 Object.assign(plugin.configs, {
     'recommended-legacy': {
         plugins: ['react-hooks'],
-        rules: ruleConfigs,
+        rules: basicRuleConfigs,
+    },
+    'recommended-latest-legacy': {
+        plugins: ['react-hooks'],
+        rules: allRuleConfigs,
     },
     'flat/recommended': [
         {
             plugins: {
                 'react-hooks': plugin,
             },
-            rules: ruleConfigs,
+            rules: basicRuleConfigs,
         },
     ],
     'recommended-latest': [
@@ -57602,13 +57561,17 @@ Object.assign(plugin.configs, {
             plugins: {
                 'react-hooks': plugin,
             },
-            rules: ruleConfigs,
+            rules: allRuleConfigs,
         },
     ],
-    recommended: {
-        plugins: ['react-hooks'],
-        rules: ruleConfigs,
-    },
+    recommended: [
+        {
+            plugins: {
+                'react-hooks': plugin,
+            },
+            rules: basicRuleConfigs,
+        },
+    ],
 });
 
 module.exports = plugin;
