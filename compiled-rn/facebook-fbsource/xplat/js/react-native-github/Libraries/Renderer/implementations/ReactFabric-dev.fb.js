@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<f409b060a5080fb54d55fc51d40403a5>>
+ * @generated SignedSource<<38a125032773439d0c856325cf2c9cf0>>
  */
 
 "use strict";
@@ -1857,6 +1857,13 @@ __DEV__ &&
         child = child.sibling;
       }
       return !1;
+    }
+    function getFragmentParentHostFiber(fiber) {
+      for (fiber = fiber.return; null !== fiber; ) {
+        if (3 === fiber.tag || 5 === fiber.tag) return fiber;
+        fiber = fiber.return;
+      }
+      return null;
     }
     function findNextSibling(child) {
       searchTarget = child;
@@ -16920,6 +16927,11 @@ __DEV__ &&
       collection.push(child);
       return !1;
     }
+    function collectClientRects(child, rects) {
+      child = getPublicInstanceFromHostFiber(child);
+      rects.push(child.getBoundingClientRect());
+      return !1;
+    }
     function commitNewChildToFragmentInstance(childInstance, fragmentInstance) {
       var publicInstance = getPublicInstance(childInstance);
       if (null !== fragmentInstance._observers) {
@@ -19852,18 +19864,7 @@ __DEV__ &&
           );
     };
     FragmentInstance.prototype.compareDocumentPosition = function (otherNode) {
-      var parentHostFiber;
-      a: {
-        for (
-          parentHostFiber = this._fragmentFiber.return;
-          null !== parentHostFiber;
-
-        ) {
-          if (3 === parentHostFiber.tag || 5 === parentHostFiber.tag) break a;
-          parentHostFiber = parentHostFiber.return;
-        }
-        parentHostFiber = null;
-      }
+      var parentHostFiber = getFragmentParentHostFiber(this._fragmentFiber);
       if (null === parentHostFiber) return Node.DOCUMENT_POSITION_DISCONNECTED;
       var children = [];
       traverseVisibleHostChildren(
@@ -19914,6 +19915,26 @@ __DEV__ &&
         lastResult
         ? Node.DOCUMENT_POSITION_CONTAINED_BY
         : result;
+    };
+    FragmentInstance.prototype.getRootNode = function (getRootNodeOptions) {
+      var parentHostFiber = getFragmentParentHostFiber(this._fragmentFiber);
+      return null === parentHostFiber
+        ? this
+        : getPublicInstanceFromHostFiber(parentHostFiber).getRootNode(
+            getRootNodeOptions
+          );
+    };
+    FragmentInstance.prototype.getClientRects = function () {
+      var rects = [];
+      traverseVisibleHostChildren(
+        this._fragmentFiber.child,
+        !1,
+        collectClientRects,
+        rects,
+        void 0,
+        void 0
+      );
+      return rects;
     };
     var NotPendingTransition = null,
       HostTransitionContext = {
@@ -20000,10 +20021,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.2.0-native-fb-bbc2d596-20251001",
+        version: "19.3.0-native-fb-a2329c10-20251003",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.2.0-native-fb-bbc2d596-20251001"
+        reconcilerVersion: "19.3.0-native-fb-a2329c10-20251003"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
