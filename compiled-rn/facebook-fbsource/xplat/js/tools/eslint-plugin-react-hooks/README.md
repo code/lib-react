@@ -4,6 +4,8 @@ The official ESLint plugin for [React](https://react.dev) which enforces the [Ru
 
 ## Installation
 
+**Note: If you're using Create React App, please use `react-scripts` >= 3 instead of adding it directly.**
+
 Assuming you already have ESLint installed, run:
 
 ```sh
@@ -16,7 +18,9 @@ yarn add eslint-plugin-react-hooks --dev
 
 ### Flat Config (eslint.config.js|ts)
 
-Add the `recommended` config for all recommended rules:
+#### >= 6.0.0
+
+For users of 6.0 and beyond, add the `recommended` config.
 
 ```js
 // eslint.config.js
@@ -24,32 +28,61 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
-  reactHooks.configs.flat.recommended,
+  {
+    files: ["src/**/*.{js,jsx,ts,tsx}"],
+    plugins: {
+      'react-hooks': reactHooks,
+    },
+    extends: ['react-hooks/recommended'],
+  },
 ]);
 ```
 
-If you want to try bleeding edge experimental compiler rules, use `recommended-latest`.
+#### 5.2.0
+
+For users of 5.2.0 (the first version with flat config support), add the `recommended-latest` config.
 
 ```js
-// eslint.config.js
 import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
-  reactHooks.configs.flat['recommended-latest'],
+  {
+    files: ["src/**/*.{js,jsx,ts,tsx}"],
+    plugins: {
+      'react-hooks': reactHooks,
+    },
+    extends: ['react-hooks/recommended-latest'],
+  },
 ]);
 ```
 
 ### Legacy Config (.eslintrc)
 
-If you are still using ESLint below 9.0.0, the `recommended` preset can also be used to enable all recommended rules.
+#### >= 5.2.0
+
+If you are still using ESLint below 9.0.0, you can use `recommended-legacy` for accessing a legacy version of the recommended config.
 
 ```js
 {
-  "extends": ["plugin:react-hooks/recommended"],
-  // ...
+  "extends": [
+    // ...
+    "plugin:react-hooks/recommended-legacy"
+  ]
 }
+```
 
+#### < 5.2.0
+
+If you're using a version earlier than 5.2.0, the legacy config was simply `recommended`.
+
+```js
+{
+  "extends": [
+    // ...
+    "plugin:react-hooks/recommended"
+  ]
+}
 ```
 
 ### Custom Configuration
@@ -59,7 +92,7 @@ If you want more fine-grained configuration, you can instead choose to enable sp
 #### Flat Config (eslint.config.js|ts)
 
 ```js
-import reactHooks from 'eslint-plugin-react-hooks';
+import * as reactHooks from 'eslint-plugin-react-hooks';
 
 export default [
   {
@@ -67,26 +100,8 @@ export default [
     plugins: { 'react-hooks': reactHooks },
     // ...
     rules: {
-      // Core hooks rules
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
-
-      // React Compiler rules
-      'react-hooks/config': 'error',
-      'react-hooks/error-boundaries': 'error',
-      'react-hooks/component-hook-factories': 'error',
-      'react-hooks/gating': 'error',
-      'react-hooks/globals': 'error',
-      'react-hooks/immutability': 'error',
-      'react-hooks/preserve-manual-memoization': 'error',
-      'react-hooks/purity': 'error',
-      'react-hooks/refs': 'error',
-      'react-hooks/set-state-in-effect': 'error',
-      'react-hooks/set-state-in-render': 'error',
-      'react-hooks/static-components': 'error',
-      'react-hooks/unsupported-syntax': 'warn',
-      'react-hooks/use-memo': 'error',
-      'react-hooks/incompatible-library': 'warn',
     }
   },
 ];
@@ -101,26 +116,8 @@ export default [
   ],
   "rules": {
     // ...
-    // Core hooks rules
     "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn",
-
-    // React Compiler rules
-    "react-hooks/config": "error",
-    "react-hooks/error-boundaries": "error",
-    "react-hooks/component-hook-factories": "error",
-    "react-hooks/gating": "error",
-    "react-hooks/globals": "error",
-    "react-hooks/immutability": "error",
-    "react-hooks/preserve-manual-memoization": "error",
-    "react-hooks/purity": "error",
-    "react-hooks/refs": "error",
-    "react-hooks/set-state-in-effect": "error",
-    "react-hooks/set-state-in-render": "error",
-    "react-hooks/static-components": "error",
-    "react-hooks/unsupported-syntax": "warn",
-    "react-hooks/use-memo": "error",
-    "react-hooks/incompatible-library": "warn"
+    "react-hooks/exhaustive-deps": "warn"
   }
 }
 ```

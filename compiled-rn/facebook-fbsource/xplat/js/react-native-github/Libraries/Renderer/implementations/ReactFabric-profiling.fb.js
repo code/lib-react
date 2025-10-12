@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<a028cdaa62487d7d85259dc9cc93797d>>
+ * @generated SignedSource<<4cd2edd288574117bad2e684bf107f5a>>
  */
 
 "use strict";
@@ -13334,10 +13334,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1629 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-91e5c3da-20251009",
+    version: "19.3.0-native-fb-9724e3e6-20251008",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-91e5c3da-20251009"
+    reconcilerVersion: "19.3.0-native-fb-9724e3e6-20251008"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1629.rendererConfig = extraDevToolsConfig);

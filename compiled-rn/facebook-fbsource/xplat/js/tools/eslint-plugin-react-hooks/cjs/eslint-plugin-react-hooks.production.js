@@ -6,7 +6,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
- * @generated SignedSource<<70c645c22ee6793f33ec1e88b1dc251e>>
+ * @generated SignedSource<<c5262576a55132309191f889a6558388>>
  */
 
 'use strict';
@@ -17991,8 +17991,7 @@ function printErrorSummary(category, message) {
         case ErrorCategory.StaticComponents:
         case ErrorCategory.Suppression:
         case ErrorCategory.Syntax:
-        case ErrorCategory.UseMemo:
-        case ErrorCategory.VoidUseMemo: {
+        case ErrorCategory.UseMemo: {
             heading = 'Error';
             break;
         }
@@ -18023,7 +18022,6 @@ var ErrorCategory;
     ErrorCategory["CapitalizedCalls"] = "CapitalizedCalls";
     ErrorCategory["StaticComponents"] = "StaticComponents";
     ErrorCategory["UseMemo"] = "UseMemo";
-    ErrorCategory["VoidUseMemo"] = "VoidUseMemo";
     ErrorCategory["Factories"] = "Factories";
     ErrorCategory["PreserveManualMemo"] = "PreserveManualMemo";
     ErrorCategory["IncompatibleLibrary"] = "IncompatibleLibrary";
@@ -18047,12 +18045,6 @@ var ErrorCategory;
     ErrorCategory["Fire"] = "Fire";
     ErrorCategory["FBT"] = "FBT";
 })(ErrorCategory || (ErrorCategory = {}));
-var LintRulePreset;
-(function (LintRulePreset) {
-    LintRulePreset["Recommended"] = "recommended";
-    LintRulePreset["RecommendedLatest"] = "recommended-latest";
-    LintRulePreset["Off"] = "off";
-})(LintRulePreset || (LintRulePreset = {}));
 const RULE_NAME_PATTERN = /^[a-z]+(-[a-z]+)*$/;
 function getRuleForCategory(category) {
     const rule = getRuleForCategoryImpl(category);
@@ -18067,7 +18059,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'automatic-effect-dependencies',
                 description: 'Verifies that automatic effect dependencies are compiled if opted-in',
-                preset: LintRulePreset.Off,
+                recommended: false,
             };
         }
         case ErrorCategory.CapitalizedCalls: {
@@ -18076,7 +18068,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'capitalized-calls',
                 description: 'Validates against calling capitalized functions/methods instead of using JSX',
-                preset: LintRulePreset.Off,
+                recommended: false,
             };
         }
         case ErrorCategory.Config: {
@@ -18085,7 +18077,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'config',
                 description: 'Validates the compiler configuration options',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         case ErrorCategory.EffectDependencies: {
@@ -18094,7 +18086,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'memoized-effect-dependencies',
                 description: 'Validates that effect dependencies are memoized',
-                preset: LintRulePreset.Off,
+                recommended: false,
             };
         }
         case ErrorCategory.EffectDerivationsOfState: {
@@ -18103,7 +18095,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'no-deriving-state-in-effects',
                 description: 'Validates against deriving values from state in an effect',
-                preset: LintRulePreset.Off,
+                recommended: false,
             };
         }
         case ErrorCategory.EffectSetState: {
@@ -18112,7 +18104,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'set-state-in-effect',
                 description: 'Validates against calling setState synchronously in an effect, which can lead to re-renders that degrade performance',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         case ErrorCategory.ErrorBoundaries: {
@@ -18121,7 +18113,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'error-boundaries',
                 description: 'Validates usage of error boundaries instead of try/catch for errors in child components',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         case ErrorCategory.Factories: {
@@ -18131,7 +18123,7 @@ function getRuleForCategoryImpl(category) {
                 name: 'component-hook-factories',
                 description: 'Validates against higher order functions defining nested components or hooks. ' +
                     'Components and hooks should be defined at the module level',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         case ErrorCategory.FBT: {
@@ -18140,7 +18132,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'fbt',
                 description: 'Validates usage of fbt',
-                preset: LintRulePreset.Off,
+                recommended: false,
             };
         }
         case ErrorCategory.Fire: {
@@ -18149,7 +18141,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'fire',
                 description: 'Validates usage of `fire`',
-                preset: LintRulePreset.Off,
+                recommended: false,
             };
         }
         case ErrorCategory.Gating: {
@@ -18158,7 +18150,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'gating',
                 description: 'Validates configuration of [gating mode](https://react.dev/reference/react-compiler/gating)',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         case ErrorCategory.Globals: {
@@ -18168,7 +18160,7 @@ function getRuleForCategoryImpl(category) {
                 name: 'globals',
                 description: 'Validates against assignment/mutation of globals during render, part of ensuring that ' +
                     '[side effects must render outside of render](https://react.dev/reference/rules/components-and-hooks-must-be-pure#side-effects-must-run-outside-of-render)',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         case ErrorCategory.Hooks: {
@@ -18177,7 +18169,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'hooks',
                 description: 'Validates the rules of hooks',
-                preset: LintRulePreset.Off,
+                recommended: false,
             };
         }
         case ErrorCategory.Immutability: {
@@ -18186,7 +18178,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'immutability',
                 description: 'Validates against mutating props, state, and other values that [are immutable](https://react.dev/reference/rules/components-and-hooks-must-be-pure#props-and-state-are-immutable)',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         case ErrorCategory.Invariant: {
@@ -18195,7 +18187,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'invariant',
                 description: 'Internal invariants',
-                preset: LintRulePreset.Off,
+                recommended: false,
             };
         }
         case ErrorCategory.PreserveManualMemo: {
@@ -18206,7 +18198,7 @@ function getRuleForCategoryImpl(category) {
                 description: 'Validates that existing manual memoized is preserved by the compiler. ' +
                     'React Compiler will only compile components and hooks if its inference ' +
                     '[matches or exceeds the existing manual memoization](https://react.dev/learn/react-compiler/introduction#what-should-i-do-about-usememo-usecallback-and-reactmemo)',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         case ErrorCategory.Purity: {
@@ -18215,7 +18207,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'purity',
                 description: 'Validates that [components/hooks are pure](https://react.dev/reference/rules/components-and-hooks-must-be-pure) by checking that they do not call known-impure functions',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         case ErrorCategory.Refs: {
@@ -18224,7 +18216,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'refs',
                 description: 'Validates correct usage of refs, not reading/writing during render. See the "pitfalls" section in [`useRef()` usage](https://react.dev/reference/react/useRef#usage)',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         case ErrorCategory.RenderSetState: {
@@ -18233,7 +18225,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'set-state-in-render',
                 description: 'Validates against setting state during render, which can trigger additional renders and potential infinite render loops',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         case ErrorCategory.StaticComponents: {
@@ -18242,7 +18234,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'static-components',
                 description: 'Validates that components are static, not recreated every render. Components that are recreated dynamically can reset state and trigger excessive re-rendering',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         case ErrorCategory.Suppression: {
@@ -18251,7 +18243,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'rule-suppression',
                 description: 'Validates against suppression of other rules',
-                preset: LintRulePreset.Off,
+                recommended: false,
             };
         }
         case ErrorCategory.Syntax: {
@@ -18260,7 +18252,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'syntax',
                 description: 'Validates against invalid syntax',
-                preset: LintRulePreset.Off,
+                recommended: false,
             };
         }
         case ErrorCategory.Todo: {
@@ -18269,7 +18261,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Hint,
                 name: 'todo',
                 description: 'Unimplemented features',
-                preset: LintRulePreset.Off,
+                recommended: false,
             };
         }
         case ErrorCategory.UnsupportedSyntax: {
@@ -18278,7 +18270,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Warning,
                 name: 'unsupported-syntax',
                 description: 'Validates against syntax that we do not plan to support in React Compiler',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         case ErrorCategory.UseMemo: {
@@ -18287,16 +18279,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'use-memo',
                 description: 'Validates usage of the useMemo() hook against common mistakes. See [`useMemo()` docs](https://react.dev/reference/react/useMemo) for more information.',
-                preset: LintRulePreset.Recommended,
-            };
-        }
-        case ErrorCategory.VoidUseMemo: {
-            return {
-                category,
-                severity: ErrorSeverity.Error,
-                name: 'void-use-memo',
-                description: 'Validates that useMemos always return a value. See [`useMemo()` docs](https://react.dev/reference/react/useMemo) for more information.',
-                preset: LintRulePreset.RecommendedLatest,
+                recommended: true,
             };
         }
         case ErrorCategory.IncompatibleLibrary: {
@@ -18305,7 +18288,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Warning,
                 name: 'incompatible-library',
                 description: 'Validates against usage of libraries which are incompatible with memoization (manual or automatic)',
-                preset: LintRulePreset.Recommended,
+                recommended: true,
             };
         }
         default: {
@@ -44373,7 +44356,7 @@ function dropManualMemoization(func) {
                         if (funcToCheck !== undefined && funcToCheck.loweredFunc.func) {
                             if (!hasNonVoidReturn(funcToCheck.loweredFunc.func)) {
                                 errors.pushDiagnostic(CompilerDiagnostic.create({
-                                    category: ErrorCategory.VoidUseMemo,
+                                    category: ErrorCategory.UseMemo,
                                     reason: 'useMemo() callbacks must return a value',
                                     description: `This ${manualMemo.loadInstr.value.kind === 'PropertyLoad'
                                         ? 'React.useMemo'
@@ -54219,7 +54202,7 @@ function makeRule(rule) {
             type: 'problem',
             docs: {
                 description: rule.description,
-                recommended: rule.preset === LintRulePreset.Recommended,
+                recommended: rule.recommended,
             },
             fixable: 'code',
             hasSuggestions: true,
@@ -54232,12 +54215,7 @@ const allRules = LintRules.reduce((acc, rule) => {
     acc[rule.name] = { rule: makeRule(rule), severity: rule.severity };
     return acc;
 }, {});
-const recommendedRules = LintRules.filter(rule => rule.preset === LintRulePreset.Recommended).reduce((acc, rule) => {
-    acc[rule.name] = { rule: makeRule(rule), severity: rule.severity };
-    return acc;
-}, {});
-const recommendedLatestRules = LintRules.filter(rule => rule.preset === LintRulePreset.Recommended ||
-    rule.preset === LintRulePreset.RecommendedLatest).reduce((acc, rule) => {
+const recommendedRules = LintRules.filter(rule => rule.recommended).reduce((acc, rule) => {
     acc[rule.name] = { rule: makeRule(rule), severity: rule.severity };
     return acc;
 }, {});
@@ -57549,41 +57527,57 @@ const basicRuleConfigs = {
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
 };
-const recommendedCompilerRuleConfigs = Object.fromEntries(Object.entries(recommendedRules).map(([name, ruleConfig]) => {
+const compilerRuleConfigs = Object.fromEntries(Object.entries(recommendedRules).map(([name, ruleConfig]) => {
     return [
         `react-hooks/${name}`,
         mapErrorSeverityToESlint(ruleConfig.severity),
     ];
 }));
-const recommendedLatestCompilerRuleConfigs = Object.fromEntries(Object.entries(recommendedLatestRules).map(([name, ruleConfig]) => {
-    return [
-        `react-hooks/${name}`,
-        mapErrorSeverityToESlint(ruleConfig.severity),
-    ];
-}));
-const recommendedRuleConfigs = Object.assign(Object.assign({}, basicRuleConfigs), recommendedCompilerRuleConfigs);
-const recommendedLatestRuleConfigs = Object.assign(Object.assign({}, basicRuleConfigs), recommendedLatestCompilerRuleConfigs);
+const allRuleConfigs = Object.assign(Object.assign({}, basicRuleConfigs), compilerRuleConfigs);
 const plugins = ['react-hooks'];
 const configs = {
-    recommended: {
+    'recommended-legacy': {
         plugins,
-        rules: recommendedRuleConfigs,
+        rules: basicRuleConfigs,
+    },
+    'recommended-latest-legacy': {
+        plugins,
+        rules: allRuleConfigs,
+    },
+    'flat/recommended': {
+        plugins,
+        rules: basicRuleConfigs,
     },
     'recommended-latest': {
         plugins,
-        rules: recommendedLatestRuleConfigs,
+        rules: allRuleConfigs,
+    },
+    recommended: {
+        plugins,
+        rules: basicRuleConfigs,
     },
     flat: {},
 };
 const plugin = {
     meta: {
         name: 'eslint-plugin-react-hooks',
-        version: '7.0.0',
     },
     rules,
     configs,
 };
 Object.assign(configs.flat, {
+    'recommended-legacy': {
+        plugins: { 'react-hooks': plugin },
+        rules: configs['recommended-legacy'].rules,
+    },
+    'recommended-latest-legacy': {
+        plugins: { 'react-hooks': plugin },
+        rules: configs['recommended-latest-legacy'].rules,
+    },
+    'flat/recommended': {
+        plugins: { 'react-hooks': plugin },
+        rules: configs['flat/recommended'].rules,
+    },
     'recommended-latest': {
         plugins: { 'react-hooks': plugin },
         rules: configs['recommended-latest'].rules,
