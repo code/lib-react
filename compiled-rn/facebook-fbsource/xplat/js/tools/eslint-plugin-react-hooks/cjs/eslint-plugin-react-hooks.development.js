@@ -12,7 +12,7 @@
  * @lightSyntaxTransform
  * @preventMunge
  * @oncall react_core
- * @generated SignedSource<<c921af54e7162b941874ba0ffd2ec2b6>>
+ * @generated SignedSource<<f29609662947d29001272647cb97185a>>
  */
 
 'use strict';
@@ -37179,49 +37179,30 @@ function memoizeFbtAndMacroOperandsInSameScope(fn) {
         ...Array.from(FBT_TAGS).map((tag) => [tag, []]),
         ...((_a = fn.env.config.customMacros) !== null && _a !== void 0 ? _a : []),
     ]);
-    const macroTagsCalls = new Set();
-    const macroValues = new Map();
+    const fbtValues = new Set();
     const macroMethods = new Map();
-    visit$1(fn, fbtMacroTags, macroTagsCalls, macroMethods, macroValues);
-    for (const root of macroValues.keys()) {
-        const scope = root.scope;
-        if (scope == null) {
-            continue;
+    while (true) {
+        let vsize = fbtValues.size;
+        let msize = macroMethods.size;
+        visit$1(fn, fbtMacroTags, fbtValues, macroMethods);
+        if (vsize === fbtValues.size && msize === macroMethods.size) {
+            break;
         }
-        if (!macroTagsCalls.has(root.id)) {
-            continue;
-        }
-        mergeScopes(root, scope, macroValues, macroTagsCalls);
     }
-    return macroTagsCalls;
+    return fbtValues;
 }
 const FBT_TAGS = new Set([
     'fbt',
     'fbt:param',
-    'fbt:enum',
-    'fbt:plural',
     'fbs',
     'fbs:param',
-    'fbs:enum',
-    'fbs:plural',
 ]);
 const SINGLE_CHILD_FBT_TAGS = new Set([
     'fbt:param',
     'fbs:param',
 ]);
-function visit$1(fn, fbtMacroTags, macroTagsCalls, macroMethods, macroValues) {
+function visit$1(fn, fbtMacroTags, fbtValues, macroMethods) {
     for (const [, block] of fn.body.blocks) {
-        for (const phi of block.phis) {
-            const macroOperands = [];
-            for (const operand of phi.operands.values()) {
-                if (macroValues.has(operand.identifier)) {
-                    macroOperands.push(operand.identifier);
-                }
-            }
-            if (macroOperands.length !== 0) {
-                macroValues.set(phi.place.identifier, macroOperands);
-            }
-        }
         for (const instruction of block.instructions) {
             const { lvalue, value } = instruction;
             if (lvalue === null) {
@@ -37230,11 +37211,11 @@ function visit$1(fn, fbtMacroTags, macroTagsCalls, macroMethods, macroValues) {
             if (value.kind === 'Primitive' &&
                 typeof value.value === 'string' &&
                 matchesExactTag(value.value, fbtMacroTags)) {
-                macroTagsCalls.add(lvalue.identifier.id);
+                fbtValues.add(lvalue.identifier.id);
             }
             else if (value.kind === 'LoadGlobal' &&
                 matchesExactTag(value.binding.name, fbtMacroTags)) {
-                macroTagsCalls.add(lvalue.identifier.id);
+                fbtValues.add(lvalue.identifier.id);
             }
             else if (value.kind === 'LoadGlobal' &&
                 matchTagRoot(value.binding.name, fbtMacroTags) !== null) {
@@ -37253,7 +37234,7 @@ function visit$1(fn, fbtMacroTags, macroTagsCalls, macroMethods, macroValues) {
                             newMethods.push(method.slice(1));
                         }
                         else {
-                            macroTagsCalls.add(lvalue.identifier.id);
+                            fbtValues.add(lvalue.identifier.id);
                         }
                     }
                 }
@@ -37261,38 +37242,44 @@ function visit$1(fn, fbtMacroTags, macroTagsCalls, macroMethods, macroValues) {
                     macroMethods.set(lvalue.identifier.id, newMethods);
                 }
             }
-            else if (value.kind === 'PropertyLoad' &&
-                macroTagsCalls.has(value.object.identifier.id)) {
-                macroTagsCalls.add(lvalue.identifier.id);
-            }
-            else if (isFbtJsxExpression(fbtMacroTags, macroTagsCalls, value) ||
-                isFbtJsxChild(macroTagsCalls, lvalue, value) ||
-                isFbtCallExpression(macroTagsCalls, value)) {
-                macroTagsCalls.add(lvalue.identifier.id);
-                macroValues.set(lvalue.identifier, Array.from(eachInstructionValueOperand(value), operand => operand.identifier));
-            }
-            else if (Iterable_some(eachInstructionValueOperand(value), operand => macroValues.has(operand.identifier))) {
-                const macroOperands = [];
-                for (const operand of eachInstructionValueOperand(value)) {
-                    if (macroValues.has(operand.identifier)) {
-                        macroOperands.push(operand.identifier);
-                    }
+            else if (isFbtCallExpression(fbtValues, value)) {
+                const fbtScope = lvalue.identifier.scope;
+                if (fbtScope === null) {
+                    continue;
                 }
-                macroValues.set(lvalue.identifier, macroOperands);
+                for (const operand of eachReactiveValueOperand(value)) {
+                    operand.identifier.scope = fbtScope;
+                    expandFbtScopeRange(fbtScope.range, operand.identifier.mutableRange);
+                    fbtValues.add(operand.identifier.id);
+                }
+            }
+            else if (isFbtJsxExpression(fbtMacroTags, fbtValues, value) ||
+                isFbtJsxChild(fbtValues, lvalue, value)) {
+                const fbtScope = lvalue.identifier.scope;
+                if (fbtScope === null) {
+                    continue;
+                }
+                for (const operand of eachReactiveValueOperand(value)) {
+                    operand.identifier.scope = fbtScope;
+                    expandFbtScopeRange(fbtScope.range, operand.identifier.mutableRange);
+                    fbtValues.add(operand.identifier.id);
+                }
+            }
+            else if (fbtValues.has(lvalue.identifier.id)) {
+                const fbtScope = lvalue.identifier.scope;
+                if (fbtScope === null) {
+                    return;
+                }
+                for (const operand of eachReactiveValueOperand(value)) {
+                    if (operand.identifier.name !== null &&
+                        operand.identifier.name.kind === 'named') {
+                        continue;
+                    }
+                    operand.identifier.scope = fbtScope;
+                    expandFbtScopeRange(fbtScope.range, operand.identifier.mutableRange);
+                }
             }
         }
-    }
-}
-function mergeScopes(root, scope, macroValues, macroTagsCalls) {
-    const operands = macroValues.get(root);
-    if (operands == null) {
-        return;
-    }
-    for (const operand of operands) {
-        operand.scope = scope;
-        expandFbtScopeRange(scope.range, operand.mutableRange);
-        macroTagsCalls.add(operand.id);
-        mergeScopes(operand, scope, macroValues, macroTagsCalls);
     }
 }
 function matchesExactTag(s, tags) {
@@ -37318,23 +37305,22 @@ function matchTagRoot(s, tags) {
         return null;
     }
 }
-function isFbtCallExpression(macroTagsCalls, value) {
+function isFbtCallExpression(fbtValues, value) {
     return ((value.kind === 'CallExpression' &&
-        macroTagsCalls.has(value.callee.identifier.id)) ||
-        (value.kind === 'MethodCall' &&
-            macroTagsCalls.has(value.property.identifier.id)));
+        fbtValues.has(value.callee.identifier.id)) ||
+        (value.kind === 'MethodCall' && fbtValues.has(value.property.identifier.id)));
 }
-function isFbtJsxExpression(fbtMacroTags, macroTagsCalls, value) {
+function isFbtJsxExpression(fbtMacroTags, fbtValues, value) {
     return (value.kind === 'JsxExpression' &&
         ((value.tag.kind === 'Identifier' &&
-            macroTagsCalls.has(value.tag.identifier.id)) ||
+            fbtValues.has(value.tag.identifier.id)) ||
             (value.tag.kind === 'BuiltinTag' &&
                 matchesExactTag(value.tag.name, fbtMacroTags))));
 }
-function isFbtJsxChild(macroTagsCalls, lvalue, value) {
+function isFbtJsxChild(fbtValues, lvalue, value) {
     return ((value.kind === 'JsxExpression' || value.kind === 'JsxFragment') &&
         lvalue !== null &&
-        macroTagsCalls.has(lvalue.identifier.id));
+        fbtValues.has(lvalue.identifier.id));
 }
 function expandFbtScopeRange(fbtRange, extendWith) {
     if (extendWith.start !== 0) {
