@@ -6,7 +6,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
- * @generated SignedSource<<9079307abbe1c09d1a87c55c574480ba>>
+ * @generated SignedSource<<4b7afef4843d548ffe6858856d15f3c9>>
  */
 
 'use strict';
@@ -18295,7 +18295,7 @@ function getRuleForCategoryImpl(category) {
                 category,
                 severity: ErrorSeverity.Error,
                 name: 'void-use-memo',
-                description: 'Validates that useMemos always return a value. See [`useMemo()` docs](https://react.dev/reference/react/useMemo) for more information.',
+                description: 'Validates that useMemos always return a value and that the result of the useMemo is used by the component/hook. See [`useMemo()` docs](https://react.dev/reference/react/useMemo) for more information.',
                 preset: LintRulePreset.RecommendedLatest,
             };
         }
@@ -21177,25 +21177,25 @@ function assertValidBlockNesting(fn) {
 function assertValidMutableRanges(fn) {
     for (const [, block] of fn.body.blocks) {
         for (const phi of block.phis) {
-            visit$2(phi.place, `phi for block bb${block.id}`);
+            visit$1(phi.place, `phi for block bb${block.id}`);
             for (const [pred, operand] of phi.operands) {
-                visit$2(operand, `phi predecessor bb${pred} for block bb${block.id}`);
+                visit$1(operand, `phi predecessor bb${pred} for block bb${block.id}`);
             }
         }
         for (const instr of block.instructions) {
             for (const operand of eachInstructionLValue(instr)) {
-                visit$2(operand, `instruction [${instr.id}]`);
+                visit$1(operand, `instruction [${instr.id}]`);
             }
             for (const operand of eachInstructionOperand(instr)) {
-                visit$2(operand, `instruction [${instr.id}]`);
+                visit$1(operand, `instruction [${instr.id}]`);
             }
         }
         for (const operand of eachTerminalOperand(block.terminal)) {
-            visit$2(operand, `terminal [${block.terminal.id}]`);
+            visit$1(operand, `terminal [${block.terminal.id}]`);
         }
     }
 }
-function visit$2(place, description) {
+function visit$1(place, description) {
     validateMutableRange(place, place.identifier.mutableRange, description);
     if (place.identifier.scope !== null) {
         validateMutableRange(place, place.identifier.scope.range, description);
@@ -31900,14 +31900,7 @@ const InstrumentationSchema = v4.z
     .refine(opts => opts.gating != null || opts.globalGating != null, 'Expected at least one of gating or globalGating');
 const USE_FIRE_FUNCTION_NAME = 'useFire';
 const EMIT_FREEZE_GLOBAL_GATING = 'false';
-const MacroMethodSchema = v4.z.union([
-    v4.z.object({ type: v4.z.literal('wildcard') }),
-    v4.z.object({ type: v4.z.literal('name'), name: v4.z.string() }),
-]);
-const MacroSchema = v4.z.union([
-    v4.z.string(),
-    v4.z.tuple([v4.z.string(), v4.z.array(MacroMethodSchema)]),
-]);
+const MacroSchema = v4.z.string();
 const HookSchema = v4.z.object({
     effectKind: v4.z.nativeEnum(Effect),
     valueKind: v4.z.nativeEnum(ValueKind),
@@ -31967,7 +31960,7 @@ const EnvironmentConfigSchema = v4.z.object({
     enableTreatRefLikeIdentifiersAsRefs: v4.z.boolean().default(true),
     enableTreatSetIdentifiersAsStateSetters: v4.z.boolean().default(false),
     lowerContextAccess: ExternalFunctionSchema.nullable().default(null),
-    validateNoVoidUseMemo: v4.z.boolean().default(false),
+    validateNoVoidUseMemo: v4.z.boolean().default(true),
     validateNoDynamicallyCreatedComponentsOrHooks: v4.z.boolean().default(false),
     enableAllowSetStateFromRefsInEffects: v4.z.boolean().default(true),
 });
@@ -36952,172 +36945,187 @@ var GuardKind;
     GuardKind[GuardKind["DisallowHook"] = 3] = "DisallowHook";
 })(GuardKind || (GuardKind = {}));
 
+var InlineLevel;
+(function (InlineLevel) {
+    InlineLevel["Transitive"] = "Transitive";
+    InlineLevel["Shallow"] = "Shallow";
+})(InlineLevel || (InlineLevel = {}));
+const SHALLOW_MACRO = {
+    level: InlineLevel.Shallow,
+    properties: null,
+};
+const TRANSITIVE_MACRO = {
+    level: InlineLevel.Transitive,
+    properties: null,
+};
+const FBT_MACRO = {
+    level: InlineLevel.Transitive,
+    properties: new Map([['*', SHALLOW_MACRO]]),
+};
+FBT_MACRO.properties.set('enum', FBT_MACRO);
 function memoizeFbtAndMacroOperandsInSameScope(fn) {
     var _a;
-    const fbtMacroTags = new Set([
-        ...Array.from(FBT_TAGS).map((tag) => [tag, []]),
-        ...((_a = fn.env.config.customMacros) !== null && _a !== void 0 ? _a : []),
+    const macroKinds = new Map([
+        ...Array.from(FBT_TAGS.entries()),
+        ...((_a = fn.env.config.customMacros) !== null && _a !== void 0 ? _a : []).map(name => [name, TRANSITIVE_MACRO]),
     ]);
-    const macroTagsCalls = new Set();
-    const macroValues = new Map();
-    const macroMethods = new Map();
-    visit$1(fn, fbtMacroTags, macroTagsCalls, macroMethods, macroValues);
-    for (const root of macroValues.keys()) {
-        const scope = root.scope;
-        if (scope == null) {
-            continue;
-        }
-        if (!macroTagsCalls.has(root.id)) {
-            continue;
-        }
-        mergeScopes(root, scope, macroValues, macroTagsCalls);
-    }
-    return macroTagsCalls;
+    const macroTags = populateMacroTags(fn, macroKinds);
+    const macroValues = mergeMacroArguments(fn, macroTags, macroKinds);
+    return macroValues;
 }
-const FBT_TAGS = new Set([
-    'fbt',
-    'fbt:param',
-    'fbt:enum',
-    'fbt:plural',
-    'fbs',
-    'fbs:param',
-    'fbs:enum',
-    'fbs:plural',
+const FBT_TAGS = new Map([
+    ['fbt', FBT_MACRO],
+    ['fbt:param', SHALLOW_MACRO],
+    ['fbt:enum', FBT_MACRO],
+    ['fbt:plural', SHALLOW_MACRO],
+    ['fbs', FBT_MACRO],
+    ['fbs:param', SHALLOW_MACRO],
+    ['fbs:enum', FBT_MACRO],
+    ['fbs:plural', SHALLOW_MACRO],
 ]);
 const SINGLE_CHILD_FBT_TAGS = new Set([
     'fbt:param',
     'fbs:param',
 ]);
-function visit$1(fn, fbtMacroTags, macroTagsCalls, macroMethods, macroValues) {
-    for (const [, block] of fn.body.blocks) {
-        for (const phi of block.phis) {
-            const macroOperands = [];
-            for (const operand of phi.operands.values()) {
-                if (macroValues.has(operand.identifier)) {
-                    macroOperands.push(operand.identifier);
+function populateMacroTags(fn, macroKinds) {
+    var _a;
+    const macroTags = new Map();
+    for (const block of fn.body.blocks.values()) {
+        for (const instr of block.instructions) {
+            const { lvalue, value } = instr;
+            switch (value.kind) {
+                case 'Primitive': {
+                    if (typeof value.value === 'string') {
+                        const macroDefinition = macroKinds.get(value.value);
+                        if (macroDefinition != null) {
+                            macroTags.set(lvalue.identifier.id, macroDefinition);
+                        }
+                    }
+                    break;
+                }
+                case 'LoadGlobal': {
+                    let macroDefinition = macroKinds.get(value.binding.name);
+                    if (macroDefinition != null) {
+                        macroTags.set(lvalue.identifier.id, macroDefinition);
+                    }
+                    break;
+                }
+                case 'PropertyLoad': {
+                    if (typeof value.property === 'string') {
+                        const macroDefinition = macroTags.get(value.object.identifier.id);
+                        if (macroDefinition != null) {
+                            const propertyDefinition = macroDefinition.properties != null
+                                ? ((_a = macroDefinition.properties.get(value.property)) !== null && _a !== void 0 ? _a : macroDefinition.properties.get('*'))
+                                : null;
+                            const propertyMacro = propertyDefinition !== null && propertyDefinition !== void 0 ? propertyDefinition : macroDefinition;
+                            macroTags.set(lvalue.identifier.id, propertyMacro);
+                        }
+                    }
+                    break;
                 }
             }
-            if (macroOperands.length !== 0) {
-                macroValues.set(phi.place.identifier, macroOperands);
+        }
+    }
+    return macroTags;
+}
+function mergeMacroArguments(fn, macroTags, macroKinds) {
+    var _a;
+    const macroValues = new Set(macroTags.keys());
+    for (const block of Array.from(fn.body.blocks.values()).reverse()) {
+        for (let i = block.instructions.length - 1; i >= 0; i--) {
+            const instr = block.instructions[i];
+            const { lvalue, value } = instr;
+            switch (value.kind) {
+                case 'DeclareContext':
+                case 'DeclareLocal':
+                case 'Destructure':
+                case 'LoadContext':
+                case 'LoadLocal':
+                case 'PostfixUpdate':
+                case 'PrefixUpdate':
+                case 'StoreContext':
+                case 'StoreLocal': {
+                    break;
+                }
+                case 'CallExpression':
+                case 'MethodCall': {
+                    const scope = lvalue.identifier.scope;
+                    if (scope == null) {
+                        continue;
+                    }
+                    const callee = value.kind === 'CallExpression' ? value.callee : value.property;
+                    const macroDefinition = (_a = macroTags.get(callee.identifier.id)) !== null && _a !== void 0 ? _a : macroTags.get(lvalue.identifier.id);
+                    if (macroDefinition != null) {
+                        visitOperands(macroDefinition, scope, lvalue, value, macroValues, macroTags);
+                    }
+                    break;
+                }
+                case 'JsxExpression': {
+                    const scope = lvalue.identifier.scope;
+                    if (scope == null) {
+                        continue;
+                    }
+                    let macroDefinition;
+                    if (value.tag.kind === 'Identifier') {
+                        macroDefinition = macroTags.get(value.tag.identifier.id);
+                    }
+                    else {
+                        macroDefinition = macroKinds.get(value.tag.name);
+                    }
+                    macroDefinition !== null && macroDefinition !== void 0 ? macroDefinition : (macroDefinition = macroTags.get(lvalue.identifier.id));
+                    if (macroDefinition != null) {
+                        visitOperands(macroDefinition, scope, lvalue, value, macroValues, macroTags);
+                    }
+                    break;
+                }
+                default: {
+                    const scope = lvalue.identifier.scope;
+                    if (scope == null) {
+                        continue;
+                    }
+                    const macroDefinition = macroTags.get(lvalue.identifier.id);
+                    if (macroDefinition != null) {
+                        visitOperands(macroDefinition, scope, lvalue, value, macroValues, macroTags);
+                    }
+                    break;
+                }
             }
         }
-        for (const instruction of block.instructions) {
-            const { lvalue, value } = instruction;
-            if (lvalue === null) {
+        for (const phi of block.phis) {
+            const scope = phi.place.identifier.scope;
+            if (scope == null) {
                 continue;
             }
-            if (value.kind === 'Primitive' &&
-                typeof value.value === 'string' &&
-                matchesExactTag(value.value, fbtMacroTags)) {
-                macroTagsCalls.add(lvalue.identifier.id);
+            const macroDefinition = macroTags.get(phi.place.identifier.id);
+            if (macroDefinition == null ||
+                macroDefinition.level === InlineLevel.Shallow) {
+                continue;
             }
-            else if (value.kind === 'LoadGlobal' &&
-                matchesExactTag(value.binding.name, fbtMacroTags)) {
-                macroTagsCalls.add(lvalue.identifier.id);
-            }
-            else if (value.kind === 'LoadGlobal' &&
-                matchTagRoot(value.binding.name, fbtMacroTags) !== null) {
-                const methods = matchTagRoot(value.binding.name, fbtMacroTags);
-                macroMethods.set(lvalue.identifier.id, methods);
-            }
-            else if (value.kind === 'PropertyLoad' &&
-                macroMethods.has(value.object.identifier.id)) {
-                const methods = macroMethods.get(value.object.identifier.id);
-                const newMethods = [];
-                for (const method of methods) {
-                    if (method.length > 0 &&
-                        (method[0].type === 'wildcard' ||
-                            (method[0].type === 'name' && method[0].name === value.property))) {
-                        if (method.length > 1) {
-                            newMethods.push(method.slice(1));
-                        }
-                        else {
-                            macroTagsCalls.add(lvalue.identifier.id);
-                        }
-                    }
-                }
-                if (newMethods.length > 0) {
-                    macroMethods.set(lvalue.identifier.id, newMethods);
-                }
-            }
-            else if (value.kind === 'PropertyLoad' &&
-                macroTagsCalls.has(value.object.identifier.id)) {
-                macroTagsCalls.add(lvalue.identifier.id);
-            }
-            else if (isFbtJsxExpression(fbtMacroTags, macroTagsCalls, value) ||
-                isFbtJsxChild(macroTagsCalls, lvalue, value) ||
-                isFbtCallExpression(macroTagsCalls, value)) {
-                macroTagsCalls.add(lvalue.identifier.id);
-                macroValues.set(lvalue.identifier, Array.from(eachInstructionValueOperand(value), operand => operand.identifier));
-            }
-            else if (Iterable_some(eachInstructionValueOperand(value), operand => macroValues.has(operand.identifier))) {
-                const macroOperands = [];
-                for (const operand of eachInstructionValueOperand(value)) {
-                    if (macroValues.has(operand.identifier)) {
-                        macroOperands.push(operand.identifier);
-                    }
-                }
-                macroValues.set(lvalue.identifier, macroOperands);
+            macroValues.add(phi.place.identifier.id);
+            for (const operand of phi.operands.values()) {
+                operand.identifier.scope = scope;
+                expandFbtScopeRange(scope.range, operand.identifier.mutableRange);
+                macroTags.set(operand.identifier.id, macroDefinition);
+                macroValues.add(operand.identifier.id);
             }
         }
     }
-}
-function mergeScopes(root, scope, macroValues, macroTagsCalls) {
-    const operands = macroValues.get(root);
-    if (operands == null) {
-        return;
-    }
-    for (const operand of operands) {
-        operand.scope = scope;
-        expandFbtScopeRange(scope.range, operand.mutableRange);
-        macroTagsCalls.add(operand.id);
-        mergeScopes(operand, scope, macroValues, macroTagsCalls);
-    }
-}
-function matchesExactTag(s, tags) {
-    return Array.from(tags).some(macro => typeof macro === 'string'
-        ? s === macro
-        : macro[1].length === 0 && macro[0] === s);
-}
-function matchTagRoot(s, tags) {
-    const methods = [];
-    for (const macro of tags) {
-        if (typeof macro === 'string') {
-            continue;
-        }
-        const [tag, rest] = macro;
-        if (tag === s && rest.length > 0) {
-            methods.push(rest);
-        }
-    }
-    if (methods.length > 0) {
-        return methods;
-    }
-    else {
-        return null;
-    }
-}
-function isFbtCallExpression(macroTagsCalls, value) {
-    return ((value.kind === 'CallExpression' &&
-        macroTagsCalls.has(value.callee.identifier.id)) ||
-        (value.kind === 'MethodCall' &&
-            macroTagsCalls.has(value.property.identifier.id)));
-}
-function isFbtJsxExpression(fbtMacroTags, macroTagsCalls, value) {
-    return (value.kind === 'JsxExpression' &&
-        ((value.tag.kind === 'Identifier' &&
-            macroTagsCalls.has(value.tag.identifier.id)) ||
-            (value.tag.kind === 'BuiltinTag' &&
-                matchesExactTag(value.tag.name, fbtMacroTags))));
-}
-function isFbtJsxChild(macroTagsCalls, lvalue, value) {
-    return ((value.kind === 'JsxExpression' || value.kind === 'JsxFragment') &&
-        lvalue !== null &&
-        macroTagsCalls.has(lvalue.identifier.id));
+    return macroValues;
 }
 function expandFbtScopeRange(fbtRange, extendWith) {
     if (extendWith.start !== 0) {
         fbtRange.start = makeInstructionId(Math.min(fbtRange.start, extendWith.start));
+    }
+}
+function visitOperands(macroDefinition, scope, lvalue, value, macroValues, macroTags) {
+    macroValues.add(lvalue.identifier.id);
+    for (const operand of eachInstructionValueOperand(value)) {
+        if (macroDefinition.level === InlineLevel.Transitive) {
+            operand.identifier.scope = scope;
+            expandFbtScopeRange(scope.range, operand.identifier.mutableRange);
+            macroTags.set(operand.identifier.id, macroDefinition);
+        }
+        macroValues.add(operand.identifier.id);
     }
 }
 
@@ -40317,7 +40325,7 @@ function inferMutationAliasingEffects(fn, { isFunctionExpression } = {
     }
     queue(fn.body.entry, initialState);
     const hoistedContextDeclarations = findHoistedContextDeclarations(fn);
-    const context = new Context$1(isFunctionExpression, fn, hoistedContextDeclarations);
+    const context = new Context$1(isFunctionExpression, fn, hoistedContextDeclarations, findNonMutatedDestructureSpreads(fn));
     let iterationCount = 0;
     while (queuedStates.size !== 0) {
         iterationCount++;
@@ -40381,7 +40389,7 @@ function findHoistedContextDeclarations(fn) {
     return hoisted;
 }
 let Context$1 = class Context {
-    constructor(isFunctionExpression, fn, hoistedContextDeclarations) {
+    constructor(isFunctionExpression, fn, hoistedContextDeclarations, nonMutatingSpreads) {
         this.internedEffects = new Map();
         this.instructionSignatureCache = new Map();
         this.effectInstructionValueCache = new Map();
@@ -40391,6 +40399,7 @@ let Context$1 = class Context {
         this.isFuctionExpression = isFunctionExpression;
         this.fn = fn;
         this.hoistedContextDeclarations = hoistedContextDeclarations;
+        this.nonMutatingSpreads = nonMutatingSpreads;
     }
     cacheApplySignature(signature, effect, f) {
         const inner = getOrInsertDefault(this.applySignatureCache, signature, new Map());
@@ -40406,6 +40415,114 @@ let Context$1 = class Context {
         return interned;
     }
 };
+function findNonMutatedDestructureSpreads(fn) {
+    const knownFrozen = new Set();
+    if (fn.fnType === 'Component') {
+        const [props] = fn.params;
+        if (props != null && props.kind === 'Identifier') {
+            knownFrozen.add(props.identifier.id);
+        }
+    }
+    else {
+        for (const param of fn.params) {
+            if (param.kind === 'Identifier') {
+                knownFrozen.add(param.identifier.id);
+            }
+        }
+    }
+    const candidateNonMutatingSpreads = new Map();
+    for (const block of fn.body.blocks.values()) {
+        if (candidateNonMutatingSpreads.size !== 0) {
+            for (const phi of block.phis) {
+                for (const operand of phi.operands.values()) {
+                    const spread = candidateNonMutatingSpreads.get(operand.identifier.id);
+                    if (spread != null) {
+                        candidateNonMutatingSpreads.delete(spread);
+                    }
+                }
+            }
+        }
+        for (const instr of block.instructions) {
+            const { lvalue, value } = instr;
+            switch (value.kind) {
+                case 'Destructure': {
+                    if (!knownFrozen.has(value.value.identifier.id) ||
+                        !(value.lvalue.kind === InstructionKind.Let ||
+                            value.lvalue.kind === InstructionKind.Const) ||
+                        value.lvalue.pattern.kind !== 'ObjectPattern') {
+                        continue;
+                    }
+                    for (const item of value.lvalue.pattern.properties) {
+                        if (item.kind !== 'Spread') {
+                            continue;
+                        }
+                        candidateNonMutatingSpreads.set(item.place.identifier.id, item.place.identifier.id);
+                    }
+                    break;
+                }
+                case 'LoadLocal': {
+                    const spread = candidateNonMutatingSpreads.get(value.place.identifier.id);
+                    if (spread != null) {
+                        candidateNonMutatingSpreads.set(lvalue.identifier.id, spread);
+                    }
+                    break;
+                }
+                case 'StoreLocal': {
+                    const spread = candidateNonMutatingSpreads.get(value.value.identifier.id);
+                    if (spread != null) {
+                        candidateNonMutatingSpreads.set(lvalue.identifier.id, spread);
+                        candidateNonMutatingSpreads.set(value.lvalue.place.identifier.id, spread);
+                    }
+                    break;
+                }
+                case 'JsxFragment':
+                case 'JsxExpression': {
+                    break;
+                }
+                case 'PropertyLoad': {
+                    break;
+                }
+                case 'CallExpression':
+                case 'MethodCall': {
+                    const callee = value.kind === 'CallExpression' ? value.callee : value.property;
+                    if (getHookKind(fn.env, callee.identifier) != null) {
+                        if (!isRefOrRefValue(lvalue.identifier)) {
+                            knownFrozen.add(lvalue.identifier.id);
+                        }
+                    }
+                    else {
+                        if (candidateNonMutatingSpreads.size !== 0) {
+                            for (const operand of eachInstructionValueOperand(value)) {
+                                const spread = candidateNonMutatingSpreads.get(operand.identifier.id);
+                                if (spread != null) {
+                                    candidateNonMutatingSpreads.delete(spread);
+                                }
+                            }
+                        }
+                    }
+                    break;
+                }
+                default: {
+                    if (candidateNonMutatingSpreads.size !== 0) {
+                        for (const operand of eachInstructionValueOperand(value)) {
+                            const spread = candidateNonMutatingSpreads.get(operand.identifier.id);
+                            if (spread != null) {
+                                candidateNonMutatingSpreads.delete(spread);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    const nonMutatingSpreads = new Set();
+    for (const [key, value] of candidateNonMutatingSpreads) {
+        if (key === value) {
+            nonMutatingSpreads.add(key);
+        }
+    }
+    return nonMutatingSpreads;
+}
 function inferParam(param, initialState, paramKind) {
     const place = param.kind === 'Identifier' ? param : param.place;
     const value = {
@@ -41660,7 +41777,9 @@ function computeSignatureForInstruction(context, env, instr) {
                         kind: 'Create',
                         into: place,
                         reason: ValueReason.Other,
-                        value: ValueKind.Mutable,
+                        value: context.nonMutatingSpreads.has(place.identifier.id)
+                            ? ValueKind.Frozen
+                            : ValueKind.Mutable,
                     });
                     effects.push({
                         kind: 'Capture',
@@ -44351,7 +44470,6 @@ function extractManualMemoizationArgs(instr, kind, sidemap, errors) {
     };
 }
 function dropManualMemoization(func) {
-    var _a;
     const errors = new CompilerError();
     const isValidationEnabled = func.env.config.validatePreserveExistingMemoizationGuarantees ||
         func.env.config.validateNoSetStateInRender ||
@@ -44380,26 +44498,6 @@ function dropManualMemoization(func) {
                     const { fnPlace, depsList } = extractManualMemoizationArgs(instr, manualMemo.kind, sidemap, errors);
                     if (fnPlace == null) {
                         continue;
-                    }
-                    if (func.env.config.validateNoVoidUseMemo &&
-                        manualMemo.kind === 'useMemo') {
-                        const funcToCheck = (_a = sidemap.functions.get(fnPlace.identifier.id)) === null || _a === void 0 ? void 0 : _a.value;
-                        if (funcToCheck !== undefined && funcToCheck.loweredFunc.func) {
-                            if (!hasNonVoidReturn(funcToCheck.loweredFunc.func)) {
-                                errors.pushDiagnostic(CompilerDiagnostic.create({
-                                    category: ErrorCategory.VoidUseMemo,
-                                    reason: 'useMemo() callbacks must return a value',
-                                    description: `This ${manualMemo.loadInstr.value.kind === 'PropertyLoad'
-                                        ? 'React.useMemo'
-                                        : 'useMemo'} callback doesn't return a value. useMemo is for computing and caching values, not for arbitrary side effects`,
-                                    suggestions: null,
-                                }).withDetails({
-                                    kind: 'error',
-                                    loc: instr.value.loc,
-                                    message: 'useMemo() callbacks must return a value',
-                                }));
-                            }
-                        }
                     }
                     instr.value = getManualMemoizationReplacement(fnPlace, instr.value.loc, manualMemo.kind);
                     if (isValidationEnabled) {
@@ -44511,17 +44609,6 @@ function findOptionalPlaces(fn) {
         }
     }
     return optionals;
-}
-function hasNonVoidReturn(func) {
-    for (const [, block] of func.body.blocks) {
-        if (block.terminal.kind === 'return') {
-            if (block.terminal.returnVariant === 'Explicit' ||
-                block.terminal.returnVariant === 'Implicit') {
-                return true;
-            }
-        }
-    }
-    return false;
 }
 
 class StableSidemap {
@@ -50005,11 +50092,18 @@ function isUnmemoized(operand, scopes) {
 
 function validateUseMemo(fn) {
     const errors = new CompilerError();
+    const voidMemoErrors = new CompilerError();
     const useMemos = new Set();
     const react = new Set();
     const functions = new Map();
+    const unusedUseMemos = new Map();
     for (const [, block] of fn.body.blocks) {
         for (const { lvalue, value } of block.instructions) {
+            if (unusedUseMemos.size !== 0) {
+                for (const operand of eachInstructionValueOperand(value)) {
+                    unusedUseMemos.delete(operand.identifier.id);
+                }
+            }
             switch (value.kind) {
                 case 'LoadGlobal': {
                     if (value.binding.name === 'useMemo') {
@@ -50034,10 +50128,8 @@ function validateUseMemo(fn) {
                 }
                 case 'MethodCall':
                 case 'CallExpression': {
-                    const callee = value.kind === 'CallExpression'
-                        ? value.callee.identifier.id
-                        : value.property.identifier.id;
-                    const isUseMemo = useMemos.has(callee);
+                    const callee = value.kind === 'CallExpression' ? value.callee : value.property;
+                    const isUseMemo = useMemos.has(callee.identifier.id);
                     if (!isUseMemo || value.args.length === 0) {
                         continue;
                     }
@@ -50077,12 +50169,83 @@ function validateUseMemo(fn) {
                             message: 'Async and generator functions are not supported',
                         }));
                     }
+                    validateNoContextVariableAssignment(body.loweredFunc.func, errors);
+                    if (fn.env.config.validateNoVoidUseMemo) {
+                        if (!hasNonVoidReturn(body.loweredFunc.func)) {
+                            voidMemoErrors.pushDiagnostic(CompilerDiagnostic.create({
+                                category: ErrorCategory.VoidUseMemo,
+                                reason: 'useMemo() callbacks must return a value',
+                                description: `This useMemo() callback doesn't return a value. useMemo() is for computing and caching values, not for arbitrary side effects`,
+                                suggestions: null,
+                            }).withDetails({
+                                kind: 'error',
+                                loc: body.loc,
+                                message: 'useMemo() callbacks must return a value',
+                            }));
+                        }
+                        else {
+                            unusedUseMemos.set(lvalue.identifier.id, callee.loc);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        if (unusedUseMemos.size !== 0) {
+            for (const operand of eachTerminalOperand(block.terminal)) {
+                unusedUseMemos.delete(operand.identifier.id);
+            }
+        }
+    }
+    if (unusedUseMemos.size !== 0) {
+        for (const loc of unusedUseMemos.values()) {
+            voidMemoErrors.pushDiagnostic(CompilerDiagnostic.create({
+                category: ErrorCategory.VoidUseMemo,
+                reason: 'useMemo() result is unused',
+                description: `This useMemo() value is unused. useMemo() is for computing and caching values, not for arbitrary side effects`,
+                suggestions: null,
+            }).withDetails({
+                kind: 'error',
+                loc,
+                message: 'useMemo() result is unused',
+            }));
+        }
+    }
+    fn.env.logErrors(voidMemoErrors.asResult());
+    return errors.asResult();
+}
+function validateNoContextVariableAssignment(fn, errors) {
+    for (const block of fn.body.blocks.values()) {
+        for (const instr of block.instructions) {
+            const value = instr.value;
+            switch (value.kind) {
+                case 'StoreContext': {
+                    errors.pushDiagnostic(CompilerDiagnostic.create({
+                        category: ErrorCategory.UseMemo,
+                        reason: 'useMemo() callbacks may not reassign variables declared outside of the callback',
+                        description: 'useMemo() callbacks must be pure functions and cannot reassign variables defined outside of the callback function',
+                        suggestions: null,
+                    }).withDetails({
+                        kind: 'error',
+                        loc: value.lvalue.place.loc,
+                        message: 'Cannot reassign variable',
+                    }));
                     break;
                 }
             }
         }
     }
-    return errors.asResult();
+}
+function hasNonVoidReturn(func) {
+    for (const [, block] of func.body.blocks) {
+        if (block.terminal.kind === 'return') {
+            if (block.terminal.returnVariant === 'Explicit' ||
+                block.terminal.returnVariant === 'Implicit') {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 function validateLocalsNotReassignedAfterRender(fn) {
