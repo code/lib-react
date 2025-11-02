@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<1bff8d3a72de7d6f409f3764af0c6aa8>>
+ * @generated SignedSource<<87aec8f1ab85af92452a66326c508874>>
  */
 
 "use strict";
@@ -2930,10 +2930,7 @@ function findFirstSuspended(row) {
         return node;
     } else if (
       19 === node.tag &&
-      ("forwards" === node.memoizedProps.revealOrder ||
-        "backwards" === node.memoizedProps.revealOrder ||
-        "unstable_legacy-backwards" === node.memoizedProps.revealOrder ||
-        "together" === node.memoizedProps.revealOrder)
+      "independent" !== node.memoizedProps.revealOrder
     ) {
       if (0 !== (node.flags & 128)) return node;
     } else if (null !== node.child) {
@@ -5630,6 +5627,16 @@ function scheduleSuspenseWorkOnFiber(fiber, renderLanes, propagationRoot) {
   null !== alternate && (alternate.lanes |= renderLanes);
   scheduleContextWorkOnParentPath(fiber.return, renderLanes, propagationRoot);
 }
+function findLastContentRow(firstChild) {
+  for (var lastContentRow = null; null !== firstChild; ) {
+    var currentRow = firstChild.alternate;
+    null !== currentRow &&
+      null === findFirstSuspended(currentRow) &&
+      (lastContentRow = firstChild);
+    firstChild = firstChild.sibling;
+  }
+  return lastContentRow;
+}
 function initSuspenseListRenderState(
   workInProgress,
   isBackwards,
@@ -5657,6 +5664,15 @@ function initSuspenseListRenderState(
       (renderState.tailMode = tailMode),
       (renderState.treeForkCount = treeForkCount));
 }
+function reverseChildren(fiber) {
+  var row = fiber.child;
+  for (fiber.child = null; null !== row; ) {
+    var nextRow = row.sibling;
+    row.sibling = fiber.child;
+    fiber.child = row;
+    row = nextRow;
+  }
+}
 function updateSuspenseListComponent(current, workInProgress, renderLanes) {
   var nextProps = workInProgress.pendingProps,
     revealOrder = nextProps.revealOrder,
@@ -5669,7 +5685,11 @@ function updateSuspenseListComponent(current, workInProgress, renderLanes) {
       (workInProgress.flags |= 128))
     : (suspenseContext &= 1);
   push(suspenseStackCursor, suspenseContext);
-  reconcileChildren(current, workInProgress, nextProps, renderLanes);
+  "backwards" === revealOrder && null !== current
+    ? (reverseChildren(current),
+      reconcileChildren(current, workInProgress, nextProps, renderLanes),
+      reverseChildren(current))
+    : reconcileChildren(current, workInProgress, nextProps, renderLanes);
   if (!shouldForceFallback && null !== current && 0 !== (current.flags & 128))
     a: for (current = workInProgress.child; null !== current; ) {
       if (13 === current.tag)
@@ -5694,29 +5714,23 @@ function updateSuspenseListComponent(current, workInProgress, renderLanes) {
   if (0 === (workInProgress.mode & 1)) workInProgress.memoizedState = null;
   else
     switch (revealOrder) {
-      case "forwards":
-        renderLanes = workInProgress.child;
-        for (revealOrder = null; null !== renderLanes; )
-          (current = renderLanes.alternate),
-            null !== current &&
-              null === findFirstSuspended(current) &&
-              (revealOrder = renderLanes),
-            (renderLanes = renderLanes.sibling);
-        renderLanes = revealOrder;
+      case "backwards":
+        renderLanes = findLastContentRow(workInProgress.child);
         null === renderLanes
           ? ((revealOrder = workInProgress.child),
             (workInProgress.child = null))
-          : ((revealOrder = renderLanes.sibling), (renderLanes.sibling = null));
+          : ((revealOrder = renderLanes.sibling),
+            (renderLanes.sibling = null),
+            reverseChildren(workInProgress));
         initSuspenseListRenderState(
           workInProgress,
-          !1,
+          !0,
           revealOrder,
-          renderLanes,
+          null,
           tailMode,
           0
         );
         break;
-      case "backwards":
       case "unstable_legacy-backwards":
         renderLanes = null;
         revealOrder = workInProgress.child;
@@ -5743,8 +5757,24 @@ function updateSuspenseListComponent(current, workInProgress, renderLanes) {
       case "together":
         initSuspenseListRenderState(workInProgress, !1, null, null, void 0, 0);
         break;
-      default:
+      case "independent":
         workInProgress.memoizedState = null;
+        break;
+      default:
+        (renderLanes = findLastContentRow(workInProgress.child)),
+          null === renderLanes
+            ? ((revealOrder = workInProgress.child),
+              (workInProgress.child = null))
+            : ((revealOrder = renderLanes.sibling),
+              (renderLanes.sibling = null)),
+          initSuspenseListRenderState(
+            workInProgress,
+            !1,
+            revealOrder,
+            renderLanes,
+            tailMode,
+            0
+          );
     }
   return workInProgress.child;
 }
@@ -6357,26 +6387,29 @@ function scheduleRetryEffect(workInProgress, retryQueue) {
 }
 function cutOffTailIfNeeded(renderState, hasRenderedATailFallback) {
   switch (renderState.tailMode) {
-    case "hidden":
-      hasRenderedATailFallback = renderState.tail;
-      for (var lastTailNode = null; null !== hasRenderedATailFallback; )
-        null !== hasRenderedATailFallback.alternate &&
-          (lastTailNode = hasRenderedATailFallback),
-          (hasRenderedATailFallback = hasRenderedATailFallback.sibling);
-      null === lastTailNode
-        ? (renderState.tail = null)
-        : (lastTailNode.sibling = null);
+    case "visible":
       break;
     case "collapsed":
-      lastTailNode = renderState.tail;
-      for (var lastTailNode$81 = null; null !== lastTailNode; )
-        null !== lastTailNode.alternate && (lastTailNode$81 = lastTailNode),
-          (lastTailNode = lastTailNode.sibling);
-      null === lastTailNode$81
+      for (
+        var tailNode = renderState.tail, lastTailNode = null;
+        null !== tailNode;
+
+      )
+        null !== tailNode.alternate && (lastTailNode = tailNode),
+          (tailNode = tailNode.sibling);
+      null === lastTailNode
         ? hasRenderedATailFallback || null === renderState.tail
           ? (renderState.tail = null)
           : (renderState.tail.sibling = null)
-        : (lastTailNode$81.sibling = null);
+        : (lastTailNode.sibling = null);
+      break;
+    default:
+      hasRenderedATailFallback = renderState.tail;
+      for (tailNode = null; null !== hasRenderedATailFallback; )
+        null !== hasRenderedATailFallback.alternate &&
+          (tailNode = hasRenderedATailFallback),
+          (hasRenderedATailFallback = hasRenderedATailFallback.sibling);
+      null === tailNode ? (renderState.tail = null) : (tailNode.sibling = null);
   }
 }
 function bubbleProperties(completedWork) {
@@ -6388,53 +6421,53 @@ function bubbleProperties(completedWork) {
   if (didBailout)
     if (0 !== (completedWork.mode & 2)) {
       for (
-        var treeBaseDuration$83 = completedWork.selfBaseDuration,
-          child$84 = completedWork.child;
-        null !== child$84;
+        var treeBaseDuration$85 = completedWork.selfBaseDuration,
+          child$86 = completedWork.child;
+        null !== child$86;
 
       )
-        (newChildLanes |= child$84.lanes | child$84.childLanes),
-          (subtreeFlags |= child$84.subtreeFlags & 65011712),
-          (subtreeFlags |= child$84.flags & 65011712),
-          (treeBaseDuration$83 += child$84.treeBaseDuration),
-          (child$84 = child$84.sibling);
-      completedWork.treeBaseDuration = treeBaseDuration$83;
+        (newChildLanes |= child$86.lanes | child$86.childLanes),
+          (subtreeFlags |= child$86.subtreeFlags & 65011712),
+          (subtreeFlags |= child$86.flags & 65011712),
+          (treeBaseDuration$85 += child$86.treeBaseDuration),
+          (child$86 = child$86.sibling);
+      completedWork.treeBaseDuration = treeBaseDuration$85;
     } else
       for (
-        treeBaseDuration$83 = completedWork.child;
-        null !== treeBaseDuration$83;
+        treeBaseDuration$85 = completedWork.child;
+        null !== treeBaseDuration$85;
 
       )
         (newChildLanes |=
-          treeBaseDuration$83.lanes | treeBaseDuration$83.childLanes),
-          (subtreeFlags |= treeBaseDuration$83.subtreeFlags & 65011712),
-          (subtreeFlags |= treeBaseDuration$83.flags & 65011712),
-          (treeBaseDuration$83.return = completedWork),
-          (treeBaseDuration$83 = treeBaseDuration$83.sibling);
+          treeBaseDuration$85.lanes | treeBaseDuration$85.childLanes),
+          (subtreeFlags |= treeBaseDuration$85.subtreeFlags & 65011712),
+          (subtreeFlags |= treeBaseDuration$85.flags & 65011712),
+          (treeBaseDuration$85.return = completedWork),
+          (treeBaseDuration$85 = treeBaseDuration$85.sibling);
   else if (0 !== (completedWork.mode & 2)) {
-    treeBaseDuration$83 = completedWork.actualDuration;
-    child$84 = completedWork.selfBaseDuration;
+    treeBaseDuration$85 = completedWork.actualDuration;
+    child$86 = completedWork.selfBaseDuration;
     for (var child = completedWork.child; null !== child; )
       (newChildLanes |= child.lanes | child.childLanes),
         (subtreeFlags |= child.subtreeFlags),
         (subtreeFlags |= child.flags),
-        (treeBaseDuration$83 += child.actualDuration),
-        (child$84 += child.treeBaseDuration),
+        (treeBaseDuration$85 += child.actualDuration),
+        (child$86 += child.treeBaseDuration),
         (child = child.sibling);
-    completedWork.actualDuration = treeBaseDuration$83;
-    completedWork.treeBaseDuration = child$84;
+    completedWork.actualDuration = treeBaseDuration$85;
+    completedWork.treeBaseDuration = child$86;
   } else
     for (
-      treeBaseDuration$83 = completedWork.child;
-      null !== treeBaseDuration$83;
+      treeBaseDuration$85 = completedWork.child;
+      null !== treeBaseDuration$85;
 
     )
       (newChildLanes |=
-        treeBaseDuration$83.lanes | treeBaseDuration$83.childLanes),
-        (subtreeFlags |= treeBaseDuration$83.subtreeFlags),
-        (subtreeFlags |= treeBaseDuration$83.flags),
-        (treeBaseDuration$83.return = completedWork),
-        (treeBaseDuration$83 = treeBaseDuration$83.sibling);
+        treeBaseDuration$85.lanes | treeBaseDuration$85.childLanes),
+        (subtreeFlags |= treeBaseDuration$85.subtreeFlags),
+        (subtreeFlags |= treeBaseDuration$85.flags),
+        (treeBaseDuration$85.return = completedWork),
+        (treeBaseDuration$85 = treeBaseDuration$85.sibling);
   completedWork.subtreeFlags |= subtreeFlags;
   completedWork.childLanes = newChildLanes;
   return didBailout;
@@ -6649,11 +6682,11 @@ function completeWork(current, workInProgress, renderLanes) {
           null !== newProps.alternate.memoizedState &&
           null !== newProps.alternate.memoizedState.cachePool &&
           (index = newProps.alternate.memoizedState.cachePool.pool);
-        var cache$96 = null;
+        var cache$98 = null;
         null !== newProps.memoizedState &&
           null !== newProps.memoizedState.cachePool &&
-          (cache$96 = newProps.memoizedState.cachePool.pool);
-        cache$96 !== index && (newProps.flags |= 2048);
+          (cache$98 = newProps.memoizedState.cachePool.pool);
+        cache$98 !== index && (newProps.flags |= 2048);
       }
       renderLanes !== current &&
         renderLanes &&
@@ -6683,8 +6716,8 @@ function completeWork(current, workInProgress, renderLanes) {
       index = workInProgress.memoizedState;
       if (null === index) return bubbleProperties(workInProgress), null;
       newProps = 0 !== (workInProgress.flags & 128);
-      cache$96 = index.rendering;
-      if (null === cache$96)
+      cache$98 = index.rendering;
+      if (null === cache$98)
         if (newProps) cutOffTailIfNeeded(index, !1);
         else {
           if (
@@ -6692,11 +6725,11 @@ function completeWork(current, workInProgress, renderLanes) {
             (null !== current && 0 !== (current.flags & 128))
           )
             for (current = workInProgress.child; null !== current; ) {
-              cache$96 = findFirstSuspended(current);
-              if (null !== cache$96) {
+              cache$98 = findFirstSuspended(current);
+              if (null !== cache$98) {
                 workInProgress.flags |= 128;
                 cutOffTailIfNeeded(index, !1);
-                current = cache$96.updateQueue;
+                current = cache$98.updateQueue;
                 workInProgress.updateQueue = current;
                 scheduleRetryEffect(workInProgress, current);
                 workInProgress.subtreeFlags = 0;
@@ -6721,7 +6754,7 @@ function completeWork(current, workInProgress, renderLanes) {
         }
       else {
         if (!newProps)
-          if (((current = findFirstSuspended(cache$96)), null !== current)) {
+          if (((current = findFirstSuspended(cache$98)), null !== current)) {
             if (
               ((workInProgress.flags |= 128),
               (newProps = !0),
@@ -6730,8 +6763,9 @@ function completeWork(current, workInProgress, renderLanes) {
               scheduleRetryEffect(workInProgress, current),
               cutOffTailIfNeeded(index, !0),
               null === index.tail &&
-                "hidden" === index.tailMode &&
-                !cache$96.alternate)
+                "collapsed" !== index.tailMode &&
+                "visible" !== index.tailMode &&
+                !cache$98.alternate)
             )
               return bubbleProperties(workInProgress), null;
           } else
@@ -6743,13 +6777,13 @@ function completeWork(current, workInProgress, renderLanes) {
               cutOffTailIfNeeded(index, !1),
               (workInProgress.lanes = 4194304));
         index.isBackwards
-          ? ((cache$96.sibling = workInProgress.child),
-            (workInProgress.child = cache$96))
+          ? ((cache$98.sibling = workInProgress.child),
+            (workInProgress.child = cache$98))
           : ((current = index.last),
             null !== current
-              ? (current.sibling = cache$96)
-              : (workInProgress.child = cache$96),
-            (index.last = cache$96));
+              ? (current.sibling = cache$98)
+              : (workInProgress.child = cache$98),
+            (index.last = cache$98));
       }
       if (null !== index.tail)
         return (
@@ -7004,9 +7038,9 @@ function commitHookEffectListMount(flags, finishedWork) {
                 finishedWork
               );
           lastEffect = void 0;
-          var create$113 = updateQueue.create,
+          var create$115 = updateQueue.create,
             inst = updateQueue.inst;
-          lastEffect = create$113();
+          lastEffect = create$115();
           inst.destroy = lastEffect;
           0 !== (flags & 8)
             ? null !== injectedProfilingHooks &&
@@ -7146,8 +7180,8 @@ function safelyCallComponentWillUnmount(
   } else
     try {
       instance.componentWillUnmount();
-    } catch (error$117) {
-      captureCommitPhaseError(current, nearestMountedAncestor, error$117);
+    } catch (error$119) {
+      captureCommitPhaseError(current, nearestMountedAncestor, error$119);
     }
 }
 function safelyAttachRef(current, nearestMountedAncestor) {
@@ -7209,8 +7243,8 @@ function safelyDetachRef(current, nearestMountedAncestor) {
             recordEffectDuration(current);
           }
         else ref(null);
-      } catch (error$118) {
-        captureCommitPhaseError(current, nearestMountedAncestor, error$118);
+      } catch (error$120) {
+        captureCommitPhaseError(current, nearestMountedAncestor, error$120);
       }
     else ref.current = null;
 }
@@ -7401,11 +7435,11 @@ function commitLayoutEffectOnFiber(finishedRoot, current, finishedWork) {
           } else
             try {
               finishedRoot.componentDidMount();
-            } catch (error$114) {
+            } catch (error$116) {
               captureCommitPhaseError(
                 finishedWork,
                 finishedWork.return,
-                error$114
+                error$116
               );
             }
         else {
@@ -7422,11 +7456,11 @@ function commitLayoutEffectOnFiber(finishedRoot, current, finishedWork) {
                 current,
                 finishedRoot.__reactInternalSnapshotBeforeUpdate
               );
-            } catch (error$115) {
+            } catch (error$117) {
               captureCommitPhaseError(
                 finishedWork,
                 finishedWork.return,
-                error$115
+                error$117
               );
             }
             recordEffectDuration();
@@ -7437,11 +7471,11 @@ function commitLayoutEffectOnFiber(finishedRoot, current, finishedWork) {
                 current,
                 finishedRoot.__reactInternalSnapshotBeforeUpdate
               );
-            } catch (error$116) {
+            } catch (error$118) {
               captureCommitPhaseError(
                 finishedWork,
                 finishedWork.return,
-                error$116
+                error$118
               );
             }
         }
@@ -7917,14 +7951,14 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
       if (finishedWork.mode & 1) {
         var prevOffscreenSubtreeIsHidden = offscreenSubtreeIsHidden,
           prevOffscreenSubtreeWasHidden = offscreenSubtreeWasHidden,
-          prevOffscreenDirectParentIsHidden$127 = offscreenDirectParentIsHidden;
+          prevOffscreenDirectParentIsHidden$129 = offscreenDirectParentIsHidden;
         offscreenSubtreeIsHidden = prevOffscreenSubtreeIsHidden || instance;
         offscreenDirectParentIsHidden =
-          prevOffscreenDirectParentIsHidden$127 || instance;
+          prevOffscreenDirectParentIsHidden$129 || instance;
         offscreenSubtreeWasHidden = prevOffscreenSubtreeWasHidden || wasHidden;
         recursivelyTraverseMutationEffects(root, finishedWork, lanes);
         offscreenSubtreeWasHidden = prevOffscreenSubtreeWasHidden;
-        offscreenDirectParentIsHidden = prevOffscreenDirectParentIsHidden$127;
+        offscreenDirectParentIsHidden = prevOffscreenDirectParentIsHidden$129;
         offscreenSubtreeIsHidden = prevOffscreenSubtreeIsHidden;
       } else recursivelyTraverseMutationEffects(root, finishedWork, lanes);
       commitReconciliationEffects(finishedWork);
@@ -8057,12 +8091,12 @@ function commitReconciliationEffects(finishedWork) {
           break;
         case 3:
         case 4:
-          var parent$119 = hostParentFiber.stateNode.containerInfo,
-            before$120 = getHostSibling(finishedWork);
+          var parent$121 = hostParentFiber.stateNode.containerInfo,
+            before$122 = getHostSibling(finishedWork);
           insertOrAppendPlacementNodeIntoContainer(
             finishedWork,
-            before$120,
-            parent$119
+            before$122,
+            parent$121
           );
           break;
         default:
@@ -9331,8 +9365,8 @@ function renderRootSync(root, lanes, shouldYieldForPrerendering) {
       workLoopSync();
       exitStatus = workInProgressRootExitStatus;
       break;
-    } catch (thrownValue$140) {
-      handleThrow(root, thrownValue$140);
+    } catch (thrownValue$142) {
+      handleThrow(root, thrownValue$142);
     }
   while (1);
   lanes && root.shellSuspendCounter++;
@@ -9449,8 +9483,8 @@ function renderRootConcurrent(root, lanes) {
       }
       workLoopConcurrentByScheduler();
       break;
-    } catch (thrownValue$142) {
-      handleThrow(root, thrownValue$142);
+    } catch (thrownValue$144) {
+      handleThrow(root, thrownValue$144);
     }
   while (1);
   lastContextDependency = currentlyRenderingFiber$1 = null;
@@ -10729,17 +10763,17 @@ function wrapFiber(fiber) {
     fiberToWrapper.set(fiber, wrapper));
   return wrapper;
 }
-var internals$jscomp$inline_1275 = {
+var internals$jscomp$inline_1271 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-6fb77544-20251030",
+  version: "19.3.0-native-fb-488d88b0-20251031",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-6fb77544-20251030",
+  reconcilerVersion: "19.3.0-native-fb-488d88b0-20251031",
   getLaneLabelMap: function () {
     for (
-      var map = new Map(), lane = 1, index$147 = 0;
-      31 > index$147;
-      index$147++
+      var map = new Map(), lane = 1, index$149 = 0;
+      31 > index$149;
+      index$149++
     ) {
       var label = getLabelForLane(lane);
       map.set(lane, label);
@@ -10752,16 +10786,16 @@ var internals$jscomp$inline_1275 = {
   }
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1560 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1556 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1560.isDisabled &&
-    hook$jscomp$inline_1560.supportsFiber
+    !hook$jscomp$inline_1556.isDisabled &&
+    hook$jscomp$inline_1556.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1560.inject(
-        internals$jscomp$inline_1275
+      (rendererID = hook$jscomp$inline_1556.inject(
+        internals$jscomp$inline_1271
       )),
-        (injectedHook = hook$jscomp$inline_1560);
+        (injectedHook = hook$jscomp$inline_1556);
     } catch (err) {}
 }
 exports._Scheduler = Scheduler;
@@ -10885,4 +10919,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.3.0-native-fb-6fb77544-20251030";
+exports.version = "19.3.0-native-fb-488d88b0-20251031";

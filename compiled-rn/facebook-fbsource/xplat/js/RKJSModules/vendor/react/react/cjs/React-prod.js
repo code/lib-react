@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<52323ff45587826dc6cfe9e3d7f961f7>>
+ * @generated SignedSource<<6ed47a613c6b3867ba44ee094ef9222f>>
  */
 
 "use strict";
@@ -586,4 +586,4 @@ exports.useSyncExternalStore = function (
 exports.useTransition = function () {
   return ReactSharedInternals.H.useTransition();
 };
-exports.version = "19.3.0-native-fb-6fb77544-20251030";
+exports.version = "19.3.0-native-fb-488d88b0-20251031";

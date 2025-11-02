@@ -7,13 +7,13 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<1b517a65eafc2fe068f607b1bc349593>>
+ * @generated SignedSource<<2d42c97d29596048af898652966ab862>>
  */
 
 "use strict";
 __DEV__ &&
   (function () {
-    function JSCompiler_object_inline_createNodeMock_1177() {
+    function JSCompiler_object_inline_createNodeMock_1172() {
       return null;
     }
     function findHook(fiber, id) {
@@ -4231,10 +4231,7 @@ __DEV__ &&
             return node;
         } else if (
           19 === node.tag &&
-          ("forwards" === node.memoizedProps.revealOrder ||
-            "backwards" === node.memoizedProps.revealOrder ||
-            "unstable_legacy-backwards" === node.memoizedProps.revealOrder ||
-            "together" === node.memoizedProps.revealOrder)
+          "independent" !== node.memoizedProps.revealOrder
         ) {
           if (0 !== (node.flags & 128)) return node;
         } else if (null !== node.child) {
@@ -7645,6 +7642,16 @@ __DEV__ &&
         propagationRoot
       );
     }
+    function findLastContentRow(firstChild) {
+      for (var lastContentRow = null; null !== firstChild; ) {
+        var currentRow = firstChild.alternate;
+        null !== currentRow &&
+          null === findFirstSuspended(currentRow) &&
+          (lastContentRow = firstChild);
+        firstChild = firstChild.sibling;
+      }
+      return lastContentRow;
+    }
     function initSuspenseListRenderState(
       workInProgress,
       isBackwards,
@@ -7672,6 +7679,15 @@ __DEV__ &&
           (renderState.tailMode = tailMode),
           (renderState.treeForkCount = treeForkCount));
     }
+    function reverseChildren(fiber) {
+      var row = fiber.child;
+      for (fiber.child = null; null !== row; ) {
+        var nextRow = row.sibling;
+        row.sibling = fiber.child;
+        fiber.child = row;
+        row = nextRow;
+      }
+    }
     function updateSuspenseListComponent(current, workInProgress, renderLanes) {
       var nextProps = workInProgress.pendingProps,
         revealOrder = nextProps.revealOrder,
@@ -7688,23 +7704,18 @@ __DEV__ &&
       push(suspenseStackCursor, suspenseContext, workInProgress);
       suspenseContext = null == revealOrder ? "null" : revealOrder;
       if (
+        null != revealOrder &&
         "forwards" !== revealOrder &&
+        "backwards" !== revealOrder &&
         "unstable_legacy-backwards" !== revealOrder &&
         "together" !== revealOrder &&
         "independent" !== revealOrder &&
         !didWarnAboutRevealOrder[suspenseContext]
       )
         if (
-          ((didWarnAboutRevealOrder[suspenseContext] = !0), null == revealOrder)
+          ((didWarnAboutRevealOrder[suspenseContext] = !0),
+          "string" === typeof revealOrder)
         )
-          console.error(
-            'The default for the <SuspenseList revealOrder="..."> prop is changing. To be future compatible you must explictly specify either "independent" (the current default), "together", "forwards" or "legacy_unstable-backwards".'
-          );
-        else if ("backwards" === revealOrder)
-          console.error(
-            'The rendering order of <SuspenseList revealOrder="backwards"> is changing. To be future compatible you must specify revealOrder="legacy_unstable-backwards" instead.'
-          );
-        else if ("string" === typeof revealOrder)
           switch (revealOrder.toLowerCase()) {
             case "together":
             case "forwards":
@@ -7736,36 +7747,28 @@ __DEV__ &&
             revealOrder
           );
       suspenseContext = null == tailMode ? "null" : tailMode;
-      if (!didWarnAboutTailOptions[suspenseContext])
-        if (null == tailMode) {
-          if (
-            "forwards" === revealOrder ||
-            "backwards" === revealOrder ||
-            "unstable_legacy-backwards" === revealOrder
-          )
-            (didWarnAboutTailOptions[suspenseContext] = !0),
-              console.error(
-                'The default for the <SuspenseList tail="..."> prop is changing. To be future compatible you must explictly specify either "visible" (the current default), "collapsed" or "hidden".'
-              );
-        } else
-          "visible" !== tailMode &&
-          "collapsed" !== tailMode &&
-          "hidden" !== tailMode
-            ? ((didWarnAboutTailOptions[suspenseContext] = !0),
-              console.error(
-                '"%s" is not a supported value for tail on <SuspenseList />. Did you mean "visible", "collapsed" or "hidden"?',
-                tailMode
-              ))
-            : "forwards" !== revealOrder &&
-              "backwards" !== revealOrder &&
-              "unstable_legacy-backwards" !== revealOrder &&
-              ((didWarnAboutTailOptions[suspenseContext] = !0),
-              console.error(
-                '<SuspenseList tail="%s" /> is only valid if revealOrder is "forwards" or "backwards". Did you mean to specify revealOrder="forwards"?',
-                tailMode
-              ));
+      didWarnAboutTailOptions[suspenseContext] ||
+        null == tailMode ||
+        ("visible" !== tailMode &&
+        "collapsed" !== tailMode &&
+        "hidden" !== tailMode
+          ? ((didWarnAboutTailOptions[suspenseContext] = !0),
+            console.error(
+              '"%s" is not a supported value for tail on <SuspenseList />. Did you mean "visible", "collapsed" or "hidden"?',
+              tailMode
+            ))
+          : null != revealOrder &&
+            "forwards" !== revealOrder &&
+            "backwards" !== revealOrder &&
+            "unstable_legacy-backwards" !== revealOrder &&
+            ((didWarnAboutTailOptions[suspenseContext] = !0),
+            console.error(
+              '<SuspenseList tail="%s" /> is only valid if revealOrder is "forwards" (default) or "backwards". Did you mean to specify revealOrder="forwards"?',
+              tailMode
+            )));
       a: if (
-        ("forwards" === revealOrder ||
+        (null == revealOrder ||
+          "forwards" === revealOrder ||
           "backwards" === revealOrder ||
           "unstable_legacy-backwards" === revealOrder) &&
         void 0 !== nextProps &&
@@ -7804,7 +7807,11 @@ __DEV__ &&
             'A single row was passed to a <SuspenseList revealOrder="%s" />. This is not useful since it needs multiple rows. Did you mean to pass multiple children or an array?',
             revealOrder
           );
-      reconcileChildren(current, workInProgress, nextProps, renderLanes);
+      "backwards" === revealOrder && null !== current
+        ? (reverseChildren(current),
+          reconcileChildren(current, workInProgress, nextProps, renderLanes),
+          reverseChildren(current))
+        : reconcileChildren(current, workInProgress, nextProps, renderLanes);
       if (
         !shouldForceFallback &&
         null !== current &&
@@ -7833,30 +7840,23 @@ __DEV__ &&
       if (0 === (workInProgress.mode & 1)) workInProgress.memoizedState = null;
       else
         switch (revealOrder) {
-          case "forwards":
-            renderLanes = workInProgress.child;
-            for (revealOrder = null; null !== renderLanes; )
-              (current = renderLanes.alternate),
-                null !== current &&
-                  null === findFirstSuspended(current) &&
-                  (revealOrder = renderLanes),
-                (renderLanes = renderLanes.sibling);
-            renderLanes = revealOrder;
+          case "backwards":
+            renderLanes = findLastContentRow(workInProgress.child);
             null === renderLanes
               ? ((revealOrder = workInProgress.child),
                 (workInProgress.child = null))
               : ((revealOrder = renderLanes.sibling),
-                (renderLanes.sibling = null));
+                (renderLanes.sibling = null),
+                reverseChildren(workInProgress));
             initSuspenseListRenderState(
               workInProgress,
-              !1,
+              !0,
               revealOrder,
-              renderLanes,
+              null,
               tailMode,
               0
             );
             break;
-          case "backwards":
           case "unstable_legacy-backwards":
             renderLanes = null;
             revealOrder = workInProgress.child;
@@ -7890,8 +7890,24 @@ __DEV__ &&
               0
             );
             break;
-          default:
+          case "independent":
             workInProgress.memoizedState = null;
+            break;
+          default:
+            (renderLanes = findLastContentRow(workInProgress.child)),
+              null === renderLanes
+                ? ((revealOrder = workInProgress.child),
+                  (workInProgress.child = null))
+                : ((revealOrder = renderLanes.sibling),
+                  (renderLanes.sibling = null)),
+              initSuspenseListRenderState(
+                workInProgress,
+                !1,
+                revealOrder,
+                renderLanes,
+                tailMode,
+                0
+              );
         }
       return workInProgress.child;
     }
@@ -8636,26 +8652,31 @@ __DEV__ &&
     }
     function cutOffTailIfNeeded(renderState, hasRenderedATailFallback) {
       switch (renderState.tailMode) {
-        case "hidden":
-          hasRenderedATailFallback = renderState.tail;
-          for (var lastTailNode = null; null !== hasRenderedATailFallback; )
-            null !== hasRenderedATailFallback.alternate &&
-              (lastTailNode = hasRenderedATailFallback),
-              (hasRenderedATailFallback = hasRenderedATailFallback.sibling);
-          null === lastTailNode
-            ? (renderState.tail = null)
-            : (lastTailNode.sibling = null);
+        case "visible":
           break;
         case "collapsed":
-          lastTailNode = renderState.tail;
-          for (var _lastTailNode = null; null !== lastTailNode; )
-            null !== lastTailNode.alternate && (_lastTailNode = lastTailNode),
-              (lastTailNode = lastTailNode.sibling);
-          null === _lastTailNode
+          for (
+            var tailNode = renderState.tail, lastTailNode = null;
+            null !== tailNode;
+
+          )
+            null !== tailNode.alternate && (lastTailNode = tailNode),
+              (tailNode = tailNode.sibling);
+          null === lastTailNode
             ? hasRenderedATailFallback || null === renderState.tail
               ? (renderState.tail = null)
               : (renderState.tail.sibling = null)
-            : (_lastTailNode.sibling = null);
+            : (lastTailNode.sibling = null);
+          break;
+        default:
+          hasRenderedATailFallback = renderState.tail;
+          for (tailNode = null; null !== hasRenderedATailFallback; )
+            null !== hasRenderedATailFallback.alternate &&
+              (tailNode = hasRenderedATailFallback),
+              (hasRenderedATailFallback = hasRenderedATailFallback.sibling);
+          null === tailNode
+            ? (renderState.tail = null)
+            : (tailNode.sibling = null);
       }
     }
     function bubbleProperties(completedWork) {
@@ -9037,7 +9058,8 @@ __DEV__ &&
                   scheduleRetryEffect(workInProgress, current),
                   cutOffTailIfNeeded(child, !0),
                   null === child.tail &&
-                    "hidden" === child.tailMode &&
+                    "collapsed" !== child.tailMode &&
+                    "visible" !== child.tailMode &&
                     !index.alternate)
                 )
                   return bubbleProperties(workInProgress), null;
@@ -16021,10 +16043,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-6fb77544-20251030",
+        version: "19.3.0-native-fb-488d88b0-20251031",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-6fb77544-20251030"
+        reconcilerVersion: "19.3.0-native-fb-488d88b0-20251031"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -16047,7 +16069,7 @@ __DEV__ &&
     exports._Scheduler = Scheduler;
     exports.act = act;
     exports.create = function (element, options) {
-      var createNodeMock = JSCompiler_object_inline_createNodeMock_1177,
+      var createNodeMock = JSCompiler_object_inline_createNodeMock_1172,
         isConcurrent = !1,
         isStrictMode = !1;
       "object" === typeof options &&
@@ -16170,5 +16192,5 @@ __DEV__ &&
             flushSyncWorkAcrossRoots_impl(0, !0));
       }
     };
-    exports.version = "19.3.0-native-fb-6fb77544-20251030";
+    exports.version = "19.3.0-native-fb-488d88b0-20251031";
   })();
