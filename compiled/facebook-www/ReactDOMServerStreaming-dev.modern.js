@@ -4371,7 +4371,8 @@ __DEV__ &&
     function isEligibleForOutlining(request, boundary) {
       return (
         (500 < boundary.byteSize ||
-          hasSuspenseyContent(boundary.contentState)) &&
+          hasSuspenseyContent(boundary.contentState) ||
+          boundary.defer) &&
         null === boundary.contentPreamble
       );
     }
@@ -4416,7 +4417,6 @@ __DEV__ &&
       onShellReady,
       onShellError,
       onFatalError,
-      onPostpone,
       formState
     ) {
       var abortSet = new Set();
@@ -4439,7 +4439,6 @@ __DEV__ &&
       this.partialBoundaries = [];
       this.trackedPostpones = null;
       this.onError = void 0 === onError ? defaultErrorHandler : onError;
-      this.onPostpone = void 0 === onPostpone ? noop : onPostpone;
       this.onAllReady = void 0 === onAllReady ? noop : onAllReady;
       this.onShellReady = void 0 === onShellReady ? noop : onShellReady;
       this.onShellError = void 0 === onShellError ? noop : onShellError;
@@ -4457,7 +4456,8 @@ __DEV__ &&
       row,
       fallbackAbortableTasks,
       contentPreamble,
-      fallbackPreamble
+      fallbackPreamble,
+      defer
     ) {
       fallbackAbortableTasks = {
         status: 0,
@@ -4467,6 +4467,7 @@ __DEV__ &&
         row: row,
         completedSegments: [],
         byteSize: 0,
+        defer: defer,
         fallbackAbortableTasks: fallbackAbortableTasks,
         errorDigest: null,
         contentState: createHoistableState(),
@@ -5823,6 +5824,7 @@ __DEV__ &&
                 parentSegment = task.blockedSegment,
                 fallback = props.fallback,
                 content = props.children,
+                defer = !0 === props.defer,
                 fallbackAbortSet = new Set();
               var newBoundary =
                 2 > task.formatContext.insertionMode
@@ -5831,14 +5833,16 @@ __DEV__ &&
                       task.row,
                       fallbackAbortSet,
                       createPreambleState(),
-                      createPreambleState()
+                      createPreambleState(),
+                      defer
                     )
                   : createSuspenseBoundary(
                       request,
                       task.row,
                       fallbackAbortSet,
                       null,
-                      null
+                      null,
+                      defer
                     );
               null !== request.trackedPostpones &&
                 (newBoundary.trackedContentKeyPath = keyPath);
@@ -5861,24 +5865,27 @@ __DEV__ &&
                 !1
               );
               contentRootSegment.parentFlushed = !0;
-              if (null !== request.trackedPostpones) {
+              var trackedPostpones = request.trackedPostpones;
+              if (null !== trackedPostpones || defer) {
                 var suspenseComponentStack = task.componentStack,
                   fallbackKeyPath = [
                     keyPath[0],
                     "Suspense Fallback",
                     keyPath[2]
-                  ],
-                  fallbackReplayNode = [
+                  ];
+                if (null !== trackedPostpones) {
+                  var fallbackReplayNode = [
                     fallbackKeyPath[1],
                     fallbackKeyPath[2],
                     [],
                     null
                   ];
-                request.trackedPostpones.workingMap.set(
-                  fallbackKeyPath,
-                  fallbackReplayNode
-                );
-                newBoundary.trackedFallbackNode = fallbackReplayNode;
+                  trackedPostpones.workingMap.set(
+                    fallbackKeyPath,
+                    fallbackReplayNode
+                  );
+                  newBoundary.trackedFallbackNode = fallbackReplayNode;
+                }
                 task.blockedSegment = boundarySegment;
                 task.blockedPreamble = newBoundary.fallbackPreamble;
                 task.keyPath = fallbackKeyPath;
@@ -5983,13 +5990,13 @@ __DEV__ &&
                     var error = request.fatalError;
                   } else
                     (contentRootSegment.status = 4), (error = thrownValue$2);
-                  var thrownInfo = getThrownInfo(task.componentStack);
-                  var errorDigest = logRecoverableError(
-                    request,
-                    error,
-                    thrownInfo,
-                    task.debugTask
-                  );
+                  var thrownInfo = getThrownInfo(task.componentStack),
+                    errorDigest = logRecoverableError(
+                      request,
+                      error,
+                      thrownInfo,
+                      task.debugTask
+                    );
                   encodeErrorForBoundary(
                     newBoundary,
                     errorDigest,
@@ -6205,10 +6212,14 @@ __DEV__ &&
                   name +
                   ">. The tree doesn't match so React will fallback to client rendering."
               );
-            var childNodes = node[2];
-            name = node[3];
-            keyOrIndex = task.node;
-            task.replay = { nodes: childNodes, slots: name, pendingTasks: 1 };
+            var childNodes = node[2],
+              childSlots = node[3];
+            name = task.node;
+            task.replay = {
+              nodes: childNodes,
+              slots: childSlots,
+              pendingTasks: 1
+            };
             try {
               renderElement(request, task, keyPath, type, props, ref);
               if (
@@ -6226,7 +6237,7 @@ __DEV__ &&
                 (x === SuspenseException || "function" === typeof x.then)
               )
                 throw (
-                  (task.node === keyOrIndex
+                  (task.node === name
                     ? (task.replay = replay)
                     : childIndex.splice(i, 1),
                   x)
@@ -6234,17 +6245,16 @@ __DEV__ &&
               task.replay.pendingTasks--;
               type = getThrownInfo(task.componentStack);
               props = request;
-              request = task.blockedBoundary;
-              keyPath = x;
-              ref = name;
-              name = logRecoverableError(props, keyPath, type, task.debugTask);
+              keyPath = task.blockedBoundary;
+              request = x;
+              ref = logRecoverableError(props, request, type, task.debugTask);
               abortRemainingReplayNodes(
                 props,
-                request,
-                childNodes,
-                ref,
                 keyPath,
-                name,
+                childNodes,
+                childSlots,
+                request,
+                ref,
                 type,
                 !1
               );
@@ -6258,50 +6268,53 @@ __DEV__ &&
                   ">. The tree doesn't match so React will fallback to client rendering."
               );
             a: {
-              replay = void 0;
-              name = node[5];
+              replay = request;
+              request = node[5];
               type = node[2];
               ref = node[3];
-              keyOrIndex = null === node[4] ? [] : node[4][2];
+              name = null === node[4] ? [] : node[4][2];
               node = null === node[4] ? null : node[4][3];
-              var prevKeyPath = task.keyPath,
-                prevContext = task.formatContext,
+              keyOrIndex = task.keyPath;
+              var prevContext = task.formatContext,
                 prevRow = task.row,
                 previousReplaySet = task.replay,
                 parentBoundary = task.blockedBoundary,
                 parentHoistableState = task.hoistableState,
                 content = props.children,
-                fallback = props.fallback,
-                fallbackAbortSet = new Set();
-              props =
+                fallback = props.fallback;
+              var resumedBoundary = !0 === props.defer;
+              props = new Set();
+              resumedBoundary =
                 2 > task.formatContext.insertionMode
                   ? createSuspenseBoundary(
-                      request,
+                      replay,
                       task.row,
-                      fallbackAbortSet,
+                      props,
                       createPreambleState(),
-                      createPreambleState()
+                      createPreambleState(),
+                      resumedBoundary
                     )
                   : createSuspenseBoundary(
-                      request,
+                      replay,
                       task.row,
-                      fallbackAbortSet,
+                      props,
                       null,
-                      null
+                      null,
+                      resumedBoundary
                     );
-              props.parentFlushed = !0;
-              props.rootSegmentID = name;
-              task.blockedBoundary = props;
-              task.hoistableState = props.contentState;
+              resumedBoundary.parentFlushed = !0;
+              resumedBoundary.rootSegmentID = request;
+              task.blockedBoundary = resumedBoundary;
+              task.hoistableState = resumedBoundary.contentState;
               task.keyPath = keyPath;
               task.formatContext = getSuspenseContentFormatContext(
-                request.resumableState,
+                replay.resumableState,
                 prevContext
               );
               task.row = null;
               task.replay = { nodes: type, slots: ref, pendingTasks: 1 };
               try {
-                renderNode(request, task, content, -1);
+                renderNode(replay, task, content, -1);
                 if (
                   1 === task.replay.pendingTasks &&
                   0 < task.replay.nodes.length
@@ -6310,43 +6323,52 @@ __DEV__ &&
                     "Couldn't find all resumable slots by key/index during replaying. The tree doesn't match so React will fallback to client rendering."
                   );
                 task.replay.pendingTasks--;
-                if (0 === props.pendingTasks && 0 === props.status) {
-                  props.status = 1;
-                  request.completedBoundaries.push(props);
+                if (
+                  0 === resumedBoundary.pendingTasks &&
+                  0 === resumedBoundary.status
+                ) {
+                  resumedBoundary.status = 1;
+                  replay.completedBoundaries.push(resumedBoundary);
                   break a;
                 }
               } catch (error) {
-                (props.status = 4),
+                (resumedBoundary.status = 4),
                   (childNodes = getThrownInfo(task.componentStack)),
-                  (replay = logRecoverableError(
-                    request,
+                  (childSlots = logRecoverableError(
+                    replay,
                     error,
                     childNodes,
                     task.debugTask
                   )),
-                  encodeErrorForBoundary(props, replay, error, childNodes, !1),
+                  encodeErrorForBoundary(
+                    resumedBoundary,
+                    childSlots,
+                    error,
+                    childNodes,
+                    !1
+                  ),
                   task.replay.pendingTasks--,
-                  request.clientRenderedBoundaries.push(props);
+                  replay.clientRenderedBoundaries.push(resumedBoundary);
               } finally {
                 (task.blockedBoundary = parentBoundary),
                   (task.hoistableState = parentHoistableState),
                   (task.replay = previousReplaySet),
-                  (task.keyPath = prevKeyPath),
+                  (task.keyPath = keyOrIndex),
                   (task.formatContext = prevContext),
                   (task.row = prevRow);
               }
               props = createReplayTask(
-                request,
+                replay,
                 null,
-                { nodes: keyOrIndex, slots: node, pendingTasks: 0 },
+                { nodes: name, slots: node, pendingTasks: 0 },
                 fallback,
                 -1,
                 parentBoundary,
-                props.fallbackState,
-                fallbackAbortSet,
+                resumedBoundary.fallbackState,
+                props,
                 [keyPath[0], "Suspense Fallback", keyPath[2]],
                 getSuspenseFallbackFormatContext(
-                  request.resumableState,
+                  replay.resumableState,
                   task.formatContext
                 ),
                 task.context,
@@ -6359,7 +6381,7 @@ __DEV__ &&
                 task.debugTask
               );
               pushComponentStack(props);
-              request.pingedTasks.push(props);
+              replay.pingedTasks.push(props);
             }
           }
           childIndex.splice(i, 1);
@@ -6655,20 +6677,19 @@ __DEV__ &&
               var thrownInfo = getThrownInfo(task.componentStack);
               children = task.blockedBoundary;
               var error = x,
-                resumeSlots = node;
-              node = logRecoverableError(
-                request,
-                error,
-                thrownInfo,
-                task.debugTask
-              );
+                errorDigest = logRecoverableError(
+                  request,
+                  error,
+                  thrownInfo,
+                  task.debugTask
+                );
               abortRemainingReplayNodes(
                 request,
                 children,
                 childIndex,
-                resumeSlots,
-                error,
                 node,
+                error,
+                errorDigest,
                 thrownInfo,
                 !1
               );
@@ -7038,7 +7059,8 @@ __DEV__ &&
               null,
               new Set(),
               null,
-              null
+              null,
+              !1
             );
           resumedBoundary.parentFlushed = !0;
           resumedBoundary.rootSegmentID = node;
@@ -7538,7 +7560,8 @@ __DEV__ &&
         !flushingPartialBoundaries &&
         isEligibleForOutlining(request, boundary) &&
         (flushedByteSize + boundary.byteSize > request.progressiveChunkSize ||
-          hasSuspenseyContent(boundary.contentState))
+          hasSuspenseyContent(boundary.contentState) ||
+          boundary.defer)
       )
         (boundary.rootSegmentID = request.nextSegmentId++),
           request.completedBoundaries.push(boundary),
@@ -9600,8 +9623,7 @@ __DEV__ &&
               task = pingedTasks[i],
               segment = task.blockedSegment;
             if (null === segment) {
-              var errorDigest = void 0,
-                prevTaskInDEV = void 0,
+              var prevTaskInDEV = void 0,
                 task$jscomp$0 = task;
               if (0 !== task$jscomp$0.replay.pendingTasks) {
                 switchContext(task$jscomp$0.context);
@@ -9659,13 +9681,13 @@ __DEV__ &&
                           ? request$jscomp$0.fatalError
                           : x,
                       replayNodes = task$jscomp$0.replay.nodes,
-                      resumeSlots = task$jscomp$0.replay.slots;
-                    errorDigest = logRecoverableError(
-                      request$jscomp$0,
-                      error$jscomp$0,
-                      errorInfo,
-                      task$jscomp$0.debugTask
-                    );
+                      resumeSlots = task$jscomp$0.replay.slots,
+                      errorDigest = logRecoverableError(
+                        request$jscomp$0,
+                        error$jscomp$0,
+                        errorInfo,
+                        task$jscomp$0.debugTask
+                      );
                     abortRemainingReplayNodes(
                       request$jscomp$0,
                       boundary,
@@ -9688,7 +9710,7 @@ __DEV__ &&
                 }
               }
             } else {
-              prevTaskInDEV = errorDigest = void 0;
+              prevTaskInDEV = void 0;
               task$jscomp$0 = task;
               var segment$jscomp$0 = segment;
               if (0 === segment$jscomp$0.status) {
@@ -9774,7 +9796,7 @@ __DEV__ &&
                       0 === --row.pendingTasks &&
                       finishSuspenseListRow(request$jscomp$0, row);
                     request$jscomp$0.allPendingTasks--;
-                    errorDigest = logRecoverableError(
+                    var errorDigest$jscomp$0 = logRecoverableError(
                       request$jscomp$0,
                       x$jscomp$0,
                       errorInfo$jscomp$0,
@@ -9794,7 +9816,7 @@ __DEV__ &&
                       boundary$jscomp$0.status = 4;
                       encodeErrorForBoundary(
                         boundary$jscomp$0,
-                        errorDigest,
+                        errorDigest$jscomp$0,
                         x$jscomp$0,
                         errorInfo$jscomp$0,
                         !1
@@ -10080,7 +10102,6 @@ __DEV__ &&
         streamingFormat,
         bootstrapModules,
         options,
-        void 0,
         void 0,
         void 0,
         void 0,
