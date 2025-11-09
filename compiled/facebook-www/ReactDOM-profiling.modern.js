@@ -61,6 +61,7 @@ var dynamicFeatureFlags = require("ReactFeatureFlags"),
   enableFragmentRefs = dynamicFeatureFlags.enableFragmentRefs,
   enableFragmentRefsScrollIntoView =
     dynamicFeatureFlags.enableFragmentRefsScrollIntoView,
+  enableInternalInstanceMap = dynamicFeatureFlags.enableInternalInstanceMap,
   enableSchedulingProfiler = dynamicFeatureFlags.enableSchedulingProfiler;
 function getNearestMountedFiber(fiber) {
   var node = fiber,
@@ -2227,8 +2228,8 @@ function prepareToHydrateHostInstance(fiber) {
   var instance = fiber.stateNode,
     type = fiber.type,
     props = fiber.memoizedProps;
-  instance[internalInstanceKey] = fiber;
-  instance[internalPropsKey] = props;
+  precacheFiberNode(fiber, instance);
+  updateFiberProps(instance, props);
   switch (type) {
     case "dialog":
       listenToNonDelegatedEvent("cancel", instance);
@@ -8106,8 +8107,8 @@ function beginWork(current, workInProgress, renderLanes) {
               (props = getOwnerDocumentFromRootContainer(
                 rootInstanceStackCursor.current
               ).createElement(renderLanes)),
-              (props[internalInstanceKey] = workInProgress),
-              (props[internalPropsKey] = current),
+              precacheFiberNode(workInProgress, props),
+              updateFiberProps(props, current),
               setInitialProperties(props, renderLanes, current),
               markNodeAsHoistable(props),
               (workInProgress.stateNode = props))
@@ -8848,8 +8849,8 @@ function completeWork(current, workInProgress, renderLanes) {
                       : ownerDocument.createElement(type);
               }
           }
-          nextResource[internalInstanceKey] = workInProgress;
-          nextResource[internalPropsKey] = newProps;
+          precacheFiberNode(workInProgress, nextResource);
+          updateFiberProps(nextResource, newProps);
           a: for (
             ownerDocument = workInProgress.child;
             null !== ownerDocument;
@@ -8925,7 +8926,7 @@ function completeWork(current, workInProgress, renderLanes) {
               case 5:
                 newProps = type.memoizedProps;
             }
-          current[internalInstanceKey] = workInProgress;
+          precacheFiberNode(workInProgress, current);
           current =
             current.nodeValue === renderLanes ||
             (null !== newProps && !0 === newProps.suppressHydrationWarning) ||
@@ -8938,7 +8939,7 @@ function completeWork(current, workInProgress, renderLanes) {
             getOwnerDocumentFromRootContainer(current).createTextNode(
               newProps
             )),
-            (current[internalInstanceKey] = workInProgress),
+            precacheFiberNode(workInProgress, current),
             (workInProgress.stateNode = current);
       }
       bubbleProperties(workInProgress);
@@ -8953,7 +8954,7 @@ function completeWork(current, workInProgress, renderLanes) {
             current = workInProgress.memoizedState;
             current = null !== current ? current.dehydrated : null;
             if (!current) throw Error(formatProdErrorMessage(557));
-            current[internalInstanceKey] = workInProgress;
+            precacheFiberNode(workInProgress, current);
             bubbleProperties(workInProgress);
             0 !== (workInProgress.mode & 2) &&
               null !== renderLanes &&
@@ -9006,7 +9007,7 @@ function completeWork(current, workInProgress, renderLanes) {
             nextResource =
               null !== nextResource ? nextResource.dehydrated : null;
             if (!nextResource) throw Error(formatProdErrorMessage(317));
-            nextResource[internalInstanceKey] = workInProgress;
+            precacheFiberNode(workInProgress, nextResource);
             bubbleProperties(workInProgress);
             0 !== (workInProgress.mode & 2) &&
               null !== type &&
@@ -9207,7 +9208,7 @@ function completeWork(current, workInProgress, renderLanes) {
             getChildContextValues: getChildContextValues
           }),
           (workInProgress.stateNode = current),
-          (current[internalInstanceKey] = workInProgress)),
+          precacheFiberNode(workInProgress, current)),
         null !== workInProgress.ref && markUpdate(workInProgress),
         bubbleProperties(workInProgress),
         null
@@ -9799,7 +9800,7 @@ function commitHostUpdate(finishedWork, newProps, oldProps) {
   try {
     var domElement = finishedWork.stateNode;
     updateProperties(domElement, finishedWork.type, oldProps, newProps);
-    domElement[internalPropsKey] = newProps;
+    updateFiberProps(domElement, newProps);
   } catch (error) {
     captureCommitPhaseError(finishedWork, finishedWork.return, error);
   }
@@ -9983,8 +9984,8 @@ function commitHostSingletonAcquisition(finishedWork) {
     )
       singleton.removeAttributeNode(attributes[0]);
     setInitialProperties(singleton, type, props);
-    singleton[internalInstanceKey] = finishedWork;
-    singleton[internalPropsKey] = props;
+    precacheFiberNode(finishedWork, singleton);
+    updateFiberProps(singleton, props);
   } catch (error) {
     captureCommitPhaseError(finishedWork, finishedWork.return, error);
   }
@@ -10076,7 +10077,7 @@ function restoreViewTransitionOnHostInstances(
 function commitAppearingPairViewTransitions(placement) {
   if (0 !== (placement.subtreeFlags & 18874368))
     for (placement = placement.child; null !== placement; ) {
-      if (22 !== placement.tag || null !== placement.memoizedState)
+      if (22 !== placement.tag || null === placement.memoizedState)
         if (
           (commitAppearingPairViewTransitions(placement),
           30 === placement.tag &&
@@ -10132,7 +10133,7 @@ function commitDeletedPairViewTransitions(deletion) {
     var pairs = appearingViewTransitions;
     if (0 !== (deletion.subtreeFlags & 18874368))
       for (deletion = deletion.child; null !== deletion; ) {
-        if (22 !== deletion.tag || null !== deletion.memoizedState) {
+        if (22 !== deletion.tag || null === deletion.memoizedState) {
           if (30 === deletion.tag && 0 !== (deletion.flags & 18874368)) {
             var props = deletion.memoizedProps,
               name = props.name;
@@ -10222,7 +10223,7 @@ function commitNestedViewTransitions(changedParent) {
 function restorePairedViewTransitions(parent) {
   if (0 !== (parent.subtreeFlags & 18874368))
     for (parent = parent.child; null !== parent; ) {
-      if (22 !== parent.tag || null !== parent.memoizedState) {
+      if (22 !== parent.tag || null === parent.memoizedState) {
         if (30 === parent.tag && 0 !== (parent.flags & 18874368)) {
           var instance = parent.stateNode;
           null !== instance.paired &&
@@ -11504,8 +11505,7 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
                     lanes = root.getElementsByTagName("title")[0];
                     if (
                       !lanes ||
-                      lanes[internalHoistableMarker] ||
-                      lanes[internalInstanceKey] ||
+                      isOwnedInstance(lanes) ||
                       "http://www.w3.org/2000/svg" === lanes.namespaceURI ||
                       lanes.hasAttribute("itemprop")
                     )
@@ -11515,7 +11515,7 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
                           root.querySelector("head > title")
                         );
                     setInitialProperties(lanes, current, flags);
-                    lanes[internalInstanceKey] = finishedWork;
+                    precacheFiberNode(finishedWork, lanes);
                     markNodeAsHoistable(lanes);
                     current = lanes;
                     break a;
@@ -11588,7 +11588,7 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
                   default:
                     throw Error(formatProdErrorMessage(468, current));
                 }
-                lanes[internalInstanceKey] = finishedWork;
+                precacheFiberNode(finishedWork, lanes);
                 markNodeAsHoistable(lanes);
                 current = lanes;
               }
@@ -11947,7 +11947,7 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
           safelyDetachRef(finishedWork, finishedWork.return),
         offscreenSubtreeIsHidden ||
           safelyAttachRef(finishedWork, finishedWork.return));
-      flags & 4 && (finishedWork.stateNode[internalInstanceKey] = finishedWork);
+      flags & 4 && precacheFiberNode(finishedWork, finishedWork.stateNode);
       break;
     case 7:
       enableFragmentRefs &&
@@ -13682,7 +13682,7 @@ function schedulePostPaintCallback(callback) {
       callbacks = [];
     }));
 }
-var PossiblyWeakMap = "function" === typeof WeakMap ? WeakMap : Map,
+var PossiblyWeakMap$1 = "function" === typeof WeakMap ? WeakMap : Map,
   executionContext = 0,
   workInProgressRoot = null,
   workInProgress = null,
@@ -15804,7 +15804,7 @@ function captureCommitPhaseError(sourceFiber, nearestMountedAncestor, error) {
 function attachPingListener(root, wakeable, lanes) {
   var pingCache = root.pingCache;
   if (null === pingCache) {
-    pingCache = root.pingCache = new PossiblyWeakMap();
+    pingCache = root.pingCache = new PossiblyWeakMap$1();
     var threadIDs = new Set();
     pingCache.set(wakeable, threadIDs);
   } else
@@ -19362,7 +19362,9 @@ var scheduleTimeout = "function" === typeof setTimeout ? setTimeout : void 0,
       ? requestAnimationFrame
       : scheduleTimeout;
 function getInstanceFromScope(scopeInstance) {
-  scopeInstance = scopeInstance[internalInstanceKey] || null;
+  scopeInstance = enableInternalInstanceMap
+    ? internalInstanceMap.get(scopeInstance) || null
+    : scopeInstance[internalInstanceKey] || null;
   return scopeInstance;
 }
 var scheduleMicrotask =
@@ -19460,22 +19462,23 @@ function hideOrUnhideDehydratedBoundary(suspenseInstance, isHidden) {
   } while (node);
 }
 function applyViewTransitionName(instance, name, className) {
+  name = CSS.escape(name) !== name ? "r-" + btoa(name).replace(/=/g, "") : name;
   instance.style.viewTransitionName = name;
   null != className && (instance.style.viewTransitionClass = className);
-  name = getComputedStyle(instance);
-  if ("inline" === name.display) {
-    className = instance.getClientRects();
-    if (1 === className.length) var JSCompiler_inline_result = 1;
+  className = getComputedStyle(instance);
+  if ("inline" === className.display) {
+    name = instance.getClientRects();
+    if (1 === name.length) var JSCompiler_inline_result = 1;
     else
-      for (var i = (JSCompiler_inline_result = 0); i < className.length; i++) {
-        var rect = className[i];
+      for (var i = (JSCompiler_inline_result = 0); i < name.length; i++) {
+        var rect = name[i];
         0 < rect.width && 0 < rect.height && JSCompiler_inline_result++;
       }
     1 === JSCompiler_inline_result &&
       ((instance = instance.style),
-      (instance.display = 1 === className.length ? "inline-block" : "block"),
-      (instance.marginTop = "-" + name.paddingTop),
-      (instance.marginBottom = "-" + name.paddingBottom));
+      (instance.display = 1 === name.length ? "inline-block" : "block"),
+      (instance.marginTop = "-" + className.paddingTop),
+      (instance.marginBottom = "-" + className.paddingBottom));
   }
 }
 function restoreViewTransitionName(instance, props) {
@@ -21134,11 +21137,8 @@ function getHydratableHoistableCache(type, keyAttribute, ownerDocument) {
   for (caches = 0; caches < ownerDocument.length; caches++) {
     var node = ownerDocument[caches];
     if (
-      !(
-        node[internalHoistableMarker] ||
-        node[internalInstanceKey] ||
-        ("link" === type && "stylesheet" === node.getAttribute("rel"))
-      ) &&
+      !isOwnedInstance(node) &&
+      ("link" !== type || "stylesheet" !== node.getAttribute("rel")) &&
       "http://www.w3.org/2000/svg" !== node.namespaceURI
     ) {
       var nodeKey = node.getAttribute(keyAttribute) || "";
@@ -21412,22 +21412,44 @@ var HostTransitionContext = {
   internalEventHandlesSetKey = "__reactHandles$" + randomKey,
   internalRootNodeResourcesKey = "__reactResources$" + randomKey,
   internalHoistableMarker = "__reactMarker$" + randomKey,
-  internalScrollTimer = "__reactScroll$" + randomKey;
+  internalScrollTimer = "__reactScroll$" + randomKey,
+  PossiblyWeakMap = "function" === typeof WeakMap ? WeakMap : Map,
+  internalInstanceMap = new PossiblyWeakMap(),
+  internalPropsMap = new PossiblyWeakMap();
 function detachDeletedInstance(node) {
-  delete node[internalInstanceKey];
-  delete node[internalPropsKey];
-  delete node[internalEventHandlersKey];
-  delete node[internalEventHandlerListenersKey];
-  delete node[internalEventHandlesSetKey];
+  enableInternalInstanceMap
+    ? (internalInstanceMap.delete(node),
+      internalPropsMap.delete(node),
+      delete node[internalEventHandlersKey],
+      delete node[internalEventHandlerListenersKey],
+      delete node[internalEventHandlesSetKey],
+      delete node[internalRootNodeResourcesKey])
+    : (delete node[internalInstanceKey],
+      delete node[internalPropsKey],
+      delete node[internalEventHandlersKey],
+      delete node[internalEventHandlerListenersKey],
+      delete node[internalEventHandlesSetKey]);
+}
+function precacheFiberNode(hostInst, node) {
+  enableInternalInstanceMap
+    ? internalInstanceMap.set(node, hostInst)
+    : (node[internalInstanceKey] = hostInst);
 }
 function getClosestInstanceFromNode(targetNode) {
-  var targetInst = targetNode[internalInstanceKey];
-  if (targetInst) return targetInst;
+  var targetInst;
+  if (
+    (targetInst = enableInternalInstanceMap
+      ? internalInstanceMap.get(targetNode)
+      : targetNode[internalInstanceKey])
+  )
+    return targetInst;
   for (var parentNode = targetNode.parentNode; parentNode; ) {
     if (
-      (targetInst =
-        parentNode[internalContainerInstanceKey] ||
-        parentNode[internalInstanceKey])
+      (targetInst = enableInternalInstanceMap
+        ? parentNode[internalContainerInstanceKey] ||
+          internalInstanceMap.get(parentNode)
+        : parentNode[internalContainerInstanceKey] ||
+          parentNode[internalInstanceKey])
     ) {
       parentNode = targetInst.alternate;
       if (
@@ -21439,7 +21461,12 @@ function getClosestInstanceFromNode(targetNode) {
           null !== targetNode;
 
         ) {
-          if ((parentNode = targetNode[internalInstanceKey])) return parentNode;
+          if (
+            (parentNode = enableInternalInstanceMap
+              ? internalInstanceMap.get(targetNode)
+              : targetNode[internalInstanceKey])
+          )
+            return parentNode;
           targetNode = getParentHydrationBoundary(targetNode);
         }
       return targetInst;
@@ -21451,7 +21478,9 @@ function getClosestInstanceFromNode(targetNode) {
 }
 function getInstanceFromNode(node) {
   if (
-    (node = node[internalInstanceKey] || node[internalContainerInstanceKey])
+    (node = enableInternalInstanceMap
+      ? internalInstanceMap.get(node) || node[internalContainerInstanceKey]
+      : node[internalInstanceKey] || node[internalContainerInstanceKey])
   ) {
     var tag = node.tag;
     if (
@@ -21473,7 +21502,14 @@ function getNodeFromInstance(inst) {
   throw Error(formatProdErrorMessage(33));
 }
 function getFiberCurrentPropsFromNode(node) {
-  return node[internalPropsKey] || null;
+  return enableInternalInstanceMap
+    ? internalPropsMap.get(node) || null
+    : node[internalPropsKey] || null;
+}
+function updateFiberProps(node, props) {
+  enableInternalInstanceMap
+    ? internalPropsMap.set(node, props)
+    : (node[internalPropsKey] = props);
 }
 function getEventListenerSet(node) {
   var elementListenerSet = node[internalEventHandlersKey];
@@ -21500,6 +21536,11 @@ function getResourcesFromRoot(root) {
 }
 function markNodeAsHoistable(node) {
   node[internalHoistableMarker] = !0;
+}
+function isOwnedInstance(node) {
+  return enableInternalInstanceMap
+    ? !(!node[internalHoistableMarker] && !internalInstanceMap.has(node))
+    : !(!node[internalHoistableMarker] && !node[internalInstanceKey]);
 }
 var hasScheduledReplayAttempt = !1,
   queuedFocus = null,
@@ -22126,16 +22167,16 @@ function getCrossOriginStringAs(as, input) {
   if ("string" === typeof input)
     return "use-credentials" === input ? input : "";
 }
-var isomorphicReactPackageVersion$jscomp$inline_2407 = React.version;
+var isomorphicReactPackageVersion$jscomp$inline_2359 = React.version;
 if (
-  "19.3.0-www-modern-5a2205ba-20251105" !==
-  isomorphicReactPackageVersion$jscomp$inline_2407
+  "19.3.0-www-modern-a44e750e-20251106" !==
+  isomorphicReactPackageVersion$jscomp$inline_2359
 )
   throw Error(
     formatProdErrorMessage(
       527,
-      isomorphicReactPackageVersion$jscomp$inline_2407,
-      "19.3.0-www-modern-5a2205ba-20251105"
+      isomorphicReactPackageVersion$jscomp$inline_2359,
+      "19.3.0-www-modern-a44e750e-20251106"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -22151,27 +22192,27 @@ Internals.Events = [
     return fn(a);
   }
 ];
-var internals$jscomp$inline_2409 = {
+var internals$jscomp$inline_2361 = {
   bundleType: 0,
-  version: "19.3.0-www-modern-5a2205ba-20251105",
+  version: "19.3.0-www-modern-a44e750e-20251106",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-modern-5a2205ba-20251105"
+  reconcilerVersion: "19.3.0-www-modern-a44e750e-20251106"
 };
 enableSchedulingProfiler &&
-  ((internals$jscomp$inline_2409.getLaneLabelMap = getLaneLabelMap),
-  (internals$jscomp$inline_2409.injectProfilingHooks = injectProfilingHooks));
+  ((internals$jscomp$inline_2361.getLaneLabelMap = getLaneLabelMap),
+  (internals$jscomp$inline_2361.injectProfilingHooks = injectProfilingHooks));
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_3029 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2938 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_3029.isDisabled &&
-    hook$jscomp$inline_3029.supportsFiber
+    !hook$jscomp$inline_2938.isDisabled &&
+    hook$jscomp$inline_2938.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_3029.inject(
-        internals$jscomp$inline_2409
+      (rendererID = hook$jscomp$inline_2938.inject(
+        internals$jscomp$inline_2361
       )),
-        (injectedHook = hook$jscomp$inline_3029);
+        (injectedHook = hook$jscomp$inline_2938);
     } catch (err) {}
 }
 function defaultOnDefaultTransitionIndicator() {
@@ -22589,7 +22630,7 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-modern-5a2205ba-20251105";
+exports.version = "19.3.0-www-modern-a44e750e-20251106";
 "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
   "function" ===
     typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&
