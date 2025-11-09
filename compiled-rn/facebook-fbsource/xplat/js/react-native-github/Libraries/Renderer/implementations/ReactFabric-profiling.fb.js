@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<840a57494f0e282e6475ceea18abd3cb>>
+ * @generated SignedSource<<e679b76a6266534ec12fc35c2a83a606>>
  */
 
 "use strict";
@@ -5880,15 +5880,15 @@ function throwException(
           !1
         );
       case 1:
+        sourceFiber = returnFiber.type;
+        error = returnFiber.stateNode;
         if (
-          ((sourceFiber = returnFiber.type),
-          (error = returnFiber.stateNode),
           0 === (returnFiber.flags & 128) &&
-            ("function" === typeof sourceFiber.getDerivedStateFromError ||
-              (null !== error &&
-                "function" === typeof error.componentDidCatch &&
-                (null === legacyErrorBoundariesThatAlreadyFailed ||
-                  !legacyErrorBoundariesThatAlreadyFailed.has(error)))))
+          ("function" === typeof sourceFiber.getDerivedStateFromError ||
+            (null !== error &&
+              "function" === typeof error.componentDidCatch &&
+              (null === legacyErrorBoundariesThatAlreadyFailed ||
+                !legacyErrorBoundariesThatAlreadyFailed.has(error))))
         )
           return (
             (returnFiber.flags |= 65536),
@@ -5904,6 +5904,10 @@ function throwException(
             enqueueCapturedUpdate(returnFiber, rootRenderLanes),
             !1
           );
+        break;
+      case 22:
+        if (null !== returnFiber.memoizedState)
+          return (returnFiber.flags |= 65536), !1;
     }
     returnFiber = returnFiber.return;
   } while (null !== returnFiber);
@@ -13270,10 +13274,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1592 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-fa50caf5-20251107",
+    version: "19.3.0-native-fb-5a9921b8-20251108",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-fa50caf5-20251107"
+    reconcilerVersion: "19.3.0-native-fb-5a9921b8-20251108"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1592.rendererConfig = extraDevToolsConfig);
