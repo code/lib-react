@@ -4577,7 +4577,7 @@ __DEV__ &&
     function isEligibleForOutlining(request, boundary) {
       return (
         (500 < boundary.byteSize || boundary.defer) &&
-        null === boundary.contentPreamble
+        null === boundary.preamble
       );
     }
     function defaultErrorHandler(error) {
@@ -4712,8 +4712,7 @@ __DEV__ &&
       request,
       row,
       fallbackAbortableTasks,
-      contentPreamble,
-      fallbackPreamble,
+      preamble,
       defer
     ) {
       fallbackAbortableTasks = {
@@ -4729,21 +4728,19 @@ __DEV__ &&
         errorDigest: null,
         contentState: createHoistableState(),
         fallbackState: createHoistableState(),
-        contentPreamble: contentPreamble,
-        fallbackPreamble: fallbackPreamble,
-        trackedContentKeyPath: null,
-        trackedFallbackNode: null,
+        preamble: preamble,
+        tracked: null,
         errorMessage: null,
         errorStack: null,
         errorComponentStack: null
       };
       null !== row &&
         (row.pendingTasks++,
-        (contentPreamble = row.boundaries),
-        null !== contentPreamble &&
+        (preamble = row.boundaries),
+        null !== preamble &&
           (request.allPendingTasks++,
           fallbackAbortableTasks.pendingTasks++,
-          contentPreamble.push(fallbackAbortableTasks)),
+          preamble.push(fallbackAbortableTasks)),
         (request = row.inheritedHoistables),
         null !== request &&
           hoistHoistables(fallbackAbortableTasks.contentState, request));
@@ -6089,11 +6086,8 @@ __DEV__ &&
                 task.row,
                 fallbackAbortSet,
                 null,
-                null,
                 defer
               );
-              null !== request.trackedPostpones &&
-                (newBoundary.trackedContentKeyPath = keyPath);
               var boundarySegment = createPendingSegment(
                 request,
                 parentSegment.chunks.length,
@@ -6132,10 +6126,16 @@ __DEV__ &&
                     fallbackKeyPath,
                     fallbackReplayNode
                   );
-                  newBoundary.trackedFallbackNode = fallbackReplayNode;
+                  newBoundary.tracked = {
+                    contentKeyPath: keyPath,
+                    fallbackNode: fallbackReplayNode
+                  };
                 }
                 task.blockedSegment = boundarySegment;
-                task.blockedPreamble = newBoundary.fallbackPreamble;
+                task.blockedPreamble =
+                  null === newBoundary.preamble
+                    ? null
+                    : newBoundary.preamble.fallback;
                 task.keyPath = fallbackKeyPath;
                 task.formatContext = getSuspenseFallbackFormatContext(
                   request.resumableState,
@@ -6174,7 +6174,9 @@ __DEV__ &&
                   -1,
                   newBoundary,
                   contentRootSegment,
-                  newBoundary.contentPreamble,
+                  null === newBoundary.preamble
+                    ? null
+                    : newBoundary.preamble.content,
                   newBoundary.contentState,
                   task.abortSet,
                   keyPath,
@@ -6193,7 +6195,10 @@ __DEV__ &&
                 request.pingedTasks.push(suspendedPrimaryTask);
               } else {
                 task.blockedBoundary = newBoundary;
-                task.blockedPreamble = newBoundary.contentPreamble;
+                task.blockedPreamble =
+                  null === newBoundary.preamble
+                    ? null
+                    : newBoundary.preamble.content;
                 task.hoistableState = newBoundary.contentState;
                 task.blockedSegment = contentRootSegment;
                 task.keyPath = keyPath;
@@ -6272,7 +6277,9 @@ __DEV__ &&
                   -1,
                   parentBoundary,
                   boundarySegment,
-                  newBoundary.fallbackPreamble,
+                  null === newBoundary.preamble
+                    ? null
+                    : newBoundary.preamble.fallback,
                   newBoundary.fallbackState,
                   fallbackAbortSet,
                   [keyPath[0], "Suspense Fallback", keyPath[2]],
@@ -6539,7 +6546,6 @@ __DEV__ &&
                 replay,
                 task.row,
                 props,
-                null,
                 null,
                 resumedBoundary
               );
@@ -6982,13 +6988,18 @@ __DEV__ &&
     function trackPostponedBoundary(request, trackedPostpones, boundary) {
       boundary.status = POSTPONED;
       boundary.rootSegmentID = request.nextSegmentId++;
-      request = boundary.trackedContentKeyPath;
+      var tracked = boundary.tracked;
+      if (null === tracked)
+        throw Error(
+          "It should not be possible to postpone at the root. This is a bug in React."
+        );
+      request = tracked.contentKeyPath;
       if (null === request)
         throw Error(
           "It should not be possible to postpone at the root. This is a bug in React."
         );
-      var fallbackReplayNode = boundary.trackedFallbackNode,
-        children = [],
+      tracked = tracked.fallbackNode;
+      var children = [],
         boundaryNode = trackedPostpones.workingMap.get(request);
       if (void 0 === boundaryNode)
         return (
@@ -6997,14 +7008,14 @@ __DEV__ &&
             request[2],
             children,
             null,
-            fallbackReplayNode,
+            tracked,
             boundary.rootSegmentID
           ]),
           trackedPostpones.workingMap.set(request, boundary),
           addToReplayParent(boundary, request[0], trackedPostpones),
           boundary
         );
-      boundaryNode[4] = fallbackReplayNode;
+      boundaryNode[4] = tracked;
       boundaryNode[5] = boundary.rootSegmentID;
       return boundaryNode;
     }
@@ -7025,7 +7036,8 @@ __DEV__ &&
             boundary
           );
           if (
-            boundary.trackedContentKeyPath === keyPath &&
+            null !== boundary.tracked &&
+            boundary.tracked.contentKeyPath === keyPath &&
             -1 === task.childIndex
           ) {
             -1 === segment.id &&
@@ -7081,11 +7093,13 @@ __DEV__ &&
     function untrackBoundary(request, boundary) {
       request = request.trackedPostpones;
       null !== request &&
-        ((boundary = boundary.trackedContentKeyPath),
+        ((boundary = boundary.tracked),
         null !== boundary &&
-          ((boundary = request.workingMap.get(boundary)),
-          void 0 !== boundary &&
-            ((boundary.length = 4), (boundary[2] = []), (boundary[3] = null))));
+          ((boundary = boundary.contentKeyPath),
+          null !== boundary &&
+            ((request = request.workingMap.get(boundary)),
+            void 0 !== request &&
+              ((request.length = 4), (request[2] = []), (request[3] = null)))));
     }
     function spawnNewSuspendedReplayTask(request, task, thenableState) {
       return createReplayTask(
@@ -7306,7 +7320,6 @@ __DEV__ &&
               request,
               null,
               new Set(),
-              null,
               null,
               !1
             );
@@ -7593,7 +7606,7 @@ __DEV__ &&
                   finishSuspenseListRow(request, row)),
               0 === request.pendingRootTasks &&
                 null === request.trackedPostpones &&
-                null !== boundary.contentPreamble &&
+                null !== boundary.preamble &&
                 preparePreamble(request);
           else {
             if (
@@ -7865,7 +7878,7 @@ __DEV__ &&
                       request.clientRenderedBoundaries.push(boundary$jscomp$0);
                     0 === request.pendingRootTasks &&
                       null === request.trackedPostpones &&
-                      null !== boundary$jscomp$0.contentPreamble &&
+                      null !== boundary$jscomp$0.preamble &&
                       preparePreamble(request);
                   }
                   0 === request.allPendingTasks && completeAll(request);
@@ -7923,12 +7936,11 @@ __DEV__ &&
           segment,
           collectedPreambleSegments
         );
-      var preamble = boundary.contentPreamble,
-        fallbackPreamble = boundary.fallbackPreamble;
-      if (null === preamble || null === fallbackPreamble) return !1;
+      var preamble = boundary.preamble;
+      if (null === preamble) return !1;
       switch (boundary.status) {
         case COMPLETED:
-          hoistPreambleState(request.renderState, preamble);
+          hoistPreambleState(request.renderState, preamble.content);
           request.byteSize += boundary.byteSize;
           segment = boundary.completedSegments[0];
           if (!segment)
@@ -7945,7 +7957,7 @@ __DEV__ &&
         case CLIENT_RENDERED:
           if (segment.status === COMPLETED)
             return (
-              hoistPreambleState(request.renderState, fallbackPreamble),
+              hoistPreambleState(request.renderState, preamble.fallback),
               preparePreambleFromSubtree(
                 request,
                 segment,
@@ -10339,5 +10351,5 @@ __DEV__ &&
         'The server used "renderToString" which does not support Suspense. If you intended for this Suspense boundary to render the fallback content on the server consider throwing an Error somewhere within the Suspense boundary. If you intended to have the server wait for the suspended component please switch to "renderToReadableStream" which supports Suspense on the server'
       );
     };
-    exports.version = "19.3.0-www-classic-38bdda1c-20251106";
+    exports.version = "19.3.0-www-classic-717e7084-20251107";
   })();
