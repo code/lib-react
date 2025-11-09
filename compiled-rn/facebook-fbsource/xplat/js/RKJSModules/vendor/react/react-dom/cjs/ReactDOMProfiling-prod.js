@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<5731c720037f43a8bde74766404fa80d>>
+ * @generated SignedSource<<8a9da18fd89edd8ce29b4b409a41eb56>>
  */
 
 /*
@@ -1032,8 +1032,8 @@ function detachDeletedInstance(node) {
   delete node[internalEventHandlesSetKey];
 }
 function getClosestInstanceFromNode(targetNode) {
-  var targetInst = targetNode[internalInstanceKey];
-  if (targetInst) return targetInst;
+  var targetInst;
+  if ((targetInst = targetNode[internalInstanceKey])) return targetInst;
   for (var parentNode = targetNode.parentNode; parentNode; ) {
     if (
       (targetInst =
@@ -13130,20 +13130,20 @@ function debounceScrollEnd(targetInst, nativeEvent, nativeEventTarget) {
     (nativeEventTarget[internalScrollTimer] = targetInst));
 }
 for (
-  var i$jscomp$inline_1622 = 0;
-  i$jscomp$inline_1622 < simpleEventPluginEvents.length;
-  i$jscomp$inline_1622++
+  var i$jscomp$inline_1623 = 0;
+  i$jscomp$inline_1623 < simpleEventPluginEvents.length;
+  i$jscomp$inline_1623++
 ) {
-  var eventName$jscomp$inline_1623 =
-      simpleEventPluginEvents[i$jscomp$inline_1622],
-    domEventName$jscomp$inline_1624 =
-      eventName$jscomp$inline_1623.toLowerCase(),
-    capitalizedEvent$jscomp$inline_1625 =
-      eventName$jscomp$inline_1623[0].toUpperCase() +
-      eventName$jscomp$inline_1623.slice(1);
+  var eventName$jscomp$inline_1624 =
+      simpleEventPluginEvents[i$jscomp$inline_1623],
+    domEventName$jscomp$inline_1625 =
+      eventName$jscomp$inline_1624.toLowerCase(),
+    capitalizedEvent$jscomp$inline_1626 =
+      eventName$jscomp$inline_1624[0].toUpperCase() +
+      eventName$jscomp$inline_1624.slice(1);
   registerSimpleEvent(
-    domEventName$jscomp$inline_1624,
-    "on" + capitalizedEvent$jscomp$inline_1625
+    domEventName$jscomp$inline_1625,
+    "on" + capitalizedEvent$jscomp$inline_1626
   );
 }
 registerSimpleEvent(ANIMATION_END, "onAnimationEnd");
@@ -17494,16 +17494,16 @@ ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function (target) {
     0 === i && attemptExplicitHydrationTarget(target);
   }
 };
-var isomorphicReactPackageVersion$jscomp$inline_2037 = React.version;
+var isomorphicReactPackageVersion$jscomp$inline_2038 = React.version;
 if (
-  "19.3.0-native-fb-5a2205ba-20251105" !==
-  isomorphicReactPackageVersion$jscomp$inline_2037
+  "19.3.0-native-fb-a44e750e-20251106" !==
+  isomorphicReactPackageVersion$jscomp$inline_2038
 )
   throw Error(
     formatProdErrorMessage(
       527,
-      isomorphicReactPackageVersion$jscomp$inline_2037,
-      "19.3.0-native-fb-5a2205ba-20251105"
+      isomorphicReactPackageVersion$jscomp$inline_2038,
+      "19.3.0-native-fb-a44e750e-20251106"
     )
   );
 ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
@@ -17523,24 +17523,24 @@ ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
     null === componentOrElement ? null : componentOrElement.stateNode;
   return componentOrElement;
 };
-var internals$jscomp$inline_2644 = {
+var internals$jscomp$inline_2645 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-5a2205ba-20251105",
+  version: "19.3.0-native-fb-a44e750e-20251106",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-5a2205ba-20251105"
+  reconcilerVersion: "19.3.0-native-fb-a44e750e-20251106"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2645 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2646 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2645.isDisabled &&
-    hook$jscomp$inline_2645.supportsFiber
+    !hook$jscomp$inline_2646.isDisabled &&
+    hook$jscomp$inline_2646.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2645.inject(
-        internals$jscomp$inline_2644
+      (rendererID = hook$jscomp$inline_2646.inject(
+        internals$jscomp$inline_2645
       )),
-        (injectedHook = hook$jscomp$inline_2645);
+        (injectedHook = hook$jscomp$inline_2646);
     } catch (err) {}
 }
 function getCrossOriginStringAs(as, input) {
@@ -17795,4 +17795,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-native-fb-5a2205ba-20251105";
+exports.version = "19.3.0-native-fb-a44e750e-20251106";
