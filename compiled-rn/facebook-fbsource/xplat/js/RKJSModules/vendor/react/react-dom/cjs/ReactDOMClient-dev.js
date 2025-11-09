@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<03dc8a93a4749ca34a7dd33577f9d263>>
+ * @generated SignedSource<<1f5a46e865b77050543f7e0d6f214689>>
  */
 
 /*
@@ -10008,15 +10008,15 @@ __DEV__ &&
               !1
             );
           case 1:
-            returnFiber = sourceFiber.type;
-            error = sourceFiber.stateNode;
             if (
+              ((returnFiber = sourceFiber.type),
+              (error = sourceFiber.stateNode),
               0 === (sourceFiber.flags & 128) &&
-              ("function" === typeof returnFiber.getDerivedStateFromError ||
-                (null !== error &&
-                  "function" === typeof error.componentDidCatch &&
-                  (null === legacyErrorBoundariesThatAlreadyFailed ||
-                    !legacyErrorBoundariesThatAlreadyFailed.has(error))))
+                ("function" === typeof returnFiber.getDerivedStateFromError ||
+                  (null !== error &&
+                    "function" === typeof error.componentDidCatch &&
+                    (null === legacyErrorBoundariesThatAlreadyFailed ||
+                      !legacyErrorBoundariesThatAlreadyFailed.has(error)))))
             )
               return (
                 (sourceFiber.flags |= 65536),
@@ -10032,10 +10032,6 @@ __DEV__ &&
                 enqueueCapturedUpdate(sourceFiber, rootRenderLanes),
                 !1
               );
-            break;
-          case 22:
-            if (null !== sourceFiber.memoizedState)
-              return (sourceFiber.flags |= 65536), !1;
         }
         sourceFiber = sourceFiber.return;
       } while (null !== sourceFiber);
@@ -29864,11 +29860,11 @@ __DEV__ &&
     };
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-native-fb-717e7084-20251107" !== isomorphicReactPackageVersion)
+      if ("19.3.0-native-fb-fa50caf5-20251107" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-native-fb-717e7084-20251107\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-native-fb-fa50caf5-20251107\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -29905,10 +29901,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-native-fb-717e7084-20251107",
+          version: "19.3.0-native-fb-fa50caf5-20251107",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-native-fb-717e7084-20251107"
+          reconcilerVersion: "19.3.0-native-fb-fa50caf5-20251107"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -30058,5 +30054,5 @@ __DEV__ &&
       listenToAllSupportedEvents(container);
       return new ReactDOMHydrationRoot(initialChildren);
     };
-    exports.version = "19.3.0-native-fb-717e7084-20251107";
+    exports.version = "19.3.0-native-fb-fa50caf5-20251107";
   })();

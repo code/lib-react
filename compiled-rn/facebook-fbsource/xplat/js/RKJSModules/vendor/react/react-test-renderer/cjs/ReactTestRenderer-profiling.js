@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<9422ff4afb2a1db5fbdfcd54f76b67ca>>
+ * @generated SignedSource<<16e9b15b79a49a8a6fee3f2ee96a86ae>>
  */
 
 "use strict";
@@ -4678,17 +4678,17 @@ function throwException(
           !1
         );
       case 1:
-        sourceFiber = returnFiber.type;
-        currentSourceFiber = returnFiber.stateNode;
         if (
+          ((sourceFiber = returnFiber.type),
+          (currentSourceFiber = returnFiber.stateNode),
           0 === (returnFiber.flags & 128) &&
-          ("function" === typeof sourceFiber.getDerivedStateFromError ||
-            (null !== currentSourceFiber &&
-              "function" === typeof currentSourceFiber.componentDidCatch &&
-              (null === legacyErrorBoundariesThatAlreadyFailed ||
-                !legacyErrorBoundariesThatAlreadyFailed.has(
-                  currentSourceFiber
-                ))))
+            ("function" === typeof sourceFiber.getDerivedStateFromError ||
+              (null !== currentSourceFiber &&
+                "function" === typeof currentSourceFiber.componentDidCatch &&
+                (null === legacyErrorBoundariesThatAlreadyFailed ||
+                  !legacyErrorBoundariesThatAlreadyFailed.has(
+                    currentSourceFiber
+                  )))))
         )
           return (
             (returnFiber.flags |= 65536),
@@ -4704,10 +4704,6 @@ function throwException(
             enqueueCapturedUpdate(returnFiber, rootRenderLanes),
             !1
           );
-        break;
-      case 22:
-        if (null !== returnFiber.memoizedState)
-          return (returnFiber.flags |= 65536), !1;
     }
     returnFiber = returnFiber.return;
   } while (null !== returnFiber);
@@ -10816,10 +10812,10 @@ function wrapFiber(fiber) {
 }
 var internals$jscomp$inline_1247 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-717e7084-20251107",
+  version: "19.3.0-native-fb-fa50caf5-20251107",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-717e7084-20251107",
+  reconcilerVersion: "19.3.0-native-fb-fa50caf5-20251107",
   getLaneLabelMap: function () {
     for (
       var map = new Map(), lane = 1, index$150 = 0;
@@ -10970,4 +10966,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.3.0-native-fb-717e7084-20251107";
+exports.version = "19.3.0-native-fb-fa50caf5-20251107";

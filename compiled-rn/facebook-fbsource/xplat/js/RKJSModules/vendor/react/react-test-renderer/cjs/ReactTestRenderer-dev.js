@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<ba84fe095398bc8cdcf35250d5ab1cb4>>
+ * @generated SignedSource<<e5c1db99843169e00c3f6d700b253737>>
  */
 
 "use strict";
@@ -6519,17 +6519,18 @@ __DEV__ &&
               !1
             );
           case 1:
-            sourceFiber = returnFiber.type;
-            currentSourceFiber = returnFiber.stateNode;
             if (
+              ((sourceFiber = returnFiber.type),
+              (currentSourceFiber = returnFiber.stateNode),
               0 === (returnFiber.flags & 128) &&
-              ("function" === typeof sourceFiber.getDerivedStateFromError ||
-                (null !== currentSourceFiber &&
-                  "function" === typeof currentSourceFiber.componentDidCatch &&
-                  (null === legacyErrorBoundariesThatAlreadyFailed ||
-                    !legacyErrorBoundariesThatAlreadyFailed.has(
-                      currentSourceFiber
-                    ))))
+                ("function" === typeof sourceFiber.getDerivedStateFromError ||
+                  (null !== currentSourceFiber &&
+                    "function" ===
+                      typeof currentSourceFiber.componentDidCatch &&
+                    (null === legacyErrorBoundariesThatAlreadyFailed ||
+                      !legacyErrorBoundariesThatAlreadyFailed.has(
+                        currentSourceFiber
+                      )))))
             )
               return (
                 (returnFiber.flags |= 65536),
@@ -6545,10 +6546,6 @@ __DEV__ &&
                 enqueueCapturedUpdate(returnFiber, rootRenderLanes),
                 !1
               );
-            break;
-          case 22:
-            if (null !== returnFiber.memoizedState)
-              return (returnFiber.flags |= 65536), !1;
         }
         returnFiber = returnFiber.return;
       } while (null !== returnFiber);
@@ -16094,10 +16091,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-717e7084-20251107",
+        version: "19.3.0-native-fb-fa50caf5-20251107",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-717e7084-20251107"
+        reconcilerVersion: "19.3.0-native-fb-fa50caf5-20251107"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -16243,5 +16240,5 @@ __DEV__ &&
             flushSyncWorkAcrossRoots_impl(0, !0));
       }
     };
-    exports.version = "19.3.0-native-fb-717e7084-20251107";
+    exports.version = "19.3.0-native-fb-fa50caf5-20251107";
   })();

@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<c4ce9ac3ef21f472637057386857b36d>>
+ * @generated SignedSource<<164d1426487ca2e20d2aa87575e23ac5>>
  */
 
 "use strict";
@@ -4554,17 +4554,17 @@ function throwException(
           !1
         );
       case 1:
-        sourceFiber = returnFiber.type;
-        currentSourceFiber = returnFiber.stateNode;
         if (
+          ((sourceFiber = returnFiber.type),
+          (currentSourceFiber = returnFiber.stateNode),
           0 === (returnFiber.flags & 128) &&
-          ("function" === typeof sourceFiber.getDerivedStateFromError ||
-            (null !== currentSourceFiber &&
-              "function" === typeof currentSourceFiber.componentDidCatch &&
-              (null === legacyErrorBoundariesThatAlreadyFailed ||
-                !legacyErrorBoundariesThatAlreadyFailed.has(
-                  currentSourceFiber
-                ))))
+            ("function" === typeof sourceFiber.getDerivedStateFromError ||
+              (null !== currentSourceFiber &&
+                "function" === typeof currentSourceFiber.componentDidCatch &&
+                (null === legacyErrorBoundariesThatAlreadyFailed ||
+                  !legacyErrorBoundariesThatAlreadyFailed.has(
+                    currentSourceFiber
+                  )))))
         )
           return (
             (returnFiber.flags |= 65536),
@@ -4580,10 +4580,6 @@ function throwException(
             enqueueCapturedUpdate(returnFiber, rootRenderLanes),
             !1
           );
-        break;
-      case 22:
-        if (null !== returnFiber.memoizedState)
-          return (returnFiber.flags |= 65536), !1;
     }
     returnFiber = returnFiber.return;
   } while (null !== returnFiber);
@@ -10187,10 +10183,10 @@ function wrapFiber(fiber) {
 }
 var internals$jscomp$inline_1464 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-717e7084-20251107",
+  version: "19.3.0-native-fb-fa50caf5-20251107",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-717e7084-20251107"
+  reconcilerVersion: "19.3.0-native-fb-fa50caf5-20251107"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_1465 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -10326,4 +10322,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.3.0-native-fb-717e7084-20251107";
+exports.version = "19.3.0-native-fb-fa50caf5-20251107";
