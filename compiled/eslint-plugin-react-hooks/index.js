@@ -18963,8 +18963,17 @@ function isRefOrRefLikeMutableType(type) {
 function isSetStateType(id) {
     return id.type.kind === 'Function' && id.type.shapeId === 'BuiltInSetState';
 }
+function isUseActionStateType(id) {
+    return (id.type.kind === 'Object' && id.type.shapeId === 'BuiltInUseActionState');
+}
 function isStartTransitionType(id) {
     return (id.type.kind === 'Function' && id.type.shapeId === 'BuiltInStartTransition');
+}
+function isUseOptimisticType(id) {
+    return (id.type.kind === 'Object' && id.type.shapeId === 'BuiltInUseOptimistic');
+}
+function isSetOptimisticType(id) {
+    return (id.type.kind === 'Function' && id.type.shapeId === 'BuiltInSetOptimistic');
 }
 function isSetActionStateType(id) {
     return (id.type.kind === 'Function' && id.type.shapeId === 'BuiltInSetActionState');
@@ -18987,7 +18996,8 @@ function isStableType(id) {
         isSetActionStateType(id) ||
         isDispatcherType(id) ||
         isUseRefType(id) ||
-        isStartTransitionType(id));
+        isStartTransitionType(id) ||
+        isSetOptimisticType(id));
 }
 function isStableTypeContainer(id) {
     const type_ = id.type;
@@ -18995,8 +19005,9 @@ function isStableTypeContainer(id) {
         return false;
     }
     return (isUseStateType(id) ||
-        type_.shapeId === 'BuiltInUseActionState' ||
+        isUseActionStateType(id) ||
         isUseReducerType(id) ||
+        isUseOptimisticType(id) ||
         type_.shapeId === 'BuiltInUseTransition');
 }
 function evaluatesToStableTypeOrContainer(env, { value }) {
@@ -19009,6 +19020,7 @@ function evaluatesToStableTypeOrContainer(env, { value }) {
             case 'useActionState':
             case 'useRef':
             case 'useTransition':
+            case 'useOptimistic':
                 return true;
         }
     }
@@ -19856,6 +19868,29 @@ function* eachInstructionLValue(instr) {
         yield instr.lvalue;
     }
     yield* eachInstructionValueLValue(instr.value);
+}
+function* eachInstructionLValueWithKind(instr) {
+    switch (instr.value.kind) {
+        case 'DeclareContext':
+        case 'StoreContext':
+        case 'DeclareLocal':
+        case 'StoreLocal': {
+            yield [instr.value.lvalue.place, instr.value.lvalue.kind];
+            break;
+        }
+        case 'Destructure': {
+            const kind = instr.value.lvalue.kind;
+            for (const place of eachPatternOperand(instr.value.lvalue.pattern)) {
+                yield [place, kind];
+            }
+            break;
+        }
+        case 'PostfixUpdate':
+        case 'PrefixUpdate': {
+            yield [instr.value.lvalue, InstructionKind.Reassign];
+            break;
+        }
+    }
 }
 function* eachInstructionValueLValue(value) {
     switch (value.kind) {
@@ -22087,6 +22122,8 @@ const BuiltInUseReducerId = 'BuiltInUseReducer';
 const BuiltInDispatchId = 'BuiltInDispatch';
 const BuiltInUseContextHookId = 'BuiltInUseContextHook';
 const BuiltInUseTransitionId = 'BuiltInUseTransition';
+const BuiltInUseOptimisticId = 'BuiltInUseOptimistic';
+const BuiltInSetOptimisticId = 'BuiltInSetOptimistic';
 const BuiltInStartTransitionId = 'BuiltInStartTransition';
 const BuiltInFireId = 'BuiltInFire';
 const BuiltInFireFunctionId = 'BuiltInFireFunction';
@@ -22699,6 +22736,19 @@ addObject(BUILTIN_SHAPES, BuiltInUseTransitionId, [
             calleeEffect: Effect.Read,
             returnValueKind: ValueKind.Primitive,
         }, BuiltInStartTransitionId),
+    ],
+]);
+addObject(BUILTIN_SHAPES, BuiltInUseOptimisticId, [
+    ['0', { kind: 'Poly' }],
+    [
+        '1',
+        addFunction(BUILTIN_SHAPES, [], {
+            positionalParams: [],
+            restParam: Effect.Freeze,
+            returnType: PRIMITIVE_TYPE,
+            calleeEffect: Effect.Read,
+            returnValueKind: ValueKind.Primitive,
+        }, BuiltInSetOptimisticId),
     ],
 ]);
 addObject(BUILTIN_SHAPES, BuiltInUseActionStateId, [
@@ -31145,6 +31195,18 @@ const REACT_APIS = [
         }),
     ],
     [
+        'useOptimistic',
+        addHook(DEFAULT_SHAPES, {
+            positionalParams: [],
+            restParam: Effect.Freeze,
+            returnType: { kind: 'Object', shapeId: BuiltInUseOptimisticId },
+            calleeEffect: Effect.Read,
+            hookKind: 'useOptimistic',
+            returnValueKind: ValueKind.Frozen,
+            returnValueReason: ValueReason.State,
+        }),
+    ],
+    [
         'use',
         addFunction(DEFAULT_SHAPES, [], {
             positionalParams: [],
@@ -38172,33 +38234,11 @@ function codegenInstructionNullable(cx, instr) {
         }
         else {
             lvalue = instr.value.lvalue.pattern;
-            let hasReassign = false;
-            let hasDeclaration = false;
             for (const place of eachPatternOperand(lvalue)) {
                 if (kind !== InstructionKind.Reassign &&
                     place.identifier.name === null) {
                     cx.temp.set(place.identifier.declarationId, null);
                 }
-                const isDeclared = cx.hasDeclared(place.identifier);
-                hasReassign || (hasReassign = isDeclared);
-                hasDeclaration || (hasDeclaration = !isDeclared);
-            }
-            if (hasReassign && hasDeclaration) {
-                CompilerError.invariant(false, {
-                    reason: 'Encountered a destructuring operation where some identifiers are already declared (reassignments) but others are not (declarations)',
-                    description: null,
-                    details: [
-                        {
-                            kind: 'error',
-                            loc: instr.loc,
-                            message: null,
-                        },
-                    ],
-                    suggestions: null,
-                });
-            }
-            else if (hasReassign) {
-                kind = InstructionKind.Reassign;
             }
             value = codegenPlaceToExpression(cx, instr.value.value);
         }
@@ -39402,10 +39442,13 @@ let Visitor$9 = class Visitor extends ReactiveFunctionTransform {
     }
     transformInstruction(instruction, state) {
         this.visitInstruction(instruction, state);
+        let instructionsToProcess = [instruction];
+        let result = { kind: 'keep' };
         if (instruction.value.kind === 'Destructure') {
             const transformed = transformDestructuring(state, instruction, instruction.value);
             if (transformed) {
-                return {
+                instructionsToProcess = transformed;
+                result = {
                     kind: 'replace-many',
                     value: transformed.map(instruction => ({
                         kind: 'instruction',
@@ -39414,7 +39457,14 @@ let Visitor$9 = class Visitor extends ReactiveFunctionTransform {
                 };
             }
         }
-        return { kind: 'keep' };
+        for (const instr of instructionsToProcess) {
+            for (const [place, kind] of eachInstructionLValueWithKind(instr)) {
+                if (kind !== InstructionKind.Reassign) {
+                    state.declared.add(place.identifier.declarationId);
+                }
+            }
+        }
+        return result;
     }
 };
 function transformDestructuring(state, instr, destructure) {
@@ -39425,9 +39475,12 @@ function transformDestructuring(state, instr, destructure) {
         if (isDeclared) {
             reassigned.add(place.identifier.id);
         }
-        hasDeclaration || (hasDeclaration = !isDeclared);
+        else {
+            hasDeclaration = true;
+        }
     }
-    if (reassigned.size === 0 || !hasDeclaration) {
+    if (!hasDeclaration) {
+        destructure.lvalue.kind = InstructionKind.Reassign;
         return null;
     }
     const instructions = [];
@@ -44850,6 +44903,85 @@ function findOptionalPlaces(fn) {
     return optionals;
 }
 
+function createControlDominators(fn, isControlVariable) {
+    const postDominators = computePostDominatorTree(fn, {
+        includeThrowsAsExitNode: false,
+    });
+    const postDominatorFrontierCache = new Map();
+    function isControlledBlock(id) {
+        let controlBlocks = postDominatorFrontierCache.get(id);
+        if (controlBlocks === undefined) {
+            controlBlocks = postDominatorFrontier(fn, postDominators, id);
+            postDominatorFrontierCache.set(id, controlBlocks);
+        }
+        for (const blockId of controlBlocks) {
+            const controlBlock = fn.body.blocks.get(blockId);
+            switch (controlBlock.terminal.kind) {
+                case 'if':
+                case 'branch': {
+                    if (isControlVariable(controlBlock.terminal.test)) {
+                        return true;
+                    }
+                    break;
+                }
+                case 'switch': {
+                    if (isControlVariable(controlBlock.terminal.test)) {
+                        return true;
+                    }
+                    for (const case_ of controlBlock.terminal.cases) {
+                        if (case_.test !== null && isControlVariable(case_.test)) {
+                            return true;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        return false;
+    }
+    return isControlledBlock;
+}
+function postDominatorFrontier(fn, postDominators, targetId) {
+    const visited = new Set();
+    const frontier = new Set();
+    const targetPostDominators = postDominatorsOf(fn, postDominators, targetId);
+    for (const blockId of [...targetPostDominators, targetId]) {
+        if (visited.has(blockId)) {
+            continue;
+        }
+        visited.add(blockId);
+        const block = fn.body.blocks.get(blockId);
+        for (const pred of block.preds) {
+            if (!targetPostDominators.has(pred)) {
+                frontier.add(pred);
+            }
+        }
+    }
+    return frontier;
+}
+function postDominatorsOf(fn, postDominators, targetId) {
+    var _a;
+    const result = new Set();
+    const visited = new Set();
+    const queue = [targetId];
+    while (queue.length) {
+        const currentId = queue.shift();
+        if (visited.has(currentId)) {
+            continue;
+        }
+        visited.add(currentId);
+        const current = fn.body.blocks.get(currentId);
+        for (const pred of current.preds) {
+            const predPostDominator = (_a = postDominators.get(pred)) !== null && _a !== void 0 ? _a : pred;
+            if (predPostDominator === targetId || result.has(predPostDominator)) {
+                result.add(pred);
+            }
+            queue.push(pred);
+        }
+    }
+    return result;
+}
+
 class StableSidemap {
     constructor(env) {
         this.map = new Map();
@@ -44925,42 +45057,7 @@ function inferReactivePlaces(fn) {
         const place = param.kind === 'Identifier' ? param : param.place;
         reactiveIdentifiers.markReactive(place);
     }
-    const postDominators = computePostDominatorTree(fn, {
-        includeThrowsAsExitNode: false,
-    });
-    const postDominatorFrontierCache = new Map();
-    function isReactiveControlledBlock(id) {
-        let controlBlocks = postDominatorFrontierCache.get(id);
-        if (controlBlocks === undefined) {
-            controlBlocks = postDominatorFrontier(fn, postDominators, id);
-            postDominatorFrontierCache.set(id, controlBlocks);
-        }
-        for (const blockId of controlBlocks) {
-            const controlBlock = fn.body.blocks.get(blockId);
-            switch (controlBlock.terminal.kind) {
-                case 'if':
-                case 'branch': {
-                    if (reactiveIdentifiers.isReactive(controlBlock.terminal.test)) {
-                        return true;
-                    }
-                    break;
-                }
-                case 'switch': {
-                    if (reactiveIdentifiers.isReactive(controlBlock.terminal.test)) {
-                        return true;
-                    }
-                    for (const case_ of controlBlock.terminal.cases) {
-                        if (case_.test !== null &&
-                            reactiveIdentifiers.isReactive(case_.test)) {
-                            return true;
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-        return false;
-    }
+    const isReactiveControlledBlock = createControlDominators(fn, place => reactiveIdentifiers.isReactive(place));
     do {
         for (const [, block] of fn.body.blocks) {
             let hasReactiveControl = isReactiveControlledBlock(block.id);
@@ -45077,46 +45174,6 @@ function inferReactivePlaces(fn) {
         }
     }
     propagateReactivityToInnerFunctions(fn, true);
-}
-function postDominatorFrontier(fn, postDominators, targetId) {
-    const visited = new Set();
-    const frontier = new Set();
-    const targetPostDominators = postDominatorsOf(fn, postDominators, targetId);
-    for (const blockId of [...targetPostDominators, targetId]) {
-        if (visited.has(blockId)) {
-            continue;
-        }
-        visited.add(blockId);
-        const block = fn.body.blocks.get(blockId);
-        for (const pred of block.preds) {
-            if (!targetPostDominators.has(pred)) {
-                frontier.add(pred);
-            }
-        }
-    }
-    return frontier;
-}
-function postDominatorsOf(fn, postDominators, targetId) {
-    var _a;
-    const result = new Set();
-    const visited = new Set();
-    const queue = [targetId];
-    while (queue.length) {
-        const currentId = queue.shift();
-        if (visited.has(currentId)) {
-            continue;
-        }
-        visited.add(currentId);
-        const current = fn.body.blocks.get(currentId);
-        for (const pred of current.preds) {
-            const predPostDominator = (_a = postDominators.get(pred)) !== null && _a !== void 0 ? _a : pred;
-            if (predPostDominator === targetId || result.has(predPostDominator)) {
-                result.add(pred);
-            }
-            queue.push(pred);
-        }
-    }
-    return result;
 }
 class ReactivityMap {
     constructor(aliasedIdentifiers) {
@@ -51098,19 +51155,83 @@ function validateNoSetStateInEffects(fn, env) {
     return errors.asResult();
 }
 function getSetStateCall(fn, setStateFunctions, env) {
+    const enableAllowSetStateFromRefsInEffects = env.config.enableAllowSetStateFromRefsInEffects;
     const refDerivedValues = new Set();
     const isDerivedFromRef = (place) => {
         return (refDerivedValues.has(place.identifier.id) ||
             isUseRefType(place.identifier) ||
             isRefValueType(place.identifier));
     };
+    const isRefControlledBlock = enableAllowSetStateFromRefsInEffects
+        ? createControlDominators(fn, place => isDerivedFromRef(place))
+        : () => false;
     for (const [, block] of fn.body.blocks) {
+        if (enableAllowSetStateFromRefsInEffects) {
+            for (const phi of block.phis) {
+                if (isDerivedFromRef(phi.place)) {
+                    continue;
+                }
+                let isPhiDerivedFromRef = false;
+                for (const [, operand] of phi.operands) {
+                    if (isDerivedFromRef(operand)) {
+                        isPhiDerivedFromRef = true;
+                        break;
+                    }
+                }
+                if (isPhiDerivedFromRef) {
+                    refDerivedValues.add(phi.place.identifier.id);
+                }
+                else {
+                    for (const [pred] of phi.operands) {
+                        if (isRefControlledBlock(pred)) {
+                            refDerivedValues.add(phi.place.identifier.id);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
         for (const instr of block.instructions) {
-            if (env.config.enableAllowSetStateFromRefsInEffects) {
+            if (enableAllowSetStateFromRefsInEffects) {
                 const hasRefOperand = Iterable_some(eachInstructionValueOperand(instr.value), isDerivedFromRef);
                 if (hasRefOperand) {
                     for (const lvalue of eachInstructionLValue(instr)) {
                         refDerivedValues.add(lvalue.identifier.id);
+                    }
+                    for (const operand of eachInstructionValueOperand(instr.value)) {
+                        switch (operand.effect) {
+                            case Effect.Capture:
+                            case Effect.Store:
+                            case Effect.ConditionallyMutate:
+                            case Effect.ConditionallyMutateIterator:
+                            case Effect.Mutate: {
+                                if (isMutable(instr, operand)) {
+                                    refDerivedValues.add(operand.identifier.id);
+                                }
+                                break;
+                            }
+                            case Effect.Freeze:
+                            case Effect.Read: {
+                                break;
+                            }
+                            case Effect.Unknown: {
+                                CompilerError.invariant(false, {
+                                    reason: 'Unexpected unknown effect',
+                                    description: null,
+                                    details: [
+                                        {
+                                            kind: 'error',
+                                            loc: operand.loc,
+                                            message: null,
+                                        },
+                                    ],
+                                    suggestions: null,
+                                });
+                            }
+                            default: {
+                                assertExhaustive$1(operand.effect, `Unexpected effect kind \`${operand.effect}\``);
+                            }
+                        }
                     }
                 }
                 if (instr.value.kind === 'PropertyLoad' &&
@@ -51138,12 +51259,15 @@ function getSetStateCall(fn, setStateFunctions, env) {
                     const callee = instr.value.callee;
                     if (isSetStateType(callee.identifier) ||
                         setStateFunctions.has(callee.identifier.id)) {
-                        if (env.config.enableAllowSetStateFromRefsInEffects) {
+                        if (enableAllowSetStateFromRefsInEffects) {
                             const arg = instr.value.args.at(0);
                             if (arg !== undefined &&
                                 arg.kind === 'Identifier' &&
                                 refDerivedValues.has(arg.identifier.id)) {
                                 return null;
+                            }
+                            else if (isRefControlledBlock(block.id)) {
+                                continue;
                             }
                         }
                         return callee;
