@@ -18928,6 +18928,9 @@ function isObjectMethodType(id) {
 function isPrimitiveType(id) {
     return id.type.kind === 'Primitive';
 }
+function isPlainObjectType(id) {
+    return id.type.kind === 'Object' && id.type.shapeId === 'BuiltInObject';
+}
 function isArrayType(id) {
     return id.type.kind === 'Object' && id.type.shapeId === 'BuiltInArray';
 }
@@ -32265,7 +32268,7 @@ const EnvironmentConfigSchema = v4.z.object({
     enableInferEventHandlers: v4.z.boolean().default(false),
 });
 class Environment {
-    constructor(scope, fnType, compilerMode, config, contextIdentifiers, parentFunction, logger, filename, code, programContext) {
+    constructor(scope, fnType, outputMode, config, contextIdentifiers, parentFunction, logger, filename, code, programContext) {
         _Environment_instances.add(this);
         _Environment_globals.set(this, void 0);
         _Environment_shapes.set(this, void 0);
@@ -32281,7 +32284,7 @@ class Environment {
         _Environment_flowTypeEnvironment.set(this, void 0);
         __classPrivateFieldSet(this, _Environment_scope, scope, "f");
         this.fnType = fnType;
-        this.compilerMode = compilerMode;
+        this.outputMode = outputMode;
         this.config = config;
         this.filename = filename;
         this.code = code;
@@ -32365,8 +32368,52 @@ class Environment {
         });
         return __classPrivateFieldGet(this, _Environment_flowTypeEnvironment, "f");
     }
-    get isInferredMemoEnabled() {
-        return this.compilerMode !== 'no_inferred_memo';
+    get enableDropManualMemoization() {
+        switch (this.outputMode) {
+            case 'lint': {
+                return true;
+            }
+            case 'client':
+            case 'ssr': {
+                return true;
+            }
+            case 'client-no-memo': {
+                return false;
+            }
+            default: {
+                assertExhaustive$1(this.outputMode, `Unexpected output mode '${this.outputMode}'`);
+            }
+        }
+    }
+    get enableMemoization() {
+        switch (this.outputMode) {
+            case 'client':
+            case 'lint': {
+                return true;
+            }
+            case 'ssr':
+            case 'client-no-memo': {
+                return false;
+            }
+            default: {
+                assertExhaustive$1(this.outputMode, `Unexpected output mode '${this.outputMode}'`);
+            }
+        }
+    }
+    get enableValidations() {
+        switch (this.outputMode) {
+            case 'client':
+            case 'lint':
+            case 'ssr': {
+                return true;
+            }
+            case 'client-no-memo': {
+                return false;
+            }
+            default: {
+                assertExhaustive$1(this.outputMode, `Unexpected output mode '${this.outputMode}'`);
+            }
+        }
     }
     get nextIdentifierId() {
         var _a, _b;
@@ -34479,9 +34526,10 @@ function deadCodeElimination(fn) {
     retainWhere(fn.context, contextVar => state.isIdOrNameUsed(contextVar.identifier));
 }
 let State$2 = class State {
-    constructor() {
+    constructor(env) {
         this.named = new Set();
         this.identifiers = new Set();
+        this.env = env;
     }
     reference(identifier) {
         this.identifiers.add(identifier.id);
@@ -34503,7 +34551,7 @@ let State$2 = class State {
 function findReferencedIdentifiers(fn) {
     const hasLoop = hasBackEdge(fn);
     const reversedBlocks = [...fn.body.blocks.values()].reverse();
-    const state = new State$2();
+    const state = new State$2(fn.env);
     let size = state.count;
     do {
         size = state.count;
@@ -34650,12 +34698,25 @@ function pruneableValue(value, state) {
         case 'Debugger': {
             return false;
         }
-        case 'Await':
         case 'CallExpression':
+        case 'MethodCall': {
+            if (state.env.outputMode === 'ssr') {
+                const calleee = value.kind === 'CallExpression' ? value.callee : value.property;
+                const hookKind = getHookKind(state.env, calleee.identifier);
+                switch (hookKind) {
+                    case 'useState':
+                    case 'useReducer':
+                    case 'useRef': {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        case 'Await':
         case 'ComputedDelete':
         case 'ComputedStore':
         case 'PropertyDelete':
-        case 'MethodCall':
         case 'PropertyStore':
         case 'StoreGlobal': {
             return false;
@@ -37450,7 +37511,7 @@ function codegenFunction(fn, { uniqueIdentifiers, fbtOperands, }) {
     }
     const compiled = compileResult.unwrap();
     const hookGuard = fn.env.config.enableEmitHookGuards;
-    if (hookGuard != null && fn.env.isInferredMemoEnabled) {
+    if (hookGuard != null && fn.env.outputMode === 'client') {
         compiled.body = libExports$1.blockStatement([
             createHookGuard(hookGuard, fn.env.programContext, compiled.body.body, GuardKind.PushHookGuard, GuardKind.PopHookGuard),
         ]);
@@ -37480,7 +37541,7 @@ function codegenFunction(fn, { uniqueIdentifiers, fbtOperands, }) {
     const emitInstrumentForget = fn.env.config.enableEmitInstrumentForget;
     if (emitInstrumentForget != null &&
         fn.id != null &&
-        fn.env.isInferredMemoEnabled) {
+        fn.env.outputMode === 'client') {
         const gating = emitInstrumentForget.gating != null
             ? libExports$1.identifier(fn.env.programContext.addImportSpecifier(emitInstrumentForget.gating).name)
             : null;
@@ -37718,7 +37779,8 @@ function codegenBlockNoReset(cx, block) {
     return libExports$1.blockStatement(statements);
 }
 function wrapCacheDep(cx, value) {
-    if (cx.env.config.enableEmitFreeze != null && cx.env.isInferredMemoEnabled) {
+    if (cx.env.config.enableEmitFreeze != null &&
+        cx.env.outputMode === 'client') {
         const emitFreezeIdentifier = cx.env.programContext.addImportSpecifier(cx.env.config.enableEmitFreeze).name;
         cx.env.programContext
             .assertGlobalBinding(EMIT_FREEZE_GLOBAL_GATING, cx.env.scope)
@@ -38564,7 +38626,7 @@ function createCallExpression(env, callee, args, loc, isHook) {
         callExpr.loc = loc;
     }
     const hookGuard = env.config.enableEmitHookGuards;
-    if (hookGuard != null && isHook && env.isInferredMemoEnabled) {
+    if (hookGuard != null && isHook && env.outputMode === 'client') {
         const iife = libExports$1.functionExpression(null, [], libExports$1.blockStatement([
             createHookGuard(hookGuard, env.programContext, [libExports$1.returnStatement(callExpr)], GuardKind.AllowHook, GuardKind.DisallowHook),
         ]));
@@ -42262,7 +42324,7 @@ function computeEffectsForLegacySignature(state, signature, lvalue, receiver, ar
             }),
         });
     }
-    if (signature.knownIncompatible != null && state.env.isInferredMemoEnabled) {
+    if (signature.knownIncompatible != null && state.env.enableValidations) {
         const errors = new CompilerError();
         errors.pushDiagnostic(CompilerDiagnostic.create({
             category: ErrorCategory.IncompatibleLibrary,
@@ -52496,6 +52558,7 @@ function validateEffect$1(effectFunction, effectDeps, errors) {
     }
 }
 
+const MAX_FIXPOINT_ITERATIONS = 100;
 class DerivationCache {
     constructor() {
         this.hasChanges = false;
@@ -52615,6 +52678,7 @@ function validateNoDerivedComputationsInEffects_exp(fn) {
             });
         }
     }
+    let iterationCount = 0;
     do {
         context.derivationCache.takeSnapshot();
         for (const block of fn.body.blocks.values()) {
@@ -52624,6 +52688,18 @@ function validateNoDerivedComputationsInEffects_exp(fn) {
             }
         }
         context.derivationCache.checkForChanges();
+        iterationCount++;
+        CompilerError.invariant(iterationCount < MAX_FIXPOINT_ITERATIONS, {
+            reason: '[ValidateNoDerivedComputationsInEffects] Fixpoint iteration failed to converge.',
+            description: `Fixpoint iteration exceeded ${MAX_FIXPOINT_ITERATIONS} iterations while tracking derivations. This suggests a cyclic dependency in the derivation cache.`,
+            details: [
+                {
+                    kind: 'error',
+                    loc: fn.loc,
+                    message: `Exceeded ${MAX_FIXPOINT_ITERATIONS} iterations in ValidateNoDerivedComputationsInEffects`,
+                },
+            ],
+        });
     } while (context.derivationCache.snapshot());
     for (const [, effect] of effectsCache) {
         validateEffect(effect.effect, effect.dependencies, context);
@@ -52718,7 +52794,7 @@ function recordInstructionDerivations(instr, context, isFirstPass) {
                 });
             }
         }
-        else if (isUseStateType(lvalue.identifier) && value.args.length > 0) {
+        else if (isUseStateType(lvalue.identifier)) {
             typeOfValue = 'fromState';
             context.derivationCache.addDerivationEntry(lvalue, new Set(), typeOfValue, true);
             return;
@@ -52746,6 +52822,9 @@ function recordInstructionDerivations(instr, context, isFirstPass) {
     }
     for (const lvalue of eachInstructionLValue(instr)) {
         context.derivationCache.addDerivationEntry(lvalue, sources, typeOfValue, isSource);
+    }
+    if (value.kind === 'FunctionExpression') {
+        return;
     }
     for (const operand of eachInstructionOperand(instr)) {
         switch (operand.effect) {
@@ -52808,6 +52887,17 @@ function buildTreeNode(sourceId, context, visited = new Set()) {
     const children = [];
     const namedSiblings = new Set();
     for (const childId of sourceMetadata.sourcesIds) {
+        CompilerError.invariant(childId !== sourceId, {
+            reason: 'Unexpected self-reference: a value should not have itself as a source',
+            description: null,
+            details: [
+                {
+                    kind: 'error',
+                    loc: sourceMetadata.place.loc,
+                    message: null,
+                },
+            ],
+        });
         const childNodes = buildTreeNode(childId, context, new Set([
             ...visited,
             ...(isNamedIdentifier(sourceMetadata.place)
@@ -53154,6 +53244,196 @@ function nameAnonymousFunctionsImpl(fn) {
     return nodes;
 }
 
+function optimizeForSSR(fn) {
+    const inlinedState = new Map();
+    for (const block of fn.body.blocks.values()) {
+        for (const instr of block.instructions) {
+            const { value } = instr;
+            switch (value.kind) {
+                case 'Destructure': {
+                    if (inlinedState.has(value.value.identifier.id) &&
+                        value.lvalue.pattern.kind === 'ArrayPattern' &&
+                        value.lvalue.pattern.items.length >= 1 &&
+                        value.lvalue.pattern.items[0].kind === 'Identifier') {
+                        continue;
+                    }
+                    break;
+                }
+                case 'MethodCall':
+                case 'CallExpression': {
+                    const calleee = value.kind === 'CallExpression' ? value.callee : value.property;
+                    const hookKind = getHookKind(fn.env, calleee.identifier);
+                    switch (hookKind) {
+                        case 'useReducer': {
+                            if (value.args.length === 2 &&
+                                value.args[1].kind === 'Identifier') {
+                                const arg = value.args[1];
+                                const replace = {
+                                    kind: 'LoadLocal',
+                                    place: arg,
+                                    loc: arg.loc,
+                                };
+                                inlinedState.set(instr.lvalue.identifier.id, replace);
+                            }
+                            else if (value.args.length === 3 &&
+                                value.args[1].kind === 'Identifier' &&
+                                value.args[2].kind === 'Identifier') {
+                                const arg = value.args[1];
+                                const initializer = value.args[2];
+                                const replace = {
+                                    kind: 'CallExpression',
+                                    callee: initializer,
+                                    args: [arg],
+                                    loc: value.loc,
+                                };
+                                inlinedState.set(instr.lvalue.identifier.id, replace);
+                            }
+                            break;
+                        }
+                        case 'useState': {
+                            if (value.args.length === 1 &&
+                                value.args[0].kind === 'Identifier') {
+                                const arg = value.args[0];
+                                if (isPrimitiveType(arg.identifier) ||
+                                    isPlainObjectType(arg.identifier) ||
+                                    isArrayType(arg.identifier)) {
+                                    const replace = {
+                                        kind: 'LoadLocal',
+                                        place: arg,
+                                        loc: arg.loc,
+                                    };
+                                    inlinedState.set(instr.lvalue.identifier.id, replace);
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            if (inlinedState.size !== 0) {
+                for (const operand of eachInstructionValueOperand(value)) {
+                    inlinedState.delete(operand.identifier.id);
+                }
+            }
+        }
+        if (inlinedState.size !== 0) {
+            for (const operand of eachTerminalOperand(block.terminal)) {
+                inlinedState.delete(operand.identifier.id);
+            }
+        }
+    }
+    for (const block of fn.body.blocks.values()) {
+        for (const instr of block.instructions) {
+            const { value } = instr;
+            switch (value.kind) {
+                case 'FunctionExpression': {
+                    if (hasKnownNonRenderCall(value.loweredFunc.func)) {
+                        instr.value = {
+                            kind: 'Primitive',
+                            value: undefined,
+                            loc: value.loc,
+                        };
+                    }
+                    break;
+                }
+                case 'JsxExpression': {
+                    if (value.tag.kind === 'BuiltinTag' &&
+                        value.tag.name.indexOf('-') === -1) {
+                        const tag = value.tag.name;
+                        retainWhere(value.props, prop => {
+                            return (prop.kind === 'JsxSpreadAttribute' ||
+                                (!isKnownEventHandler(tag, prop.name) && prop.name !== 'ref'));
+                        });
+                    }
+                    break;
+                }
+                case 'Destructure': {
+                    if (inlinedState.has(value.value.identifier.id)) {
+                        CompilerError.invariant(value.lvalue.pattern.kind === 'ArrayPattern' &&
+                            value.lvalue.pattern.items.length >= 1 &&
+                            value.lvalue.pattern.items[0].kind === 'Identifier', {
+                            reason: 'Expected a valid destructuring pattern for inlined state',
+                            description: null,
+                            details: [
+                                {
+                                    kind: 'error',
+                                    message: 'Expected a valid destructuring pattern',
+                                    loc: value.loc,
+                                },
+                            ],
+                        });
+                        const store = {
+                            kind: 'StoreLocal',
+                            loc: value.loc,
+                            type: null,
+                            lvalue: {
+                                kind: value.lvalue.kind,
+                                place: value.lvalue.pattern.items[0],
+                            },
+                            value: value.value,
+                        };
+                        instr.value = store;
+                    }
+                    break;
+                }
+                case 'MethodCall':
+                case 'CallExpression': {
+                    const calleee = value.kind === 'CallExpression' ? value.callee : value.property;
+                    const hookKind = getHookKind(fn.env, calleee.identifier);
+                    switch (hookKind) {
+                        case 'useEffectEvent': {
+                            if (value.args.length === 1 &&
+                                value.args[0].kind === 'Identifier') {
+                                const load = {
+                                    kind: 'LoadLocal',
+                                    place: value.args[0],
+                                    loc: value.loc,
+                                };
+                                instr.value = load;
+                            }
+                            break;
+                        }
+                        case 'useEffect':
+                        case 'useLayoutEffect':
+                        case 'useInsertionEffect': {
+                            instr.value = {
+                                kind: 'Primitive',
+                                value: undefined,
+                                loc: value.loc,
+                            };
+                            break;
+                        }
+                        case 'useReducer':
+                        case 'useState': {
+                            const replace = inlinedState.get(instr.lvalue.identifier.id);
+                            if (replace != null) {
+                                instr.value = replace;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+function hasKnownNonRenderCall(fn) {
+    for (const block of fn.body.blocks.values()) {
+        for (const instr of block.instructions) {
+            if (instr.value.kind === 'CallExpression' &&
+                (isSetStateType(instr.value.callee.identifier) ||
+                    isStartTransitionType(instr.value.callee.identifier))) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+const EVENT_HANDLER_PATTERN = /^on[A-Z]/;
+function isKnownEventHandler(_tag, prop) {
+    return EVENT_HANDLER_PATTERN.test(prop);
+}
+
 function run(func, config, fnType, mode, programContext, logger, filename, code) {
     var _a, _b;
     const contextIdentifiers = findContextIdentifiers(func);
@@ -53176,7 +53456,7 @@ function runWithEnvironment(func, env) {
     log({ kind: 'hir', name: 'PruneMaybeThrows', value: hir });
     validateContextVariableLValues(hir);
     validateUseMemo(hir).unwrap();
-    if (env.isInferredMemoEnabled &&
+    if (env.enableDropManualMemoization &&
         !env.config.enablePreserveExistingManualUseMemo &&
         !env.config.disableMemoizationForDebugging &&
         !env.config.enableChangeDetectionForDebugging) {
@@ -53202,7 +53482,7 @@ function runWithEnvironment(func, env) {
     log({ kind: 'hir', name: 'ConstantPropagation', value: hir });
     inferTypes(hir);
     log({ kind: 'hir', name: 'InferTypes', value: hir });
-    if (env.isInferredMemoEnabled) {
+    if (env.enableValidations) {
         if (env.config.validateHooksUsage) {
             validateHooksUsage(hir).unwrap();
         }
@@ -53223,10 +53503,14 @@ function runWithEnvironment(func, env) {
     log({ kind: 'hir', name: 'AnalyseFunctions', value: hir });
     const mutabilityAliasingErrors = inferMutationAliasingEffects(hir);
     log({ kind: 'hir', name: 'InferMutationAliasingEffects', value: hir });
-    if (env.isInferredMemoEnabled) {
+    if (env.enableValidations) {
         if (mutabilityAliasingErrors.isErr()) {
             throw mutabilityAliasingErrors.unwrapErr();
         }
+    }
+    if (env.outputMode === 'ssr') {
+        optimizeForSSR(hir);
+        log({ kind: 'hir', name: 'OptimizeForSSR', value: hir });
     }
     deadCodeElimination(hir);
     log({ kind: 'hir', name: 'DeadCodeElimination', value: hir });
@@ -53240,13 +53524,13 @@ function runWithEnvironment(func, env) {
         isFunctionExpression: false,
     });
     log({ kind: 'hir', name: 'InferMutationAliasingRanges', value: hir });
-    if (env.isInferredMemoEnabled) {
+    if (env.enableValidations) {
         if (mutabilityAliasingRangeErrors.isErr()) {
             throw mutabilityAliasingRangeErrors.unwrapErr();
         }
         validateLocalsNotReassignedAfterRender(hir);
     }
-    if (env.isInferredMemoEnabled) {
+    if (env.enableValidations) {
         if (env.config.assertValidMutableRanges) {
             assertValidMutableRanges(hir);
         }
@@ -53281,10 +53565,10 @@ function runWithEnvironment(func, env) {
         name: 'RewriteInstructionKindsBasedOnReassignment',
         value: hir,
     });
-    if (env.isInferredMemoEnabled) {
-        if (env.config.validateStaticComponents) {
-            env.logErrors(validateStaticComponents(hir));
-        }
+    if (env.enableValidations && env.config.validateStaticComponents) {
+        env.logErrors(validateStaticComponents(hir));
+    }
+    if (env.enableMemoization) {
         inferReactiveScopeVariables(hir);
         log({ kind: 'hir', name: 'InferReactiveScopeVariables', value: hir });
     }
@@ -53864,7 +54148,7 @@ function isFilePartOfSources(sources, filename) {
     return false;
 }
 function compileProgram(program, pass) {
-    var _a;
+    var _a, _b;
     if (shouldSkipCompilation(program, pass)) {
         return null;
     }
@@ -53885,9 +54169,10 @@ function compileProgram(program, pass) {
     });
     const queue = findFunctionsToCompile(program, pass, programContext);
     const compiledFns = [];
+    const outputMode = (_b = pass.opts.outputMode) !== null && _b !== void 0 ? _b : (pass.opts.noEmit ? 'lint' : 'client');
     while (queue.length !== 0) {
         const current = queue.shift();
-        const compiled = processFn(current.fn, current.fnType, programContext);
+        const compiled = processFn(current.fn, current.fnType, programContext, outputMode);
         if (compiled != null) {
             for (const outlined of compiled.outlined) {
                 CompilerError.invariant(outlined.fn.outlined.length === 0, {
@@ -53969,7 +54254,7 @@ function findFunctionsToCompile(program, pass, programContext) {
     }, Object.assign(Object.assign({}, pass), { opts: Object.assign(Object.assign({}, pass.opts), pass.opts), filename: (_a = pass.filename) !== null && _a !== void 0 ? _a : null }));
     return queue;
 }
-function processFn(fn, fnType, programContext) {
+function processFn(fn, fnType, programContext, outputMode) {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     let directives;
     if (fn.node.body.type !== 'BlockStatement') {
@@ -53990,7 +54275,7 @@ function processFn(fn, fnType, programContext) {
         };
     }
     let compiledFn;
-    const compileResult = tryCompileFunction(fn, fnType, programContext);
+    const compileResult = tryCompileFunction(fn, fnType, programContext, outputMode);
     if (compileResult.kind === 'error') {
         if (directives.optOut != null) {
             logError(compileResult.error, programContext, (_b = fn.node.loc) !== null && _b !== void 0 ? _b : null);
@@ -53998,11 +54283,16 @@ function processFn(fn, fnType, programContext) {
         else {
             handleError(compileResult.error, programContext, (_c = fn.node.loc) !== null && _c !== void 0 ? _c : null);
         }
-        const retryResult = retryCompileFunction(fn, fnType, programContext);
-        if (retryResult == null) {
+        if (outputMode === 'client') {
+            const retryResult = retryCompileFunction(fn, fnType, programContext);
+            if (retryResult == null) {
+                return null;
+            }
+            compiledFn = retryResult;
+        }
+        else {
             return null;
         }
-        compiledFn = retryResult;
     }
     else {
         compiledFn = compileResult.compiledFn;
@@ -54030,7 +54320,7 @@ function processFn(fn, fnType, programContext) {
     if (programContext.hasModuleScopeOptOut) {
         return null;
     }
-    else if (programContext.opts.noEmit) {
+    else if (programContext.opts.outputMode === 'lint') {
         for (const loc of compiledFn.inferredEffectLocations) {
             if (loc !== GeneratedSource) {
                 programContext.inferredEffectLocations.add(loc);
@@ -54046,7 +54336,7 @@ function processFn(fn, fnType, programContext) {
         return compiledFn;
     }
 }
-function tryCompileFunction(fn, fnType, programContext) {
+function tryCompileFunction(fn, fnType, programContext, outputMode) {
     const suppressionsInFunction = filterSuppressionsThatAffectFunction(programContext.suppressions, fn);
     if (suppressionsInFunction.length > 0) {
         return {
@@ -54057,7 +54347,7 @@ function tryCompileFunction(fn, fnType, programContext) {
     try {
         return {
             kind: 'compile',
-            compiledFn: compileFn(fn, programContext.opts.environment, fnType, 'all_features', programContext, programContext.opts.logger, programContext.filename, programContext.code),
+            compiledFn: compileFn(fn, programContext.opts.environment, fnType, outputMode, programContext, programContext.opts.logger, programContext.filename, programContext.code),
         };
     }
     catch (err) {
@@ -54070,7 +54360,7 @@ function retryCompileFunction(fn, fnType, programContext) {
         return null;
     }
     try {
-        const retryResult = compileFn(fn, environment, fnType, 'no_inferred_memo', programContext, programContext.opts.logger, programContext.filename, programContext.code);
+        const retryResult = compileFn(fn, environment, fnType, 'client-no-memo', programContext, programContext.opts.logger, programContext.filename, programContext.code);
         if (!retryResult.hasFireRewrite && !retryResult.hasInferredEffect) {
             return null;
         }
@@ -54746,6 +55036,12 @@ v4.z.enum([
     'annotation',
     'all',
 ]);
+v4.z.enum([
+    'ssr',
+    'client',
+    'client-no-memo',
+    'lint',
+]);
 const defaultOptions = {
     compilationMode: 'infer',
     panicThreshold: 'none',
@@ -54753,6 +55049,7 @@ const defaultOptions = {
     logger: null,
     gating: null,
     noEmit: false,
+    outputMode: null,
     dynamicGating: null,
     eslintSuppressionRules: null,
     flowSuppressions: true,
@@ -55171,7 +55468,7 @@ function BabelPluginReactCompiler(_babel) {
 
 var _LRUCache_values, _LRUCache_headIdx;
 const COMPILER_OPTIONS = {
-    noEmit: true,
+    outputMode: 'lint',
     panicThreshold: 'none',
     flowSuppressions: false,
     environment: {
