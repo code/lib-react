@@ -1872,9 +1872,9 @@ module.exports = function ($$$config) {
     }
     function mapRemainingChildren(currentFirstChild) {
       for (var existingChildren = new Map(); null !== currentFirstChild; )
-        null === currentFirstChild.key
-          ? existingChildren.set(currentFirstChild.index, currentFirstChild)
-          : existingChildren.set(currentFirstChild.key, currentFirstChild),
+        null !== currentFirstChild.key
+          ? existingChildren.set(currentFirstChild.key, currentFirstChild)
+          : existingChildren.set(currentFirstChild.index, currentFirstChild),
           (currentFirstChild = currentFirstChild.sibling);
       return existingChildren;
     }
@@ -2252,9 +2252,10 @@ module.exports = function ($$$config) {
         )),
           null !== nextOldFiber &&
             (shouldTrackSideEffects &&
-              ((newFiber = nextOldFiber.alternate),
-              null !== newFiber &&
-                oldFiber.delete(null === newFiber.key ? newIdx : newFiber.key)),
+              null !== nextOldFiber.alternate &&
+              oldFiber.delete(
+                null === nextOldFiber.key ? newIdx : nextOldFiber.key
+              ),
             (currentFirstChild = placeChild(
               nextOldFiber,
               currentFirstChild,
@@ -2343,11 +2344,8 @@ module.exports = function ($$$config) {
         )),
           null !== step &&
             (shouldTrackSideEffects &&
-              ((nextOldFiber = step.alternate),
-              null !== nextOldFiber &&
-                oldFiber.delete(
-                  null === nextOldFiber.key ? newIdx : nextOldFiber.key
-                )),
+              null !== step.alternate &&
+              oldFiber.delete(null === step.key ? newIdx : step.key),
             (currentFirstChild = placeChild(step, currentFirstChild, newIdx)),
             null === previousNewFiber
               ? (resultingFirstChild = step)
@@ -13148,7 +13146,6 @@ module.exports = function ($$$config) {
     REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel"),
     REACT_VIEW_TRANSITION_TYPE = Symbol.for("react.view_transition"),
     MAYBE_ITERATOR_SYMBOL = Symbol.iterator,
-    REACT_OPTIMISTIC_KEY = Symbol.for("react.optimistic_key"),
     REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"),
     isArrayImpl = Array.isArray,
     ReactSharedInternals =
@@ -14134,12 +14131,7 @@ module.exports = function ($$$config) {
       3 < arguments.length && void 0 !== arguments[3] ? arguments[3] : null;
     return {
       $$typeof: REACT_PORTAL_TYPE,
-      key:
-        null == key
-          ? null
-          : key === REACT_OPTIMISTIC_KEY
-            ? REACT_OPTIMISTIC_KEY
-            : "" + key,
+      key: null == key ? null : "" + key,
       children: children,
       containerInfo: containerInfo,
       implementation: implementation
@@ -14360,7 +14352,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-classic-eb89912e-20251118"
+      reconcilerVersion: "19.3.0-www-classic-194c12d9-20251118"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);

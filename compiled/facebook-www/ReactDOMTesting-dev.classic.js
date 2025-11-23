@@ -6152,9 +6152,9 @@ __DEV__ &&
       }
       function mapRemainingChildren(currentFirstChild) {
         for (var existingChildren = new Map(); null !== currentFirstChild; )
-          null === currentFirstChild.key
-            ? existingChildren.set(currentFirstChild.index, currentFirstChild)
-            : existingChildren.set(currentFirstChild.key, currentFirstChild),
+          null !== currentFirstChild.key
+            ? existingChildren.set(currentFirstChild.key, currentFirstChild)
+            : existingChildren.set(currentFirstChild.index, currentFirstChild),
             (currentFirstChild = currentFirstChild.sibling);
         return existingChildren;
       }
@@ -6674,11 +6674,10 @@ __DEV__ &&
                 knownKeys
               )),
               shouldTrackSideEffects &&
-                ((newFiber = nextOldFiber.alternate),
-                null !== newFiber &&
-                  oldFiber.delete(
-                    null === newFiber.key ? newIdx : newFiber.key
-                  )),
+                null !== nextOldFiber.alternate &&
+                oldFiber.delete(
+                  null === nextOldFiber.key ? newIdx : nextOldFiber.key
+                ),
               (currentFirstChild = placeChild(
                 nextOldFiber,
                 currentFirstChild,
@@ -6787,9 +6786,10 @@ __DEV__ &&
                 knownKeys
               )),
               shouldTrackSideEffects &&
-                ((step = nextOldFiber.alternate),
-                null !== step &&
-                  oldFiber.delete(null === step.key ? newIdx : step.key)),
+                null !== nextOldFiber.alternate &&
+                oldFiber.delete(
+                  null === nextOldFiber.key ? newIdx : nextOldFiber.key
+                ),
               (currentFirstChild = placeChild(
                 nextOldFiber,
                 currentFirstChild,
@@ -22317,20 +22317,15 @@ __DEV__ &&
     function createPortal$1(children, containerInfo, implementation) {
       var key =
         3 < arguments.length && void 0 !== arguments[3] ? arguments[3] : null;
-      null == key
-        ? (key = null)
-        : key === REACT_OPTIMISTIC_KEY
-          ? (key = REACT_OPTIMISTIC_KEY)
-          : (willCoercionThrow(key) &&
-              (console.error(
-                "The provided key is an unsupported type %s. This value must be coerced to a string before using it here.",
-                typeName(key)
-              ),
-              testStringCoercion(key)),
-            (key = "" + key));
+      willCoercionThrow(key) &&
+        (console.error(
+          "The provided key is an unsupported type %s. This value must be coerced to a string before using it here.",
+          typeName(key)
+        ),
+        testStringCoercion(key));
       return {
         $$typeof: REACT_PORTAL_TYPE,
-        key: key,
+        key: null == key ? null : "" + key,
         children: children,
         containerInfo: containerInfo,
         implementation: implementation
@@ -29318,7 +29313,6 @@ __DEV__ &&
       REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel"),
       REACT_VIEW_TRANSITION_TYPE = Symbol.for("react.view_transition"),
       MAYBE_ITERATOR_SYMBOL = Symbol.iterator,
-      REACT_OPTIMISTIC_KEY = Symbol.for("react.optimistic_key"),
       REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"),
       current = null,
       isRendering = !1,
@@ -33405,11 +33399,11 @@ __DEV__ &&
       return_targetInst = null;
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-www-classic-eb89912e-20251118" !== isomorphicReactPackageVersion)
+      if ("19.3.0-www-classic-194c12d9-20251118" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-www-classic-eb89912e-20251118\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-www-classic-194c12d9-20251118\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -33452,10 +33446,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-www-classic-eb89912e-20251118",
+          version: "19.3.0-www-classic-194c12d9-20251118",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-www-classic-eb89912e-20251118"
+          reconcilerVersion: "19.3.0-www-classic-194c12d9-20251118"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -34234,5 +34228,5 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-www-classic-eb89912e-20251118";
+    exports.version = "19.3.0-www-classic-194c12d9-20251118";
   })();

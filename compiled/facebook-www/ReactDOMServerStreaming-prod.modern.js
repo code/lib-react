@@ -70,8 +70,7 @@ function getIteratorFn(maybeIterable) {
     maybeIterable["@@iterator"];
   return "function" === typeof maybeIterable ? maybeIterable : null;
 }
-var REACT_OPTIMISTIC_KEY = Symbol.for("react.optimistic_key"),
-  isArrayImpl = Array.isArray;
+var isArrayImpl = Array.isArray;
 function murmurhash3_32_gc(key, seed) {
   var remainder = key.length & 3;
   var bytes = key.length - remainder;
@@ -5002,11 +5001,7 @@ function retryNode(request, task) {
           var ref = void 0 !== node ? node : null,
             name = getComponentNameFromType(type),
             keyOrIndex =
-              null == key || key === REACT_OPTIMISTIC_KEY
-                ? -1 === childIndex
-                  ? 0
-                  : childIndex
-                : key;
+              null == key ? (-1 === childIndex ? 0 : childIndex) : key;
           key = [task.keyPath, name, keyOrIndex];
           if (null !== task.replay)
             a: {
