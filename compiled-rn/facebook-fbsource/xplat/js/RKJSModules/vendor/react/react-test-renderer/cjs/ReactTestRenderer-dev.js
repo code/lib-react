@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<32948a544f10b56e002335a321f0cddd>>
+ * @generated SignedSource<<976b9e3b31498ad1fa289411db9aa79f>>
  */
 
 "use strict";
@@ -2807,9 +2807,9 @@ __DEV__ &&
       }
       function mapRemainingChildren(currentFirstChild) {
         for (var existingChildren = new Map(); null !== currentFirstChild; )
-          null === currentFirstChild.key
-            ? existingChildren.set(currentFirstChild.index, currentFirstChild)
-            : existingChildren.set(currentFirstChild.key, currentFirstChild),
+          null !== currentFirstChild.key
+            ? existingChildren.set(currentFirstChild.key, currentFirstChild)
+            : existingChildren.set(currentFirstChild.index, currentFirstChild),
             (currentFirstChild = currentFirstChild.sibling);
         return existingChildren;
       }
@@ -3325,11 +3325,10 @@ __DEV__ &&
                 knownKeys
               )),
               shouldTrackSideEffects &&
-                ((newFiber = nextOldFiber.alternate),
-                null !== newFiber &&
-                  oldFiber.delete(
-                    null === newFiber.key ? newIdx : newFiber.key
-                  )),
+                null !== nextOldFiber.alternate &&
+                oldFiber.delete(
+                  null === nextOldFiber.key ? newIdx : nextOldFiber.key
+                ),
               (currentFirstChild = placeChild(
                 nextOldFiber,
                 currentFirstChild,
@@ -3434,9 +3433,10 @@ __DEV__ &&
                 knownKeys
               )),
               shouldTrackSideEffects &&
-                ((step = nextOldFiber.alternate),
-                null !== step &&
-                  oldFiber.delete(null === step.key ? newIdx : step.key)),
+                null !== nextOldFiber.alternate &&
+                oldFiber.delete(
+                  null === nextOldFiber.key ? newIdx : nextOldFiber.key
+                ),
               (currentFirstChild = placeChild(
                 nextOldFiber,
                 currentFirstChild,
@@ -16098,10 +16098,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-eb89912e-20251118",
+        version: "19.3.0-native-fb-194c12d9-20251118",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-eb89912e-20251118"
+        reconcilerVersion: "19.3.0-native-fb-194c12d9-20251118"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -16247,5 +16247,5 @@ __DEV__ &&
             flushSyncWorkAcrossRoots_impl(0, !0));
       }
     };
-    exports.version = "19.3.0-native-fb-eb89912e-20251118";
+    exports.version = "19.3.0-native-fb-194c12d9-20251118";
   })();

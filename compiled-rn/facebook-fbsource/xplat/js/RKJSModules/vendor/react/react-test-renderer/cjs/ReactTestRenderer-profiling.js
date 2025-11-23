@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<cef14cb0f1d059ce6ccff6fcb4b0a0c3>>
+ * @generated SignedSource<<8e47b462627a84310314abc29c850ada>>
  */
 
 "use strict";
@@ -1872,9 +1872,9 @@ function createChildReconciler(shouldTrackSideEffects) {
   }
   function mapRemainingChildren(currentFirstChild) {
     for (var existingChildren = new Map(); null !== currentFirstChild; )
-      null === currentFirstChild.key
-        ? existingChildren.set(currentFirstChild.index, currentFirstChild)
-        : existingChildren.set(currentFirstChild.key, currentFirstChild),
+      null !== currentFirstChild.key
+        ? existingChildren.set(currentFirstChild.key, currentFirstChild)
+        : existingChildren.set(currentFirstChild.index, currentFirstChild),
         (currentFirstChild = currentFirstChild.sibling);
     return existingChildren;
   }
@@ -2245,9 +2245,10 @@ function createChildReconciler(shouldTrackSideEffects) {
       )),
         null !== nextOldFiber &&
           (shouldTrackSideEffects &&
-            ((newFiber = nextOldFiber.alternate),
-            null !== newFiber &&
-              oldFiber.delete(null === newFiber.key ? newIdx : newFiber.key)),
+            null !== nextOldFiber.alternate &&
+            oldFiber.delete(
+              null === nextOldFiber.key ? newIdx : nextOldFiber.key
+            ),
           (currentFirstChild = placeChild(
             nextOldFiber,
             currentFirstChild,
@@ -2323,11 +2324,8 @@ function createChildReconciler(shouldTrackSideEffects) {
       (step = updateFromMap(oldFiber, returnFiber, newIdx, step.value, lanes)),
         null !== step &&
           (shouldTrackSideEffects &&
-            ((nextOldFiber = step.alternate),
-            null !== nextOldFiber &&
-              oldFiber.delete(
-                null === nextOldFiber.key ? newIdx : nextOldFiber.key
-              )),
+            null !== step.alternate &&
+            oldFiber.delete(null === step.key ? newIdx : step.key),
           (currentFirstChild = placeChild(step, currentFirstChild, newIdx)),
           null === previousNewFiber
             ? (resultingFirstChild = step)
@@ -10826,10 +10824,10 @@ function wrapFiber(fiber) {
 }
 var internals$jscomp$inline_1262 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-eb89912e-20251118",
+  version: "19.3.0-native-fb-194c12d9-20251118",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-eb89912e-20251118",
+  reconcilerVersion: "19.3.0-native-fb-194c12d9-20251118",
   getLaneLabelMap: function () {
     for (
       var map = new Map(), lane = 1, index$151 = 0;
@@ -10980,4 +10978,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.3.0-native-fb-eb89912e-20251118";
+exports.version = "19.3.0-native-fb-194c12d9-20251118";

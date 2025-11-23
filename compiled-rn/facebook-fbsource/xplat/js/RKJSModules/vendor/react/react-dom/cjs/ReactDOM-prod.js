@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<1d08fd796f20004fef1c064d7ca54e75>>
+ * @generated SignedSource<<d7cc4846f2ea502a4601f0f617480136>>
  */
 
 "use strict";
@@ -45,19 +45,13 @@ var Internals = {
     p: 0,
     findDOMNode: null
   },
-  REACT_PORTAL_TYPE = Symbol.for("react.portal"),
-  REACT_OPTIMISTIC_KEY = Symbol.for("react.optimistic_key");
+  REACT_PORTAL_TYPE = Symbol.for("react.portal");
 function createPortal$1(children, containerInfo, implementation) {
   var key =
     3 < arguments.length && void 0 !== arguments[3] ? arguments[3] : null;
   return {
     $$typeof: REACT_PORTAL_TYPE,
-    key:
-      null == key
-        ? null
-        : key === REACT_OPTIMISTIC_KEY
-          ? REACT_OPTIMISTIC_KEY
-          : "" + key,
+    key: null == key ? null : "" + key,
     children: children,
     containerInfo: containerInfo,
     implementation: implementation
@@ -209,4 +203,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-native-fb-eb89912e-20251118";
+exports.version = "19.3.0-native-fb-194c12d9-20251118";
