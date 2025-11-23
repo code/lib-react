@@ -1036,7 +1036,10 @@ function popHostContainer() {
   pop(rootInstanceStackCursor);
 }
 function pushHostContext(fiber) {
-  null !== fiber.memoizedState && push(hostTransitionProviderCursor, fiber);
+  var stateHook = fiber.memoizedState;
+  null !== stateHook &&
+    ((HostTransitionContext._currentValue2 = stateHook.memoizedState),
+    push(hostTransitionProviderCursor, fiber));
   contextStackCursor.current !== NO_CONTEXT &&
     (push(contextFiberStackCursor, fiber),
     push(contextStackCursor, NO_CONTEXT));
@@ -1828,9 +1831,9 @@ function createChildReconciler(shouldTrackSideEffects) {
   }
   function mapRemainingChildren(currentFirstChild) {
     for (var existingChildren = new Map(); null !== currentFirstChild; )
-      null !== currentFirstChild.key
-        ? existingChildren.set(currentFirstChild.key, currentFirstChild)
-        : existingChildren.set(currentFirstChild.index, currentFirstChild),
+      null === currentFirstChild.key
+        ? existingChildren.set(currentFirstChild.index, currentFirstChild)
+        : existingChildren.set(currentFirstChild.key, currentFirstChild),
         (currentFirstChild = currentFirstChild.sibling);
     return existingChildren;
   }
@@ -2205,10 +2208,9 @@ function createChildReconciler(shouldTrackSideEffects) {
       )),
         null !== nextOldFiber &&
           (shouldTrackSideEffects &&
-            null !== nextOldFiber.alternate &&
-            oldFiber.delete(
-              null === nextOldFiber.key ? newIdx : nextOldFiber.key
-            ),
+            ((newFiber = nextOldFiber.alternate),
+            null !== newFiber &&
+              oldFiber.delete(null === newFiber.key ? newIdx : newFiber.key)),
           (currentFirstChild = placeChild(
             nextOldFiber,
             currentFirstChild,
@@ -2283,8 +2285,11 @@ function createChildReconciler(shouldTrackSideEffects) {
       (step = updateFromMap(oldFiber, returnFiber, newIdx, step.value, lanes)),
         null !== step &&
           (shouldTrackSideEffects &&
-            null !== step.alternate &&
-            oldFiber.delete(null === step.key ? newIdx : step.key),
+            ((nextOldFiber = step.alternate),
+            null !== nextOldFiber &&
+              oldFiber.delete(
+                null === nextOldFiber.key ? newIdx : nextOldFiber.key
+              )),
           (currentFirstChild = placeChild(step, currentFirstChild, newIdx)),
           null === previousNewFiber
             ? (resultingFirstChild = step)
@@ -11255,10 +11260,10 @@ var slice = Array.prototype.slice,
   })(React.Component);
 var internals$jscomp$inline_1598 = {
   bundleType: 0,
-  version: "19.3.0-www-modern-194c12d9-20251118",
+  version: "19.3.0-www-modern-40b4a5bf-20251120",
   rendererPackageName: "react-art",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-modern-194c12d9-20251118"
+  reconcilerVersion: "19.3.0-www-modern-40b4a5bf-20251120"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_1599 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -11284,4 +11289,4 @@ exports.RadialGradient = RadialGradient;
 exports.Shape = TYPES.SHAPE;
 exports.Surface = Surface;
 exports.Text = Text;
-exports.version = "19.3.0-www-modern-194c12d9-20251118";
+exports.version = "19.3.0-www-modern-40b4a5bf-20251120";

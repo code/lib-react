@@ -1254,11 +1254,13 @@ __DEV__ &&
       pop(rootInstanceStackCursor, fiber);
     }
     function pushHostContext(fiber) {
-      null !== fiber.memoizedState &&
-        push(hostTransitionProviderCursor, fiber, fiber);
-      var context = requiredContext(contextStackCursor.current),
-        nextContext = NO_CONTEXT;
-      context !== nextContext &&
+      var stateHook = fiber.memoizedState;
+      null !== stateHook &&
+        ((HostTransitionContext._currentValue2 = stateHook.memoizedState),
+        push(hostTransitionProviderCursor, fiber, fiber));
+      stateHook = requiredContext(contextStackCursor.current);
+      var nextContext = NO_CONTEXT;
+      stateHook !== nextContext &&
         (push(contextFiberStackCursor, fiber, fiber),
         push(contextStackCursor, nextContext, fiber));
     }
@@ -2758,9 +2760,9 @@ __DEV__ &&
       }
       function mapRemainingChildren(currentFirstChild) {
         for (var existingChildren = new Map(); null !== currentFirstChild; )
-          null !== currentFirstChild.key
-            ? existingChildren.set(currentFirstChild.key, currentFirstChild)
-            : existingChildren.set(currentFirstChild.index, currentFirstChild),
+          null === currentFirstChild.key
+            ? existingChildren.set(currentFirstChild.index, currentFirstChild)
+            : existingChildren.set(currentFirstChild.key, currentFirstChild),
             (currentFirstChild = currentFirstChild.sibling);
         return existingChildren;
       }
@@ -3276,10 +3278,11 @@ __DEV__ &&
                 knownKeys
               )),
               shouldTrackSideEffects &&
-                null !== nextOldFiber.alternate &&
-                oldFiber.delete(
-                  null === nextOldFiber.key ? newIdx : nextOldFiber.key
-                ),
+                ((newFiber = nextOldFiber.alternate),
+                null !== newFiber &&
+                  oldFiber.delete(
+                    null === newFiber.key ? newIdx : newFiber.key
+                  )),
               (currentFirstChild = placeChild(
                 nextOldFiber,
                 currentFirstChild,
@@ -3384,10 +3387,9 @@ __DEV__ &&
                 knownKeys
               )),
               shouldTrackSideEffects &&
-                null !== nextOldFiber.alternate &&
-                oldFiber.delete(
-                  null === nextOldFiber.key ? newIdx : nextOldFiber.key
-                ),
+                ((step = nextOldFiber.alternate),
+                null !== step &&
+                  oldFiber.delete(null === step.key ? newIdx : step.key)),
               (currentFirstChild = placeChild(
                 nextOldFiber,
                 currentFirstChild,
@@ -15787,10 +15789,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-www-classic-194c12d9-20251118",
+        version: "19.3.0-www-classic-40b4a5bf-20251120",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-194c12d9-20251118"
+        reconcilerVersion: "19.3.0-www-classic-40b4a5bf-20251120"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -15926,5 +15928,5 @@ __DEV__ &&
     exports.unstable_batchedUpdates = function (fn, a) {
       return fn(a);
     };
-    exports.version = "19.3.0-www-classic-194c12d9-20251118";
+    exports.version = "19.3.0-www-classic-40b4a5bf-20251120";
   })();
