@@ -18353,7 +18353,7 @@ function getRuleForCategoryImpl(category) {
                 severity: ErrorSeverity.Error,
                 name: 'memo-dependencies',
                 description: 'Validates that useMemo() and useCallback() specify comprehensive dependencies without extraneous values. See [`useMemo()` docs](https://react.dev/reference/react/useMemo) for more information.',
-                preset: LintRulePreset.RecommendedLatest,
+                preset: LintRulePreset.Off,
             };
         }
         case ErrorCategory.IncompatibleLibrary: {
@@ -18868,6 +18868,10 @@ function isSubPath(subpath, path) {
     return (subpath.length <= path.length &&
         subpath.every((item, ix) => item.property === path[ix].property &&
             item.optional === path[ix].optional));
+}
+function isSubPathIgnoringOptionals(subpath, path) {
+    return (subpath.length <= path.length &&
+        subpath.every((item, ix) => item.property === path[ix].property));
 }
 function getPlaceScope(id, place) {
     const scope = place.identifier.scope;
@@ -53574,15 +53578,14 @@ function validateExhaustiveDependencies(fn) {
                 reason: 'Unexpected function dependency',
                 loc: value.loc,
             });
-            const isRequiredDependency = reactive.has(inferredDependency.identifier.id) ||
-                !isStableType(inferredDependency.identifier);
+            const isRequiredDependency = reactive.has(inferredDependency.identifier.id);
             let hasMatchingManualDependency = false;
             for (const manualDependency of manualDependencies) {
                 if (manualDependency.root.kind === 'NamedLocal' &&
                     manualDependency.root.value.identifier.id ===
                         inferredDependency.identifier.id &&
                     (areEqualPaths(manualDependency.path, inferredDependency.path) ||
-                        isSubPath(manualDependency.path, inferredDependency.path))) {
+                        isSubPathIgnoringOptionals(manualDependency.path, inferredDependency.path))) {
                     hasMatchingManualDependency = true;
                     matched.add(manualDependency);
                     if (!isRequiredDependency) {
@@ -53600,6 +53603,9 @@ function validateExhaustiveDependencies(fn) {
             }
             extra.push(dep);
         }
+        retainWhere(extra, dep => {
+            return dep.root.kind === 'Global' || dep.root.value.reactive;
+        });
         if (missing.length !== 0 || extra.length !== 0) {
             let suggestions = null;
             if (startMemo.depsLoc != null && typeof startMemo.depsLoc !== 'symbol') {
@@ -53615,7 +53621,7 @@ function validateExhaustiveDependencies(fn) {
             if (missing.length !== 0) {
                 const diagnostic = CompilerDiagnostic.create({
                     category: ErrorCategory.MemoDependencies,
-                    reason: 'Found non-exhaustive dependencies',
+                    reason: 'Found missing memoization dependencies',
                     description: 'Missing dependencies can cause a value not to update when those inputs change, ' +
                         'resulting in stale UI',
                     suggestions,
@@ -53639,7 +53645,7 @@ function validateExhaustiveDependencies(fn) {
                     category: ErrorCategory.MemoDependencies,
                     reason: 'Found unnecessary memoization dependencies',
                     description: 'Unnecessary dependencies can cause a value to update more often than necessary, ' +
-                        'which can cause effects to run more than expected',
+                        'causing performance regressions and effects to fire more often than expected',
                 });
                 diagnostic.withDetails({
                     kind: 'error',
@@ -54164,8 +54170,10 @@ function runWithEnvironment(func, env) {
     }
     inferReactivePlaces(hir);
     log({ kind: 'hir', name: 'InferReactivePlaces', value: hir });
-    if (env.config.validateExhaustiveMemoizationDependencies) {
-        validateExhaustiveDependencies(hir).unwrap();
+    if (env.enableValidations) {
+        if (env.config.validateExhaustiveMemoizationDependencies) {
+            validateExhaustiveDependencies(hir).unwrap();
+        }
     }
     rewriteInstructionKindsBasedOnReassignment(hir);
     log({
@@ -54428,7 +54436,7 @@ function findProgramSuppressions(programComments, ruleNames, flowSuppressions) {
     let disableNextLinePattern = null;
     let disablePattern = null;
     let enablePattern = null;
-    if (ruleNames.length !== 0) {
+    if (ruleNames != null && ruleNames.length !== 0) {
         const rulePattern = `(${ruleNames.join('|')})`;
         disableNextLinePattern = new RegExp(`eslint-disable-next-line ${rulePattern}`);
         disablePattern = new RegExp(`eslint-disable ${rulePattern}`);
@@ -54765,7 +54773,10 @@ function compileProgram(program, pass) {
         handleError(restrictedImportsErr, pass, null);
         return null;
     }
-    const suppressions = findProgramSuppressions(pass.comments, (_a = pass.opts.eslintSuppressionRules) !== null && _a !== void 0 ? _a : DEFAULT_ESLINT_SUPPRESSIONS, pass.opts.flowSuppressions);
+    const suppressions = findProgramSuppressions(pass.comments, pass.opts.environment.validateExhaustiveMemoizationDependencies &&
+        pass.opts.environment.validateHooksUsage
+        ? null
+        : ((_a = pass.opts.eslintSuppressionRules) !== null && _a !== void 0 ? _a : DEFAULT_ESLINT_SUPPRESSIONS), pass.opts.flowSuppressions);
     const programContext = new ProgramContext({
         program: program,
         opts: pass.opts,
