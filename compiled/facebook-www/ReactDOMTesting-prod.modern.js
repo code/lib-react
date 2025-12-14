@@ -17667,7 +17667,6 @@ function startViewTransition(
       types: transitionTypes
     });
     ownerDocument.__reactViewTransition = transition;
-    var viewTransitionAnimations = [];
     transition.ready.then(
       function () {
         for (
@@ -17678,26 +17677,25 @@ function startViewTransition(
           i < animations.length;
           i++
         ) {
-          var animation = animations[i],
-            effect = animation.effect,
+          var effect = animations[i].effect,
             pseudoElement = effect.pseudoElement;
           if (
             null != pseudoElement &&
             pseudoElement.startsWith("::view-transition")
           ) {
-            viewTransitionAnimations.push(animation);
-            animation = effect.getKeyframes();
+            pseudoElement = effect.getKeyframes();
             for (
-              var height = (pseudoElement = void 0),
+              var width = void 0,
+                height = void 0,
                 unchangedDimensions = !0,
                 j = 0;
-              j < animation.length;
+              j < pseudoElement.length;
               j++
             ) {
-              var keyframe = animation[j],
+              var keyframe = pseudoElement[j],
                 w = keyframe.width;
-              if (void 0 === pseudoElement) pseudoElement = w;
-              else if (pseudoElement !== w) {
+              if (void 0 === width) width = w;
+              else if (width !== w) {
                 unchangedDimensions = !1;
                 break;
               }
@@ -17712,22 +17710,22 @@ function startViewTransition(
               "none" === keyframe.transform && delete keyframe.transform;
             }
             unchangedDimensions &&
-              void 0 !== pseudoElement &&
+              void 0 !== width &&
               void 0 !== height &&
-              (effect.setKeyframes(animation),
+              (effect.setKeyframes(pseudoElement),
               (unchangedDimensions = getComputedStyle(
                 effect.target,
                 effect.pseudoElement
               )),
-              unchangedDimensions.width !== pseudoElement ||
+              unchangedDimensions.width !== width ||
                 unchangedDimensions.height !== height) &&
-              ((unchangedDimensions = animation[0]),
-              (unchangedDimensions.width = pseudoElement),
+              ((unchangedDimensions = pseudoElement[0]),
+              (unchangedDimensions.width = width),
               (unchangedDimensions.height = height),
-              (unchangedDimensions = animation[animation.length - 1]),
-              (unchangedDimensions.width = pseudoElement),
+              (unchangedDimensions = pseudoElement[pseudoElement.length - 1]),
+              (unchangedDimensions.width = width),
               (unchangedDimensions.height = height),
-              effect.setKeyframes(animation));
+              effect.setKeyframes(pseudoElement));
           }
         }
         spawnedWorkCallback();
@@ -17758,8 +17756,21 @@ function startViewTransition(
       }
     );
     transition.finished.finally(function () {
-      for (var i = 0; i < viewTransitionAnimations.length; i++)
-        viewTransitionAnimations[i].cancel();
+      for (
+        var scope = ownerDocument.documentElement,
+          animations = scope.getAnimations({ subtree: !0 }),
+          i = 0;
+        i < animations.length;
+        i++
+      ) {
+        var anim = animations[i],
+          effect = anim.effect,
+          pseudo = effect.pseudoElement;
+        null != pseudo &&
+          pseudo.startsWith("::view-transition") &&
+          effect.target === scope &&
+          anim.cancel();
+      }
       ownerDocument.__reactViewTransition === transition &&
         (ownerDocument.__reactViewTransition = null);
       passiveCallback();
@@ -20176,16 +20187,16 @@ function getCrossOriginStringAs(as, input) {
   if ("string" === typeof input)
     return "use-credentials" === input ? input : "";
 }
-var isomorphicReactPackageVersion$jscomp$inline_2086 = React.version;
+var isomorphicReactPackageVersion$jscomp$inline_2093 = React.version;
 if (
-  "19.3.0-www-modern-5a970933-20251210" !==
-  isomorphicReactPackageVersion$jscomp$inline_2086
+  "19.3.0-www-modern-55480b4d-20251208" !==
+  isomorphicReactPackageVersion$jscomp$inline_2093
 )
   throw Error(
     formatProdErrorMessage(
       527,
-      isomorphicReactPackageVersion$jscomp$inline_2086,
-      "19.3.0-www-modern-5a970933-20251210"
+      isomorphicReactPackageVersion$jscomp$inline_2093,
+      "19.3.0-www-modern-55480b4d-20251208"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -20201,24 +20212,24 @@ Internals.Events = [
     return fn(a);
   }
 ];
-var internals$jscomp$inline_2677 = {
+var internals$jscomp$inline_2684 = {
   bundleType: 0,
-  version: "19.3.0-www-modern-5a970933-20251210",
+  version: "19.3.0-www-modern-55480b4d-20251208",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-modern-5a970933-20251210"
+  reconcilerVersion: "19.3.0-www-modern-55480b4d-20251208"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2678 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2685 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2678.isDisabled &&
-    hook$jscomp$inline_2678.supportsFiber
+    !hook$jscomp$inline_2685.isDisabled &&
+    hook$jscomp$inline_2685.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2678.inject(
-        internals$jscomp$inline_2677
+      (rendererID = hook$jscomp$inline_2685.inject(
+        internals$jscomp$inline_2684
       )),
-        (injectedHook = hook$jscomp$inline_2678);
+        (injectedHook = hook$jscomp$inline_2685);
     } catch (err) {}
 }
 function defaultOnDefaultTransitionIndicator() {
@@ -20786,4 +20797,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-modern-5a970933-20251210";
+exports.version = "19.3.0-www-modern-55480b4d-20251208";
