@@ -22757,6 +22757,16 @@ __DEV__ &&
         enableTrustedTypesIntegration ? actionProp : "" + actionProp
       );
     }
+    function createFormDataWithSubmitter(form, submitter) {
+      var temp = submitter.ownerDocument.createElement("input");
+      temp.name = submitter.name;
+      temp.value = submitter.value;
+      form.id && temp.setAttribute("form", form.id);
+      submitter.parentNode.insertBefore(temp, submitter);
+      form = new FormData(form);
+      temp.parentNode.removeChild(temp);
+      return form;
+    }
     function extractEvents$2(
       dispatchQueue,
       domEventName,
@@ -22795,7 +22805,12 @@ __DEV__ &&
               listener: function () {
                 if (nativeEvent.defaultPrevented) {
                   if (0 !== currentEventTransitionLane) {
-                    var formData = new FormData(nativeEventTarget, submitter),
+                    var formData = submitter
+                        ? createFormDataWithSubmitter(
+                            nativeEventTarget,
+                            submitter
+                          )
+                        : new FormData(nativeEventTarget),
                       pendingState = {
                         pending: !0,
                         data: formData,
@@ -22813,7 +22828,12 @@ __DEV__ &&
                 } else
                   "function" === typeof action &&
                     (event.preventDefault(),
-                    (formData = new FormData(nativeEventTarget, submitter)),
+                    (formData = submitter
+                      ? createFormDataWithSubmitter(
+                          nativeEventTarget,
+                          submitter
+                        )
+                      : new FormData(nativeEventTarget)),
                     (pendingState = {
                       pending: !0,
                       data: formData,
@@ -33086,11 +33106,11 @@ __DEV__ &&
       return_targetInst = null;
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-www-classic-65eec428-20251218" !== isomorphicReactPackageVersion)
+      if ("19.3.0-www-classic-454fc41f-20251217" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-www-classic-65eec428-20251218\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-www-classic-454fc41f-20251217\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -33133,10 +33153,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-www-classic-65eec428-20251218",
+          version: "19.3.0-www-classic-454fc41f-20251217",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-www-classic-65eec428-20251218"
+          reconcilerVersion: "19.3.0-www-classic-454fc41f-20251217"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -33749,7 +33769,7 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-www-classic-65eec428-20251218";
+    exports.version = "19.3.0-www-classic-454fc41f-20251217";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&

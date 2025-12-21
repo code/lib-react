@@ -447,12 +447,22 @@
         "javascript:throw new Error('React form unexpectedly submitted.')" ===
           action &&
           (event.preventDefault(),
-          (event = new FormData(form, formDataSubmitter)),
-          (action = form.ownerDocument || form),
-          (action.$$reactFormReplay = action.$$reactFormReplay || []).push(
+          formDataSubmitter
+            ? ((event = document.createElement("input")),
+              (event.name = formDataSubmitter.name),
+              (event.value = formDataSubmitter.value),
+              formDataSubmitter.parentNode.insertBefore(
+                event,
+                formDataSubmitter
+              ),
+              (formDataSubmitter = new FormData(form)),
+              event.parentNode.removeChild(event))
+            : (formDataSubmitter = new FormData(form)),
+          (event = form.ownerDocument || form),
+          (event.$$reactFormReplay = event.$$reactFormReplay || []).push(
             form,
             submitter,
-            event
+            formDataSubmitter
           ));
       }
     });
