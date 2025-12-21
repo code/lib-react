@@ -24027,41 +24027,16 @@ __DEV__ &&
         normalizeMarkupForTextOrAttribute(serverValue) !== clientValue &&
           (serverDifferences[propName] = serverValue));
     }
-    function hasViewTransition(htmlElement) {
-      return !!(
-        htmlElement.getAttribute("vt-share") ||
-        htmlElement.getAttribute("vt-exit") ||
-        htmlElement.getAttribute("vt-enter") ||
-        htmlElement.getAttribute("vt-update")
-      );
-    }
-    function isExpectedViewTransitionName(htmlElement) {
-      if (!hasViewTransition(htmlElement)) return !1;
-      var expectedVtName = htmlElement.getAttribute("vt-name");
-      htmlElement = htmlElement.style["view-transition-name"];
-      return expectedVtName
-        ? expectedVtName === htmlElement
-        : htmlElement.startsWith("_T_");
-    }
     function warnForExtraAttributes(
       domElement,
       attributeNames,
       serverDifferences
     ) {
       attributeNames.forEach(function (attributeName) {
-        "style" === attributeName
-          ? "" !== domElement.getAttribute(attributeName) &&
-            ((attributeName = domElement.style),
-            (((1 === attributeName.length &&
-              "view-transition-name" === attributeName[0]) ||
-              (2 === attributeName.length &&
-                "view-transition-class" === attributeName[0] &&
-                "view-transition-name" === attributeName[1])) &&
-              isExpectedViewTransitionName(domElement)) ||
-              (serverDifferences.style =
-                getStylesObjectFromElement(domElement)))
-          : (serverDifferences[getPropNameFromAttributeName(attributeName)] =
-              domElement.getAttribute(attributeName));
+        serverDifferences[getPropNameFromAttributeName(attributeName)] =
+          "style" === attributeName
+            ? getStylesObjectFromElement(domElement)
+            : domElement.getAttribute(attributeName);
       });
     }
     function warnForInvalidEventListener(registrationName, listener) {
@@ -25339,16 +25314,12 @@ __DEV__ &&
       }
     }
     function getStylesObjectFromElement(domElement) {
-      for (
-        var serverValueInObjectForm = {}, style = domElement.style, i = 0;
-        i < style.length;
-        i++
-      ) {
-        var styleName = style[i];
-        ("view-transition-name" === styleName &&
-          isExpectedViewTransitionName(domElement)) ||
-          (serverValueInObjectForm[styleName] =
-            style.getPropertyValue(styleName));
+      var serverValueInObjectForm = {};
+      domElement = domElement.style;
+      for (var i = 0; i < domElement.length; i++) {
+        var styleName = domElement[i];
+        serverValueInObjectForm[styleName] =
+          domElement.getPropertyValue(styleName);
       }
       return serverValueInObjectForm;
     }
@@ -25398,10 +25369,7 @@ __DEV__ &&
         value$jscomp$0 = domElement.getAttribute("style");
         value$jscomp$0 !== clientValue &&
           ((clientValue = normalizeMarkupForTextOrAttribute(clientValue)),
-          (value$jscomp$0 = normalizeMarkupForTextOrAttribute(value$jscomp$0)),
-          value$jscomp$0 === clientValue ||
-            (";" === value$jscomp$0[value$jscomp$0.length - 1] &&
-              hasViewTransition(domElement)) ||
+          normalizeMarkupForTextOrAttribute(value$jscomp$0) !== clientValue &&
             (serverDifferences.style = getStylesObjectFromElement(domElement)));
       }
     }
@@ -33427,11 +33395,11 @@ __DEV__ &&
       return_targetInst = null;
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-www-classic-454fc41f-20251217" !== isomorphicReactPackageVersion)
+      if ("19.3.0-www-classic-b731fe28-20251217" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-www-classic-454fc41f-20251217\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-www-classic-b731fe28-20251217\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -33474,10 +33442,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-www-classic-454fc41f-20251217",
+          version: "19.3.0-www-classic-b731fe28-20251217",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-www-classic-454fc41f-20251217"
+          reconcilerVersion: "19.3.0-www-classic-b731fe28-20251217"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -34256,5 +34224,5 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-www-classic-454fc41f-20251217";
+    exports.version = "19.3.0-www-classic-b731fe28-20251217";
   })();
