@@ -18472,16 +18472,7 @@ __DEV__ &&
           );
           break;
         case 5:
-          resetHooksOnUnwind(unitOfWork),
-            (Component = unitOfWork),
-            supportsHydration &&
-              Component === hydrationParentFiber &&
-              (isHydrating
-                ? (popToNextHostParent(Component),
-                  5 === Component.tag &&
-                    null != Component.stateNode &&
-                    (nextHydratableInstance = Component.stateNode))
-                : (popToNextHostParent(Component), (isHydrating = !0)));
+          resetHooksOnUnwind(unitOfWork);
         default:
           unwindInterruptedWork(current, unitOfWork),
             (unitOfWork = workInProgress =
@@ -23138,7 +23129,7 @@ __DEV__ &&
         version: rendererVersion,
         rendererPackageName: rendererPackageName,
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-3e1abcc8-20260113"
+        reconcilerVersion: "19.3.0-www-classic-583e2003-20260113"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
