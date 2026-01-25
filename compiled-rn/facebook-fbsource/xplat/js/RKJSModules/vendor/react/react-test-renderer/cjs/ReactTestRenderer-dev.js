@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<37982232ed21ab0d1ccd3cf4566b33b5>>
+ * @generated SignedSource<<b4ce783da1ef9070329c338d589fc639>>
  */
 
 "use strict";
@@ -14046,7 +14046,7 @@ __DEV__ &&
       Scheduler$1 = require("scheduler"),
       assign = Object.assign,
       REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"),
-      REACT_ELEMENT_TYPE = REACT_LEGACY_ELEMENT_TYPE,
+      REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"),
       REACT_PORTAL_TYPE = Symbol.for("react.portal"),
       REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"),
       REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"),
@@ -16110,10 +16110,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-6a0ab4d2-20260121",
+        version: "19.3.0-native-fb-94913cbf-20260123",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-6a0ab4d2-20260121"
+        reconcilerVersion: "19.3.0-native-fb-94913cbf-20260123"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -16259,5 +16259,5 @@ __DEV__ &&
             flushSyncWorkAcrossRoots_impl(0, !0));
       }
     };
-    exports.version = "19.3.0-native-fb-6a0ab4d2-20260121";
+    exports.version = "19.3.0-native-fb-94913cbf-20260123";
   })();
