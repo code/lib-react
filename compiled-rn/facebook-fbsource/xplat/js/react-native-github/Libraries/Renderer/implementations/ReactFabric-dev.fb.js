@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<9e7a7da479b054127c4e058c46edf267>>
+ * @generated SignedSource<<a0be6a3df6a7f56d733b1de94ac02bb5>>
  */
 
 "use strict";
@@ -1835,7 +1835,9 @@ __DEV__ &&
     ) {
       for (; null !== child; ) {
         if (
-          (5 === child.tag && fn(child, a, b, c)) ||
+          ((5 === child.tag ||
+            (enableFragmentRefsTextNodes && 6 === child.tag)) &&
+            fn(child, a, b, c)) ||
           ((22 !== child.tag || null === child.memoizedState) &&
             (searchWithinHosts || 5 !== child.tag) &&
             traverseVisibleHostChildren(
@@ -2189,7 +2191,11 @@ __DEV__ &&
             return;
           }
         case "function":
-          value = "" === value.name ? "() => {}" : value.name + "() {}";
+          value = value.name;
+          value =
+            "" === value || "string" !== typeof value
+              ? "() => {}"
+              : value + "() {}";
           break;
         case "string":
           value =
@@ -17087,6 +17093,8 @@ __DEV__ &&
       enableFragmentRefs = dynamicFlagsUntyped.enableFragmentRefs,
       enableFragmentRefsInstanceHandles =
         dynamicFlagsUntyped.enableFragmentRefsInstanceHandles,
+      enableFragmentRefsTextNodes =
+        dynamicFlagsUntyped.enableFragmentRefsTextNodes,
       assign = Object.assign,
       disabledDepth = 0,
       prevLog,
@@ -20088,10 +20096,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-87ae75b3-20260128",
+        version: "19.3.0-native-fb-da641178-20260129",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-87ae75b3-20260128"
+        reconcilerVersion: "19.3.0-native-fb-da641178-20260129"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
