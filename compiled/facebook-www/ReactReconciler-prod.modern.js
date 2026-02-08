@@ -263,7 +263,7 @@ module.exports = function ($$$config) {
       case 32768:
       case 65536:
       case 131072:
-        return enableParallelTransitions ? lanes & -lanes : lanes & 261888;
+        return lanes & 261888;
       case 262144:
       case 524288:
       case 1048576:
@@ -335,22 +335,6 @@ module.exports = function ($$$config) {
         ~(root.suspendedLanes & ~root.pingedLanes) &
         renderLanes)
     );
-  }
-  function getEntangledLanes(root, renderLanes) {
-    0 !== (renderLanes & 8) && (renderLanes |= renderLanes & 32);
-    var allEntangledLanes = root.entangledLanes;
-    if (0 !== allEntangledLanes)
-      for (
-        root = root.entanglements, allEntangledLanes &= renderLanes;
-        0 < allEntangledLanes;
-
-      ) {
-        var index$2 = 31 - clz32(allEntangledLanes),
-          lane = 1 << index$2;
-        renderLanes |= root[index$2];
-        allEntangledLanes &= ~lane;
-      }
-    return renderLanes;
   }
   function computeExpirationTime(lane, currentTime) {
     switch (lane) {
@@ -8402,7 +8386,6 @@ module.exports = function ($$$config) {
         case 11:
         case 15:
           if (
-            !enableEffectEventMutationPhase &&
             0 !== (flags & 4) &&
             ((current = fiber.updateQueue),
             (current = null !== current ? current.events : null),
@@ -9278,17 +9261,6 @@ module.exports = function ($$$config) {
       case 11:
       case 14:
       case 15:
-        if (
-          enableEffectEventMutationPhase &&
-          flags & 4 &&
-          ((current = finishedWork.updateQueue),
-          (current = null !== current ? current.events : null),
-          null !== current)
-        )
-          for (var ii = 0; ii < current.length; ii++) {
-            var _eventPayloads$ii2 = current[ii];
-            _eventPayloads$ii2.ref.impl = _eventPayloads$ii2.nextImpl;
-          }
         recursivelyTraverseMutationEffects(root, finishedWork, lanes);
         commitReconciliationEffects(finishedWork);
         flags & 4 &&
@@ -9307,15 +9279,15 @@ module.exports = function ($$$config) {
           offscreenSubtreeIsHidden &&
           ((finishedWork = finishedWork.updateQueue),
           null !== finishedWork &&
-            ((root = finishedWork.callbacks),
-            null !== root &&
-              ((lanes = finishedWork.shared.hiddenCallbacks),
+            ((current = finishedWork.callbacks),
+            null !== current &&
+              ((root = finishedWork.shared.hiddenCallbacks),
               (finishedWork.shared.hiddenCallbacks =
-                null === lanes ? root : lanes.concat(root)))));
+                null === root ? current : root.concat(current)))));
         break;
       case 26:
         if (supportsResources) {
-          ii = currentHoistableRoot;
+          var hoistableRoot = currentHoistableRoot;
           recursivelyTraverseMutationEffects(root, finishedWork, lanes);
           commitReconciliationEffects(finishedWork);
           flags & 512 &&
@@ -9329,18 +9301,18 @@ module.exports = function ($$$config) {
               ? null === lanes
                 ? null === finishedWork.stateNode
                   ? (finishedWork.stateNode = hydrateHoistable(
-                      ii,
+                      hoistableRoot,
                       finishedWork.type,
                       finishedWork.memoizedProps,
                       finishedWork
                     ))
                   : mountHoistable(
-                      ii,
+                      hoistableRoot,
                       finishedWork.type,
                       finishedWork.stateNode
                     )
                 : (finishedWork.stateNode = acquireResource(
-                    ii,
+                    hoistableRoot,
                     lanes,
                     finishedWork.memoizedProps
                   ))
@@ -9351,11 +9323,15 @@ module.exports = function ($$$config) {
                     : releaseResource(root),
                   null === lanes
                     ? mountHoistable(
-                        ii,
+                        hoistableRoot,
                         finishedWork.type,
                         finishedWork.stateNode
                       )
-                    : acquireResource(ii, lanes, finishedWork.memoizedProps))
+                    : acquireResource(
+                        hoistableRoot,
+                        lanes,
+                        finishedWork.memoizedProps
+                      ))
                 : null === lanes &&
                   null !== finishedWork.stateNode &&
                   commitHostUpdate(
@@ -9383,10 +9359,10 @@ module.exports = function ($$$config) {
           break;
         }
       case 5:
-        ii = offscreenDirectParentIsHidden;
+        hoistableRoot = offscreenDirectParentIsHidden;
         offscreenDirectParentIsHidden = !1;
         recursivelyTraverseMutationEffects(root, finishedWork, lanes);
-        offscreenDirectParentIsHidden = ii;
+        offscreenDirectParentIsHidden = hoistableRoot;
         commitReconciliationEffects(finishedWork);
         flags & 512 &&
           (offscreenSubtreeWasHidden ||
@@ -9422,10 +9398,10 @@ module.exports = function ($$$config) {
           if (null === finishedWork.stateNode)
             throw Error(formatProdErrorMessage(162));
           root = finishedWork.memoizedProps;
-          lanes = null !== current ? current.memoizedProps : root;
-          flags = finishedWork.stateNode;
+          current = null !== current ? current.memoizedProps : root;
+          lanes = finishedWork.stateNode;
           try {
-            commitTextUpdate(flags, lanes, root), trackHostMutation();
+            commitTextUpdate(lanes, current, root), trackHostMutation();
           } catch (error) {
             captureCommitPhaseError(finishedWork, finishedWork.return, error);
           }
@@ -9436,10 +9412,10 @@ module.exports = function ($$$config) {
         enableViewTransition && (viewTransitionMutationContext = !1);
         supportsResources
           ? (prepareToCommitHoistables(),
-            (ii = currentHoistableRoot),
+            (hoistableRoot = currentHoistableRoot),
             (currentHoistableRoot = getHoistableRoot(root.containerInfo)),
             recursivelyTraverseMutationEffects(root, finishedWork, lanes),
-            (currentHoistableRoot = ii))
+            (currentHoistableRoot = hoistableRoot))
           : recursivelyTraverseMutationEffects(root, finishedWork, lanes);
         commitReconciliationEffects(finishedWork);
         if (flags & 4) {
@@ -9455,10 +9431,10 @@ module.exports = function ($$$config) {
               captureCommitPhaseError(finishedWork, finishedWork.return, error);
             }
           if (supportsPersistence) {
-            flags = root.containerInfo;
-            current = root.pendingChildren;
+            current = root.containerInfo;
+            flags = root.pendingChildren;
             try {
-              replaceContainerChildren(flags, current), trackHostMutation();
+              replaceContainerChildren(current, flags), trackHostMutation();
             } catch (error) {
               captureCommitPhaseError(finishedWork, finishedWork.return, error);
             }
@@ -9475,21 +9451,22 @@ module.exports = function ($$$config) {
       case 4:
         current = offscreenDirectParentIsHidden;
         offscreenDirectParentIsHidden = offscreenSubtreeIsHidden;
-        ii = pushMutationContext();
-        supportsResources
-          ? ((_eventPayloads$ii2 = currentHoistableRoot),
-            (currentHoistableRoot = getHoistableRoot(
-              finishedWork.stateNode.containerInfo
-            )),
-            recursivelyTraverseMutationEffects(root, finishedWork, lanes),
-            commitReconciliationEffects(finishedWork),
-            (currentHoistableRoot = _eventPayloads$ii2))
-          : (recursivelyTraverseMutationEffects(root, finishedWork, lanes),
-            commitReconciliationEffects(finishedWork));
+        hoistableRoot = pushMutationContext();
+        if (supportsResources) {
+          var previousHoistableRoot$154 = currentHoistableRoot;
+          currentHoistableRoot = getHoistableRoot(
+            finishedWork.stateNode.containerInfo
+          );
+          recursivelyTraverseMutationEffects(root, finishedWork, lanes);
+          commitReconciliationEffects(finishedWork);
+          currentHoistableRoot = previousHoistableRoot$154;
+        } else
+          recursivelyTraverseMutationEffects(root, finishedWork, lanes),
+            commitReconciliationEffects(finishedWork);
         viewTransitionMutationContext &&
           inUpdateViewTransition &&
           (rootViewTransitionAffected = !0);
-        popMutationContext(ii);
+        popMutationContext(hoistableRoot);
         offscreenDirectParentIsHidden = current;
         flags & 4 &&
           supportsPersistence &&
@@ -9507,83 +9484,85 @@ module.exports = function ($$$config) {
         recursivelyTraverseMutationEffects(root, finishedWork, lanes);
         commitReconciliationEffects(finishedWork);
         flags & 4 &&
-          ((root = finishedWork.updateQueue),
-          null !== root &&
+          ((current = finishedWork.updateQueue),
+          null !== current &&
             ((finishedWork.updateQueue = null),
-            attachSuspenseRetryListeners(finishedWork, root)));
+            attachSuspenseRetryListeners(finishedWork, current)));
         break;
       case 13:
         recursivelyTraverseMutationEffects(root, finishedWork, lanes);
         commitReconciliationEffects(finishedWork);
         finishedWork.child.flags & 8192 &&
           ((root = null !== finishedWork.memoizedState),
-          (lanes = null !== current && null !== current.memoizedState),
+          (current = null !== current && null !== current.memoizedState),
           alwaysThrottleRetries
-            ? root !== lanes && (globalMostRecentFallbackTime = now())
-            : root && !lanes && (globalMostRecentFallbackTime = now()));
+            ? root !== current && (globalMostRecentFallbackTime = now())
+            : root && !current && (globalMostRecentFallbackTime = now()));
         if (flags & 4) {
           try {
             null !== finishedWork.memoizedState &&
-              ((ii = finishedWork.memoizedProps.suspenseCallback),
-              "function" === typeof ii &&
-                ((_eventPayloads$ii2 = finishedWork.updateQueue),
-                null !== _eventPayloads$ii2 &&
-                  ii(new Set(_eventPayloads$ii2))));
+              ((hoistableRoot = finishedWork.memoizedProps.suspenseCallback),
+              "function" === typeof hoistableRoot &&
+                ((previousHoistableRoot$154 = finishedWork.updateQueue),
+                null !== previousHoistableRoot$154 &&
+                  hoistableRoot(new Set(previousHoistableRoot$154))));
           } catch (error) {
             captureCommitPhaseError(finishedWork, finishedWork.return, error);
           }
-          root = finishedWork.updateQueue;
-          null !== root &&
+          current = finishedWork.updateQueue;
+          null !== current &&
             ((finishedWork.updateQueue = null),
-            attachSuspenseRetryListeners(finishedWork, root));
+            attachSuspenseRetryListeners(finishedWork, current));
         }
         break;
       case 22:
-        ii = null !== finishedWork.memoizedState;
-        _eventPayloads$ii2 = null !== current && null !== current.memoizedState;
+        hoistableRoot = null !== finishedWork.memoizedState;
+        previousHoistableRoot$154 =
+          null !== current && null !== current.memoizedState;
         var prevOffscreenSubtreeIsHidden = offscreenSubtreeIsHidden,
           prevOffscreenSubtreeWasHidden = offscreenSubtreeWasHidden,
-          prevOffscreenDirectParentIsHidden$157 = offscreenDirectParentIsHidden;
-        offscreenSubtreeIsHidden = prevOffscreenSubtreeIsHidden || ii;
+          prevOffscreenDirectParentIsHidden$156 = offscreenDirectParentIsHidden;
+        offscreenSubtreeIsHidden =
+          prevOffscreenSubtreeIsHidden || hoistableRoot;
         offscreenDirectParentIsHidden =
-          prevOffscreenDirectParentIsHidden$157 || ii;
+          prevOffscreenDirectParentIsHidden$156 || hoistableRoot;
         offscreenSubtreeWasHidden =
-          prevOffscreenSubtreeWasHidden || _eventPayloads$ii2;
+          prevOffscreenSubtreeWasHidden || previousHoistableRoot$154;
         recursivelyTraverseMutationEffects(root, finishedWork, lanes);
         offscreenSubtreeWasHidden = prevOffscreenSubtreeWasHidden;
-        offscreenDirectParentIsHidden = prevOffscreenDirectParentIsHidden$157;
+        offscreenDirectParentIsHidden = prevOffscreenDirectParentIsHidden$156;
         offscreenSubtreeIsHidden = prevOffscreenSubtreeIsHidden;
         commitReconciliationEffects(finishedWork);
         flags & 8192 &&
           ((root = finishedWork.stateNode),
-          (root._visibility = ii
+          (root._visibility = hoistableRoot
             ? root._visibility & -2
             : root._visibility | 1),
-          ii &&
+          hoistableRoot &&
             (null === current ||
-              _eventPayloads$ii2 ||
+              previousHoistableRoot$154 ||
               offscreenSubtreeIsHidden ||
               offscreenSubtreeWasHidden ||
               recursivelyTraverseDisappearLayoutEffects(finishedWork)),
           supportsMutation &&
-            (ii || !offscreenDirectParentIsHidden) &&
-            hideOrUnhideAllChildren(finishedWork, ii));
+            (hoistableRoot || !offscreenDirectParentIsHidden) &&
+            hideOrUnhideAllChildren(finishedWork, hoistableRoot));
         flags & 4 &&
-          ((root = finishedWork.updateQueue),
-          null !== root &&
-            ((lanes = root.retryQueue),
-            null !== lanes &&
-              ((root.retryQueue = null),
-              attachSuspenseRetryListeners(finishedWork, lanes))));
+          ((current = finishedWork.updateQueue),
+          null !== current &&
+            ((root = current.retryQueue),
+            null !== root &&
+              ((current.retryQueue = null),
+              attachSuspenseRetryListeners(finishedWork, root))));
         break;
       case 19:
         recursivelyTraverseMutationEffects(root, finishedWork, lanes);
         commitReconciliationEffects(finishedWork);
         flags & 4 &&
-          ((root = finishedWork.updateQueue),
-          null !== root &&
+          ((current = finishedWork.updateQueue),
+          null !== current &&
             ((finishedWork.updateQueue = null),
-            attachSuspenseRetryListeners(finishedWork, root)));
+            attachSuspenseRetryListeners(finishedWork, current)));
         break;
       case 30:
         enableViewTransition &&
@@ -9592,12 +9571,12 @@ module.exports = function ($$$config) {
               null === current ||
               safelyDetachRef(current, current.return)),
           (flags = pushMutationContext()),
-          (ii = inUpdateViewTransition),
-          (_eventPayloads$ii2 =
+          (hoistableRoot = inUpdateViewTransition),
+          (previousHoistableRoot$154 =
             enableViewTransition && (lanes & 335544064) === lanes),
           (prevOffscreenSubtreeIsHidden = finishedWork.memoizedProps),
           (inUpdateViewTransition =
-            _eventPayloads$ii2 &&
+            previousHoistableRoot$154 &&
             "none" !==
               getViewTransitionClassName(
                 prevOffscreenSubtreeIsHidden.default,
@@ -9605,11 +9584,11 @@ module.exports = function ($$$config) {
               )),
           recursivelyTraverseMutationEffects(root, finishedWork, lanes),
           commitReconciliationEffects(finishedWork),
-          _eventPayloads$ii2 &&
+          previousHoistableRoot$154 &&
             null !== current &&
             viewTransitionMutationContext &&
             (finishedWork.flags |= 4),
-          (inUpdateViewTransition = ii),
+          (inUpdateViewTransition = hoistableRoot),
           popMutationContext(flags));
         break;
       case 21:
@@ -10264,14 +10243,14 @@ module.exports = function ($$$config) {
           );
         break;
       case 22:
-        var instance$162 = finishedWork.stateNode,
-          current$163 = finishedWork.alternate;
+        var instance$161 = finishedWork.stateNode,
+          current$162 = finishedWork.alternate;
         null !== finishedWork.memoizedState
           ? (isViewTransitionEligible &&
-              null !== current$163 &&
-              null === current$163.memoizedState &&
-              restoreEnterOrExitViewTransitions(current$163),
-            instance$162._visibility & 2
+              null !== current$162 &&
+              null === current$162.memoizedState &&
+              restoreEnterOrExitViewTransitions(current$162),
+            instance$161._visibility & 2
               ? recursivelyTraversePassiveMountEffects(
                   finishedRoot,
                   finishedWork,
@@ -10283,17 +10262,17 @@ module.exports = function ($$$config) {
                   finishedWork
                 ))
           : (isViewTransitionEligible &&
-              null !== current$163 &&
-              null !== current$163.memoizedState &&
+              null !== current$162 &&
+              null !== current$162.memoizedState &&
               restoreEnterOrExitViewTransitions(finishedWork),
-            instance$162._visibility & 2
+            instance$161._visibility & 2
               ? recursivelyTraversePassiveMountEffects(
                   finishedRoot,
                   finishedWork,
                   committedLanes,
                   committedTransitions
                 )
-              : ((instance$162._visibility |= 2),
+              : ((instance$161._visibility |= 2),
                 recursivelyTraverseReconnectPassiveEffects(
                   finishedRoot,
                   finishedWork,
@@ -10303,9 +10282,9 @@ module.exports = function ($$$config) {
                 )));
         flags & 2048 &&
           commitOffscreenPassiveMountEffects(
-            current$163,
+            current$162,
             finishedWork,
-            instance$162
+            instance$161
           );
         break;
       case 24:
@@ -10401,9 +10380,9 @@ module.exports = function ($$$config) {
             );
           break;
         case 22:
-          var instance$166 = finishedWork.stateNode;
+          var instance$165 = finishedWork.stateNode;
           null !== finishedWork.memoizedState
-            ? instance$166._visibility & 2
+            ? instance$165._visibility & 2
               ? recursivelyTraverseReconnectPassiveEffects(
                   finishedRoot,
                   finishedWork,
@@ -10415,7 +10394,7 @@ module.exports = function ($$$config) {
                   finishedRoot,
                   finishedWork
                 )
-            : ((instance$166._visibility |= 2),
+            : ((instance$165._visibility |= 2),
               recursivelyTraverseReconnectPassiveEffects(
                 finishedRoot,
                 finishedWork,
@@ -10428,7 +10407,7 @@ module.exports = function ($$$config) {
             commitOffscreenPassiveMountEffects(
               finishedWork.alternate,
               finishedWork,
-              instance$166
+              instance$165
             );
           break;
         case 24:
@@ -11422,8 +11401,6 @@ module.exports = function ($$$config) {
     spawnedLane,
     didAttemptEntireTree
   ) {
-    enableParallelTransitions &&
-      (suspendedLanes = getEntangledLanes(root, suspendedLanes));
     suspendedLanes &= ~workInProgressRootPingedLanes;
     suspendedLanes &= ~workInProgressRootInterleavedUpdatedLanes;
     root.suspendedLanes |= suspendedLanes;
@@ -11488,7 +11465,20 @@ module.exports = function ($$$config) {
     workInProgressRootRecoverableErrors = workInProgressRootConcurrentErrors =
       null;
     workInProgressRootDidIncludeRecursiveRenderUpdate = !1;
-    entangledRenderLanes = getEntangledLanes(root, lanes);
+    0 !== (lanes & 8) && (lanes |= lanes & 32);
+    var allEntangledLanes = root.entangledLanes;
+    if (0 !== allEntangledLanes)
+      for (
+        root = root.entanglements, allEntangledLanes &= lanes;
+        0 < allEntangledLanes;
+
+      ) {
+        var index$2 = 31 - clz32(allEntangledLanes),
+          lane = 1 << index$2;
+        lanes |= root[index$2];
+        allEntangledLanes &= ~lane;
+      }
+    entangledRenderLanes = lanes;
     finishQueueingConcurrentUpdates();
     return timeoutHandle;
   }
@@ -11606,8 +11596,8 @@ module.exports = function ($$$config) {
         workLoopSync();
         exitStatus = workInProgressRootExitStatus;
         break;
-      } catch (thrownValue$183) {
-        handleThrow(root, thrownValue$183);
+      } catch (thrownValue$182) {
+        handleThrow(root, thrownValue$182);
       }
     while (1);
     lanes && root.shellSuspendCounter++;
@@ -11728,8 +11718,8 @@ module.exports = function ($$$config) {
         }
         workLoopConcurrentByScheduler();
         break;
-      } catch (thrownValue$185) {
-        handleThrow(root, thrownValue$185);
+      } catch (thrownValue$184) {
+        handleThrow(root, thrownValue$184);
       }
     while (1);
     lastContextDependency = currentlyRenderingFiber$1 = null;
@@ -12895,8 +12885,6 @@ module.exports = function ($$$config) {
     alwaysThrottleRetries = dynamicFeatureFlags.alwaysThrottleRetries,
     disableSchedulerTimeoutInWorkLoop =
       dynamicFeatureFlags.disableSchedulerTimeoutInWorkLoop,
-    enableEffectEventMutationPhase =
-      dynamicFeatureFlags.enableEffectEventMutationPhase,
     enableHiddenSubtreeInsertionEffectCleanup =
       dynamicFeatureFlags.enableHiddenSubtreeInsertionEffectCleanup,
     enableInfiniteRenderLoopDetection =
@@ -12910,7 +12898,6 @@ module.exports = function ($$$config) {
     transitionLaneExpirationMs = dynamicFeatureFlags.transitionLaneExpirationMs,
     enableViewTransition = dynamicFeatureFlags.enableViewTransition,
     enableFragmentRefs = dynamicFeatureFlags.enableFragmentRefs,
-    enableParallelTransitions = dynamicFeatureFlags.enableParallelTransitions,
     REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"),
     REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"),
     REACT_PORTAL_TYPE = Symbol.for("react.portal"),
@@ -14142,7 +14129,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-modern-3aaab92a-20260204"
+      reconcilerVersion: "19.3.0-www-modern-f84ce5a4-20260204"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);

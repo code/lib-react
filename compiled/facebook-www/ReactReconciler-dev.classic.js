@@ -554,7 +554,7 @@ __DEV__ &&
         case 32768:
         case 65536:
         case 131072:
-          return enableParallelTransitions ? lanes & -lanes : lanes & 261888;
+          return lanes & 261888;
         case 262144:
         case 524288:
         case 1048576:
@@ -632,22 +632,6 @@ __DEV__ &&
           ~(root.suspendedLanes & ~root.pingedLanes) &
           renderLanes)
       );
-    }
-    function getEntangledLanes(root, renderLanes) {
-      0 !== (renderLanes & 8) && (renderLanes |= renderLanes & 32);
-      var allEntangledLanes = root.entangledLanes;
-      if (0 !== allEntangledLanes)
-        for (
-          root = root.entanglements, allEntangledLanes &= renderLanes;
-          0 < allEntangledLanes;
-
-        ) {
-          var index = 31 - clz32(allEntangledLanes),
-            lane = 1 << index;
-          renderLanes |= root[index];
-          allEntangledLanes &= ~lane;
-        }
-      return renderLanes;
     }
     function computeExpirationTime(lane, currentTime) {
       switch (lane) {
@@ -13454,7 +13438,6 @@ __DEV__ &&
           case 11:
           case 15:
             if (
-              !enableEffectEventMutationPhase &&
               0 !== (flags & 4) &&
               ((finishedWork = finishedWork.updateQueue),
               (finishedWork =
@@ -14554,17 +14537,6 @@ __DEV__ &&
         case 11:
         case 14:
         case 15:
-          if (
-            enableEffectEventMutationPhase &&
-            flags & 4 &&
-            ((current = finishedWork.updateQueue),
-            (current = null !== current ? current.events : null),
-            null !== current)
-          )
-            for (var ii = 0; ii < current.length; ii++) {
-              var _eventPayloads$ii2 = current[ii];
-              _eventPayloads$ii2.ref.impl = _eventPayloads$ii2.nextImpl;
-            }
           recursivelyTraverseMutationEffects(root, finishedWork, lanes);
           commitReconciliationEffects(finishedWork);
           flags & 4 &&
@@ -14589,17 +14561,17 @@ __DEV__ &&
               safelyDetachRef(current, current.return));
           flags & 64 &&
             offscreenSubtreeIsHidden &&
-            ((root = finishedWork.updateQueue),
-            null !== root &&
-              ((lanes = root.callbacks),
-              null !== lanes &&
-                ((flags = root.shared.hiddenCallbacks),
-                (root.shared.hiddenCallbacks =
-                  null === flags ? lanes : flags.concat(lanes)))));
+            ((current = finishedWork.updateQueue),
+            null !== current &&
+              ((root = current.callbacks),
+              null !== root &&
+                ((lanes = current.shared.hiddenCallbacks),
+                (current.shared.hiddenCallbacks =
+                  null === lanes ? root : lanes.concat(root)))));
           break;
         case 26:
           if (supportsResources) {
-            ii = currentHoistableRoot;
+            var hoistableRoot = currentHoistableRoot;
             recursivelyTraverseMutationEffects(root, finishedWork, lanes);
             commitReconciliationEffects(finishedWork);
             flags & 512 &&
@@ -14613,18 +14585,18 @@ __DEV__ &&
                 ? null === lanes
                   ? null === finishedWork.stateNode
                     ? (finishedWork.stateNode = hydrateHoistable(
-                        ii,
+                        hoistableRoot,
                         finishedWork.type,
                         finishedWork.memoizedProps,
                         finishedWork
                       ))
                     : mountHoistable(
-                        ii,
+                        hoistableRoot,
                         finishedWork.type,
                         finishedWork.stateNode
                       )
                   : (finishedWork.stateNode = acquireResource(
-                      ii,
+                      hoistableRoot,
                       lanes,
                       finishedWork.memoizedProps
                     ))
@@ -14635,11 +14607,15 @@ __DEV__ &&
                       : releaseResource(root),
                     null === lanes
                       ? mountHoistable(
-                          ii,
+                          hoistableRoot,
                           finishedWork.type,
                           finishedWork.stateNode
                         )
-                      : acquireResource(ii, lanes, finishedWork.memoizedProps))
+                      : acquireResource(
+                          hoistableRoot,
+                          lanes,
+                          finishedWork.memoizedProps
+                        ))
                   : null === lanes &&
                     null !== finishedWork.stateNode &&
                     commitHostUpdate(
@@ -14667,10 +14643,10 @@ __DEV__ &&
             break;
           }
         case 5:
-          ii = offscreenDirectParentIsHidden;
+          hoistableRoot = offscreenDirectParentIsHidden;
           offscreenDirectParentIsHidden = !1;
           recursivelyTraverseMutationEffects(root, finishedWork, lanes);
-          offscreenDirectParentIsHidden = ii;
+          offscreenDirectParentIsHidden = hoistableRoot;
           commitReconciliationEffects(finishedWork);
           flags & 512 &&
             (offscreenSubtreeWasHidden ||
@@ -14718,14 +14694,14 @@ __DEV__ &&
                 "This should have a text node initialized. This error is likely caused by a bug in React. Please file an issue."
               );
             root = finishedWork.memoizedProps;
-            lanes = null !== current ? current.memoizedProps : root;
-            flags = finishedWork.stateNode;
+            current = null !== current ? current.memoizedProps : root;
+            lanes = finishedWork.stateNode;
             try {
               runWithFiberInDEV(
                 finishedWork,
                 commitTextUpdate,
-                flags,
                 lanes,
+                current,
                 root
               ),
                 trackHostMutation();
@@ -14735,16 +14711,16 @@ __DEV__ &&
           }
           break;
         case 3:
-          ii = pushNestedEffectDurations();
+          hoistableRoot = pushNestedEffectDurations();
           rootMutationContext = !1;
           enableViewTransition && (viewTransitionMutationContext = !1);
-          supportsResources
-            ? (prepareToCommitHoistables(),
-              (_eventPayloads$ii2 = currentHoistableRoot),
-              (currentHoistableRoot = getHoistableRoot(root.containerInfo)),
-              recursivelyTraverseMutationEffects(root, finishedWork, lanes),
-              (currentHoistableRoot = _eventPayloads$ii2))
-            : recursivelyTraverseMutationEffects(root, finishedWork, lanes);
+          if (supportsResources) {
+            prepareToCommitHoistables();
+            var previousHoistableRoot = currentHoistableRoot;
+            currentHoistableRoot = getHoistableRoot(root.containerInfo);
+            recursivelyTraverseMutationEffects(root, finishedWork, lanes);
+            currentHoistableRoot = previousHoistableRoot;
+          } else recursivelyTraverseMutationEffects(root, finishedWork, lanes);
           commitReconciliationEffects(finishedWork);
           if (flags & 4) {
             if (
@@ -14767,14 +14743,14 @@ __DEV__ &&
                 );
               }
             if (supportsPersistence) {
-              flags = root.containerInfo;
-              current = root.pendingChildren;
+              current = root.containerInfo;
+              flags = root.pendingChildren;
               try {
                 runWithFiberInDEV(
                   finishedWork,
                   replaceContainerChildren,
-                  flags,
-                  current
+                  current,
+                  flags
                 ),
                   trackHostMutation();
               } catch (error) {
@@ -14788,7 +14764,7 @@ __DEV__ &&
           }
           needsFormReset &&
             ((needsFormReset = !1), recursivelyResetForms(finishedWork));
-          root.effectDuration += popNestedEffectDurations(ii);
+          root.effectDuration += popNestedEffectDurations(hoistableRoot);
           popMutationContext(!1);
           rootMutationContext &&
             0 !== (lanes & 34) &&
@@ -14798,21 +14774,21 @@ __DEV__ &&
         case 4:
           current = offscreenDirectParentIsHidden;
           offscreenDirectParentIsHidden = offscreenSubtreeIsHidden;
-          ii = pushMutationContext();
+          hoistableRoot = pushMutationContext();
           supportsResources
-            ? ((_eventPayloads$ii2 = currentHoistableRoot),
+            ? ((previousHoistableRoot = currentHoistableRoot),
               (currentHoistableRoot = getHoistableRoot(
                 finishedWork.stateNode.containerInfo
               )),
               recursivelyTraverseMutationEffects(root, finishedWork, lanes),
               commitReconciliationEffects(finishedWork),
-              (currentHoistableRoot = _eventPayloads$ii2))
+              (currentHoistableRoot = previousHoistableRoot))
             : (recursivelyTraverseMutationEffects(root, finishedWork, lanes),
               commitReconciliationEffects(finishedWork));
           viewTransitionMutationContext &&
             inUpdateViewTransition &&
             (rootViewTransitionAffected = !0);
-          popMutationContext(ii);
+          popMutationContext(hoistableRoot);
           offscreenDirectParentIsHidden = current;
           flags & 4 &&
             supportsPersistence &&
@@ -14823,67 +14799,68 @@ __DEV__ &&
             );
           break;
         case 12:
-          flags = pushNestedEffectDurations();
+          current = pushNestedEffectDurations();
           recursivelyTraverseMutationEffects(root, finishedWork, lanes);
           commitReconciliationEffects(finishedWork);
           finishedWork.stateNode.effectDuration +=
-            bubbleNestedEffectDurations(flags);
+            bubbleNestedEffectDurations(current);
           break;
         case 31:
           recursivelyTraverseMutationEffects(root, finishedWork, lanes);
           commitReconciliationEffects(finishedWork);
           flags & 4 &&
-            ((root = finishedWork.updateQueue),
-            null !== root &&
+            ((current = finishedWork.updateQueue),
+            null !== current &&
               ((finishedWork.updateQueue = null),
-              attachSuspenseRetryListeners(finishedWork, root)));
+              attachSuspenseRetryListeners(finishedWork, current)));
           break;
         case 13:
           recursivelyTraverseMutationEffects(root, finishedWork, lanes);
           commitReconciliationEffects(finishedWork);
           finishedWork.child.flags & 8192 &&
             ((root = null !== finishedWork.memoizedState),
-            (lanes = null !== current && null !== current.memoizedState),
+            (current = null !== current && null !== current.memoizedState),
             alwaysThrottleRetries
-              ? root !== lanes && (globalMostRecentFallbackTime = now$1())
-              : root && !lanes && (globalMostRecentFallbackTime = now$1()));
+              ? root !== current && (globalMostRecentFallbackTime = now$1())
+              : root && !current && (globalMostRecentFallbackTime = now$1()));
           if (flags & 4) {
             try {
               null !== finishedWork.memoizedState &&
-                ((ii = finishedWork.memoizedProps.suspenseCallback),
-                "function" === typeof ii
-                  ? ((_eventPayloads$ii2 = finishedWork.updateQueue),
-                    null !== _eventPayloads$ii2 &&
-                      ii(new Set(_eventPayloads$ii2)))
-                  : void 0 !== ii &&
+                ((hoistableRoot = finishedWork.memoizedProps.suspenseCallback),
+                "function" === typeof hoistableRoot
+                  ? ((previousHoistableRoot = finishedWork.updateQueue),
+                    null !== previousHoistableRoot &&
+                      hoistableRoot(new Set(previousHoistableRoot)))
+                  : void 0 !== hoistableRoot &&
                     console.error("Unexpected type for suspenseCallback."));
             } catch (error) {
               captureCommitPhaseError(finishedWork, finishedWork.return, error);
             }
-            root = finishedWork.updateQueue;
-            null !== root &&
+            current = finishedWork.updateQueue;
+            null !== current &&
               ((finishedWork.updateQueue = null),
-              attachSuspenseRetryListeners(finishedWork, root));
+              attachSuspenseRetryListeners(finishedWork, current));
           }
           break;
         case 22:
-          ii = null !== finishedWork.memoizedState;
-          _eventPayloads$ii2 =
+          hoistableRoot = null !== finishedWork.memoizedState;
+          previousHoistableRoot =
             null !== current && null !== current.memoizedState;
           var prevOffscreenSubtreeIsHidden = offscreenSubtreeIsHidden,
             prevOffscreenSubtreeWasHidden = offscreenSubtreeWasHidden,
             _prevOffscreenDirectParentIsHidden2 = offscreenDirectParentIsHidden;
-          offscreenSubtreeIsHidden = prevOffscreenSubtreeIsHidden || ii;
+          offscreenSubtreeIsHidden =
+            prevOffscreenSubtreeIsHidden || hoistableRoot;
           offscreenDirectParentIsHidden =
-            _prevOffscreenDirectParentIsHidden2 || ii;
+            _prevOffscreenDirectParentIsHidden2 || hoistableRoot;
           offscreenSubtreeWasHidden =
-            prevOffscreenSubtreeWasHidden || _eventPayloads$ii2;
+            prevOffscreenSubtreeWasHidden || previousHoistableRoot;
           recursivelyTraverseMutationEffects(root, finishedWork, lanes);
           offscreenSubtreeWasHidden = prevOffscreenSubtreeWasHidden;
           offscreenDirectParentIsHidden = _prevOffscreenDirectParentIsHidden2;
           offscreenSubtreeIsHidden = prevOffscreenSubtreeIsHidden;
-          _eventPayloads$ii2 &&
-            !ii &&
+          previousHoistableRoot &&
+            !hoistableRoot &&
             !prevOffscreenSubtreeIsHidden &&
             !prevOffscreenSubtreeWasHidden &&
             (finishedWork.mode & 2) !== NoMode &&
@@ -14898,12 +14875,12 @@ __DEV__ &&
           commitReconciliationEffects(finishedWork);
           flags & 8192 &&
             ((root = finishedWork.stateNode),
-            (root._visibility = ii
+            (root._visibility = hoistableRoot
               ? root._visibility & ~OffscreenVisible
               : root._visibility | OffscreenVisible),
-            !ii ||
+            !hoistableRoot ||
               null === current ||
-              _eventPayloads$ii2 ||
+              previousHoistableRoot ||
               offscreenSubtreeIsHidden ||
               offscreenSubtreeWasHidden ||
               (recursivelyTraverseDisappearLayoutEffects(finishedWork),
@@ -14918,24 +14895,24 @@ __DEV__ &&
                   "Disconnect"
                 )),
             supportsMutation &&
-              (ii || !offscreenDirectParentIsHidden) &&
-              hideOrUnhideAllChildren(finishedWork, ii));
+              (hoistableRoot || !offscreenDirectParentIsHidden) &&
+              hideOrUnhideAllChildren(finishedWork, hoistableRoot));
           flags & 4 &&
-            ((root = finishedWork.updateQueue),
-            null !== root &&
-              ((lanes = root.retryQueue),
-              null !== lanes &&
-                ((root.retryQueue = null),
-                attachSuspenseRetryListeners(finishedWork, lanes))));
+            ((current = finishedWork.updateQueue),
+            null !== current &&
+              ((root = current.retryQueue),
+              null !== root &&
+                ((current.retryQueue = null),
+                attachSuspenseRetryListeners(finishedWork, root))));
           break;
         case 19:
           recursivelyTraverseMutationEffects(root, finishedWork, lanes);
           commitReconciliationEffects(finishedWork);
           flags & 4 &&
-            ((root = finishedWork.updateQueue),
-            null !== root &&
+            ((current = finishedWork.updateQueue),
+            null !== current &&
               ((finishedWork.updateQueue = null),
-              attachSuspenseRetryListeners(finishedWork, root)));
+              attachSuspenseRetryListeners(finishedWork, current)));
           break;
         case 30:
           enableViewTransition &&
@@ -14944,12 +14921,12 @@ __DEV__ &&
                 null === current ||
                 safelyDetachRef(current, current.return)),
             (flags = pushMutationContext()),
-            (ii = inUpdateViewTransition),
-            (_eventPayloads$ii2 =
+            (hoistableRoot = inUpdateViewTransition),
+            (previousHoistableRoot =
               enableViewTransition && (lanes & 335544064) === lanes),
             (prevOffscreenSubtreeIsHidden = finishedWork.memoizedProps),
             (inUpdateViewTransition =
-              _eventPayloads$ii2 &&
+              previousHoistableRoot &&
               "none" !==
                 getViewTransitionClassName(
                   prevOffscreenSubtreeIsHidden.default,
@@ -14957,11 +14934,11 @@ __DEV__ &&
                 )),
             recursivelyTraverseMutationEffects(root, finishedWork, lanes),
             commitReconciliationEffects(finishedWork),
-            _eventPayloads$ii2 &&
+            previousHoistableRoot &&
               null !== current &&
               viewTransitionMutationContext &&
               (finishedWork.flags |= 4),
-            (inUpdateViewTransition = ii),
+            (inUpdateViewTransition = hoistableRoot),
             popMutationContext(flags));
           break;
         case 21:
@@ -17468,8 +17445,6 @@ __DEV__ &&
       spawnedLane,
       didAttemptEntireTree
     ) {
-      enableParallelTransitions &&
-        (suspendedLanes = getEntangledLanes(root, suspendedLanes));
       suspendedLanes &= ~workInProgressRootPingedLanes;
       suspendedLanes &= ~workInProgressRootInterleavedUpdatedLanes;
       root.suspendedLanes |= suspendedLanes;
@@ -17890,7 +17865,15 @@ __DEV__ &&
       workInProgressRootRecoverableErrors = workInProgressRootConcurrentErrors =
         null;
       workInProgressRootDidIncludeRecursiveRenderUpdate = !1;
-      entangledRenderLanes = getEntangledLanes(root, lanes);
+      0 !== (lanes & 8) && (lanes |= lanes & 32);
+      endTime = root.entangledLanes;
+      if (0 !== endTime)
+        for (root = root.entanglements, endTime &= lanes; 0 < endTime; )
+          (debugTask = 31 - clz32(endTime)),
+            (color = 1 << debugTask),
+            (lanes |= root[debugTask]),
+            (endTime &= ~color);
+      entangledRenderLanes = lanes;
       finishQueueingConcurrentUpdates();
       root = getCurrentTime();
       1e3 < root - lastResetTime &&
@@ -20263,8 +20246,6 @@ __DEV__ &&
         dynamicFeatureFlags.disableLegacyContextForFunctionComponents,
       disableSchedulerTimeoutInWorkLoop =
         dynamicFeatureFlags.disableSchedulerTimeoutInWorkLoop,
-      enableEffectEventMutationPhase =
-        dynamicFeatureFlags.enableEffectEventMutationPhase,
       enableHiddenSubtreeInsertionEffectCleanup =
         dynamicFeatureFlags.enableHiddenSubtreeInsertionEffectCleanup,
       enableInfiniteRenderLoopDetection =
@@ -20279,7 +20260,6 @@ __DEV__ &&
         dynamicFeatureFlags.transitionLaneExpirationMs,
       enableViewTransition = dynamicFeatureFlags.enableViewTransition,
       enableFragmentRefs = dynamicFeatureFlags.enableFragmentRefs,
-      enableParallelTransitions = dynamicFeatureFlags.enableParallelTransitions,
       enableSchedulingProfiler = dynamicFeatureFlags.enableSchedulingProfiler,
       REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"),
       REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"),
@@ -23053,7 +23033,7 @@ __DEV__ &&
         version: rendererVersion,
         rendererPackageName: rendererPackageName,
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-3aaab92a-20260204"
+        reconcilerVersion: "19.3.0-www-classic-f84ce5a4-20260204"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
