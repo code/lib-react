@@ -5995,12 +5995,6 @@ function updateSuspenseListComponent(current, workInProgress, renderLanes) {
   }
   return workInProgress.child;
 }
-function updateContextProvider(current, workInProgress, renderLanes) {
-  var newProps = workInProgress.pendingProps;
-  pushProvider(workInProgress, workInProgress.type, newProps.value);
-  reconcileChildren(current, workInProgress, newProps.children, renderLanes);
-  return workInProgress.child;
-}
 function bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes) {
   null !== current && (workInProgress.dependencies = current.dependencies);
   workInProgressRootSkippedLanes |= workInProgress.lanes;
@@ -6235,15 +6229,6 @@ function beginWork(current, workInProgress, renderLanes) {
                 renderLanes
               );
               break a;
-            } else if ($$typeof === REACT_CONTEXT_TYPE) {
-              workInProgress.tag = 10;
-              workInProgress.type = current;
-              workInProgress = updateContextProvider(
-                null,
-                workInProgress,
-                renderLanes
-              );
-              break a;
             }
           }
           workInProgress = getComponentNameFromType(current) || current;
@@ -6391,7 +6376,12 @@ function beginWork(current, workInProgress, renderLanes) {
         workInProgress.child
       );
     case 10:
-      return updateContextProvider(current, workInProgress, renderLanes);
+      return (
+        (props = workInProgress.pendingProps),
+        pushProvider(workInProgress, workInProgress.type, props.value),
+        reconcileChildren(current, workInProgress, props.children, renderLanes),
+        workInProgress.child
+      );
     case 9:
       return (
         ($$typeof = workInProgress.type._context),
@@ -11564,24 +11554,24 @@ var slice = Array.prototype.slice,
     };
     return Text;
   })(React.Component);
-var internals$jscomp$inline_1636 = {
+var internals$jscomp$inline_1645 = {
   bundleType: 0,
-  version: "19.3.0-www-classic-cd0c4879-20260203",
+  version: "19.3.0-www-classic-748ee74e-20260203",
   rendererPackageName: "react-art",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-classic-cd0c4879-20260203"
+  reconcilerVersion: "19.3.0-www-classic-748ee74e-20260203"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1637 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1646 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1637.isDisabled &&
-    hook$jscomp$inline_1637.supportsFiber
+    !hook$jscomp$inline_1646.isDisabled &&
+    hook$jscomp$inline_1646.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1637.inject(
-        internals$jscomp$inline_1636
+      (rendererID = hook$jscomp$inline_1646.inject(
+        internals$jscomp$inline_1645
       )),
-        (injectedHook = hook$jscomp$inline_1637);
+        (injectedHook = hook$jscomp$inline_1646);
     } catch (err) {}
 }
 var Path = Mode$1.Path;
@@ -11595,4 +11585,4 @@ exports.RadialGradient = RadialGradient;
 exports.Shape = TYPES.SHAPE;
 exports.Surface = Surface;
 exports.Text = Text;
-exports.version = "19.3.0-www-classic-cd0c4879-20260203";
+exports.version = "19.3.0-www-classic-748ee74e-20260203";

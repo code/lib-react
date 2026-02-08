@@ -5920,12 +5920,6 @@ module.exports = function ($$$config) {
     }
     return workInProgress.child;
   }
-  function updateContextProvider(current, workInProgress, renderLanes) {
-    var newProps = workInProgress.pendingProps;
-    pushProvider(workInProgress, workInProgress.type, newProps.value);
-    reconcileChildren(current, workInProgress, newProps.children, renderLanes);
-    return workInProgress.child;
-  }
   function bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes) {
     null !== current && (workInProgress.dependencies = current.dependencies);
     workInProgressRootSkippedLanes |= workInProgress.lanes;
@@ -6169,15 +6163,6 @@ module.exports = function ($$$config) {
                   workInProgress,
                   current,
                   props,
-                  renderLanes
-                );
-                break a;
-              } else if ($$typeof === REACT_CONTEXT_TYPE) {
-                workInProgress.tag = 10;
-                workInProgress.type = current;
-                workInProgress = updateContextProvider(
-                  null,
-                  workInProgress,
                   renderLanes
                 );
                 break a;
@@ -6487,7 +6472,17 @@ module.exports = function ($$$config) {
           workInProgress.child
         );
       case 10:
-        return updateContextProvider(current, workInProgress, renderLanes);
+        return (
+          (props = workInProgress.pendingProps),
+          pushProvider(workInProgress, workInProgress.type, props.value),
+          reconcileChildren(
+            current,
+            workInProgress,
+            props.children,
+            renderLanes
+          ),
+          workInProgress.child
+        );
       case 9:
         return (
           ($$typeof = workInProgress.type._context),
@@ -14412,7 +14407,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-classic-cd0c4879-20260203"
+      reconcilerVersion: "19.3.0-www-classic-748ee74e-20260203"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);
