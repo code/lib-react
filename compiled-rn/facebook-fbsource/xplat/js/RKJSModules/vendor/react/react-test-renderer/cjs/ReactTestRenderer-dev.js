@@ -7,13 +7,13 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<a01a6bc4e4d1e8beedda21ee8e854bab>>
+ * @generated SignedSource<<af37bfff25b0ed7ffd5383fad74ea500>>
  */
 
 "use strict";
 __DEV__ &&
   (function () {
-    function JSCompiler_object_inline_createNodeMock_1160() {
+    function JSCompiler_object_inline_createNodeMock_1151() {
       return null;
     }
     function findHook(fiber, id) {
@@ -2570,6 +2570,24 @@ __DEV__ &&
             )),
           thenable.then(noop, noop),
           (thenable = index));
+      if (void 0 === thenable._debugInfo) {
+        thenableState = performance.now();
+        trackedThenables = thenable.displayName;
+        var ioInfo = {
+          name:
+            "string" === typeof trackedThenables ? trackedThenables : "Promise",
+          start: thenableState,
+          end: thenableState,
+          value: thenable
+        };
+        thenable._debugInfo = [{ awaited: ioInfo }];
+        "fulfilled" !== thenable.status &&
+          "rejected" !== thenable.status &&
+          ((thenableState = function () {
+            ioInfo.end = performance.now();
+          }),
+          thenable.then(thenableState, thenableState));
+      }
       switch (thenable.status) {
         case "fulfilled":
           return thenable.value;
@@ -7926,6 +7944,25 @@ __DEV__ &&
         }
       return workInProgress.child;
     }
+    function updateContextProvider(current, workInProgress, renderLanes) {
+      var context = workInProgress.type,
+        newProps = workInProgress.pendingProps,
+        newValue = newProps.value;
+      "value" in newProps ||
+        hasWarnedAboutUsingNoValuePropOnContextProvider ||
+        ((hasWarnedAboutUsingNoValuePropOnContextProvider = !0),
+        console.error(
+          "The `value` prop is required for the `<Context.Provider>`. Did you misspell it or forget to pass it?"
+        ));
+      pushProvider(workInProgress, context, newValue);
+      reconcileChildren(
+        current,
+        workInProgress,
+        newProps.children,
+        renderLanes
+      );
+      return workInProgress.child;
+    }
     function resetSuspendedCurrentOnMountInLegacyMode(current, workInProgress) {
       0 === (workInProgress.mode & 1) &&
         null !== current &&
@@ -8229,6 +8266,15 @@ __DEV__ &&
                   renderLanes
                 );
                 break a;
+              } else if (prevSibling === REACT_CONTEXT_TYPE) {
+                workInProgress.tag = 10;
+                workInProgress.type = current;
+                workInProgress = updateContextProvider(
+                  null,
+                  workInProgress,
+                  renderLanes
+                );
+                break a;
               }
             workInProgress = "";
             null !== current &&
@@ -8398,25 +8444,7 @@ __DEV__ &&
             workInProgress.child
           );
         case 10:
-          return (
-            (returnFiber = workInProgress.type),
-            (prevSibling = workInProgress.pendingProps),
-            (nextProps = prevSibling.value),
-            "value" in prevSibling ||
-              hasWarnedAboutUsingNoValuePropOnContextProvider ||
-              ((hasWarnedAboutUsingNoValuePropOnContextProvider = !0),
-              console.error(
-                "The `value` prop is required for the `<Context.Provider>`. Did you misspell it or forget to pass it?"
-              )),
-            pushProvider(workInProgress, returnFiber, nextProps),
-            reconcileChildren(
-              current,
-              workInProgress,
-              prevSibling.children,
-              renderLanes
-            ),
-            workInProgress.child
-          );
+          return updateContextProvider(current, workInProgress, renderLanes);
         case 9:
           return (
             (prevSibling = workInProgress.type._context),
@@ -16110,10 +16138,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-748ee74e-20260203",
+        version: "19.3.0-native-fb-3ce1316b-20260203",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-748ee74e-20260203"
+        reconcilerVersion: "19.3.0-native-fb-3ce1316b-20260203"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -16136,7 +16164,7 @@ __DEV__ &&
     exports._Scheduler = Scheduler;
     exports.act = act;
     exports.create = function (element, options) {
-      var createNodeMock = JSCompiler_object_inline_createNodeMock_1160,
+      var createNodeMock = JSCompiler_object_inline_createNodeMock_1151,
         isConcurrent = !1,
         isStrictMode = !1;
       "object" === typeof options &&
@@ -16259,5 +16287,5 @@ __DEV__ &&
             flushSyncWorkAcrossRoots_impl(0, !0));
       }
     };
-    exports.version = "19.3.0-native-fb-748ee74e-20260203";
+    exports.version = "19.3.0-native-fb-3ce1316b-20260203";
   })();

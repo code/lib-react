@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<8c0b081d63c7ea357d905951bfe769be>>
+ * @generated SignedSource<<e12e9670fec3bea0267e2456382dc614>>
  */
 
 "use strict";
@@ -2026,6 +2026,11 @@ __DEV__ &&
           break;
         }
     }
+    function readReactElementTypeof(value) {
+      return "$$typeof" in value && hasOwnProperty.call(value, "$$typeof")
+        ? value.$$typeof
+        : void 0;
+    }
     function addValueToProperties(
       propertyName,
       value,
@@ -2039,7 +2044,7 @@ __DEV__ &&
             value = "null";
             break;
           } else {
-            if (value.$$typeof === REACT_ELEMENT_TYPE) {
+            if (readReactElementTypeof(value) === REACT_ELEMENT_TYPE) {
               var typeName = getComponentNameFromType(value.type) || "\u2026",
                 key = value.key;
               value = value.props;
@@ -2267,9 +2272,10 @@ __DEV__ &&
                 "object" === typeof nextValue &&
                 null !== key &&
                 null !== nextValue &&
-                key.$$typeof === nextValue.$$typeof
+                readReactElementTypeof(key) ===
+                  readReactElementTypeof(nextValue)
               )
-                if (nextValue.$$typeof === REACT_ELEMENT_TYPE) {
+                if (readReactElementTypeof(nextValue) === REACT_ELEMENT_TYPE) {
                   if (
                     key.type === nextValue.type &&
                     key.key === nextValue.key
@@ -4074,6 +4080,24 @@ __DEV__ &&
             )),
           thenable.then(noop, noop),
           (thenable = index));
+      if (void 0 === thenable._debugInfo) {
+        thenableState = performance.now();
+        trackedThenables = thenable.displayName;
+        var ioInfo = {
+          name:
+            "string" === typeof trackedThenables ? trackedThenables : "Promise",
+          start: thenableState,
+          end: thenableState,
+          value: thenable
+        };
+        thenable._debugInfo = [{ awaited: ioInfo }];
+        "fulfilled" !== thenable.status &&
+          "rejected" !== thenable.status &&
+          ((thenableState = function () {
+            ioInfo.end = performance.now();
+          }),
+          thenable.then(thenableState, thenableState));
+      }
       switch (thenable.status) {
         case "fulfilled":
           return thenable.value;
@@ -9408,6 +9432,25 @@ __DEV__ &&
         }
       return workInProgress.child;
     }
+    function updateContextProvider(current, workInProgress, renderLanes) {
+      var context = workInProgress.type,
+        newProps = workInProgress.pendingProps,
+        newValue = newProps.value;
+      "value" in newProps ||
+        hasWarnedAboutUsingNoValuePropOnContextProvider ||
+        ((hasWarnedAboutUsingNoValuePropOnContextProvider = !0),
+        console.error(
+          "The `value` prop is required for the `<Context.Provider>`. Did you misspell it or forget to pass it?"
+        ));
+      pushProvider(workInProgress, context, newValue);
+      reconcileChildren(
+        current,
+        workInProgress,
+        newProps.children,
+        renderLanes
+      );
+      return workInProgress.child;
+    }
     function resetSuspendedCurrentOnMountInLegacyMode(current, workInProgress) {
       0 === (workInProgress.mode & 1) &&
         null !== current &&
@@ -9711,6 +9754,15 @@ __DEV__ &&
                   renderLanes
                 );
                 break a;
+              } else if (prevSibling === REACT_CONTEXT_TYPE) {
+                workInProgress.tag = 10;
+                workInProgress.type = current;
+                workInProgress = updateContextProvider(
+                  null,
+                  workInProgress,
+                  renderLanes
+                );
+                break a;
               }
             workInProgress = "";
             null !== current &&
@@ -9882,25 +9934,7 @@ __DEV__ &&
             workInProgress.child
           );
         case 10:
-          return (
-            (returnFiber = workInProgress.type),
-            (prevSibling = workInProgress.pendingProps),
-            (nextProps = prevSibling.value),
-            "value" in prevSibling ||
-              hasWarnedAboutUsingNoValuePropOnContextProvider ||
-              ((hasWarnedAboutUsingNoValuePropOnContextProvider = !0),
-              console.error(
-                "The `value` prop is required for the `<Context.Provider>`. Did you misspell it or forget to pass it?"
-              )),
-            pushProvider(workInProgress, returnFiber, nextProps),
-            reconcileChildren(
-              current,
-              workInProgress,
-              prevSibling.children,
-              renderLanes
-            ),
-            workInProgress.child
-          );
+          return updateContextProvider(current, workInProgress, renderLanes);
         case 9:
           return (
             (prevSibling = workInProgress.type._context),
@@ -20096,10 +20130,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-748ee74e-20260203",
+        version: "19.3.0-native-fb-3ce1316b-20260203",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-748ee74e-20260203"
+        reconcilerVersion: "19.3.0-native-fb-3ce1316b-20260203"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);

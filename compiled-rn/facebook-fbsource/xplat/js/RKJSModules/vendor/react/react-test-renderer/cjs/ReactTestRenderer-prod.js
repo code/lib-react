@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<9ad6ca00d7148a906f409a423e4f6ff4>>
+ * @generated SignedSource<<12e9904a7cd43419b0c4c15c70038584>>
  */
 
 "use strict";
@@ -5647,6 +5647,12 @@ function updateSuspenseListComponent(current, workInProgress, renderLanes) {
     }
   return workInProgress.child;
 }
+function updateContextProvider(current, workInProgress, renderLanes) {
+  var newProps = workInProgress.pendingProps;
+  pushProvider(workInProgress, workInProgress.type, newProps.value);
+  reconcileChildren(current, workInProgress, newProps.children, renderLanes);
+  return workInProgress.child;
+}
 function resetSuspendedCurrentOnMountInLegacyMode(current, workInProgress) {
   0 === (workInProgress.mode & 1) &&
     null !== current &&
@@ -5871,6 +5877,15 @@ function beginWork(current, workInProgress, renderLanes) {
               renderLanes
             );
             break a;
+          } else if ($$typeof === REACT_CONTEXT_TYPE) {
+            workInProgress.tag = 10;
+            workInProgress.type = elementType;
+            workInProgress = updateContextProvider(
+              null,
+              workInProgress,
+              renderLanes
+            );
+            break a;
           }
         }
         workInProgress = getComponentNameFromType(elementType) || elementType;
@@ -6019,17 +6034,7 @@ function beginWork(current, workInProgress, renderLanes) {
         workInProgress.child
       );
     case 10:
-      return (
-        (elementType = workInProgress.pendingProps),
-        pushProvider(workInProgress, workInProgress.type, elementType.value),
-        reconcileChildren(
-          current,
-          workInProgress,
-          elementType.children,
-          renderLanes
-        ),
-        workInProgress.child
-      );
+      return updateContextProvider(current, workInProgress, renderLanes);
     case 9:
       return (
         ($$typeof = workInProgress.type._context),
@@ -10192,24 +10197,24 @@ function wrapFiber(fiber) {
     fiberToWrapper.set(fiber, wrapper));
   return wrapper;
 }
-var internals$jscomp$inline_1490 = {
+var internals$jscomp$inline_1481 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-748ee74e-20260203",
+  version: "19.3.0-native-fb-3ce1316b-20260203",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-748ee74e-20260203"
+  reconcilerVersion: "19.3.0-native-fb-3ce1316b-20260203"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1491 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1482 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1491.isDisabled &&
-    hook$jscomp$inline_1491.supportsFiber
+    !hook$jscomp$inline_1482.isDisabled &&
+    hook$jscomp$inline_1482.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1491.inject(
-        internals$jscomp$inline_1490
+      (rendererID = hook$jscomp$inline_1482.inject(
+        internals$jscomp$inline_1481
       )),
-        (injectedHook = hook$jscomp$inline_1491);
+        (injectedHook = hook$jscomp$inline_1482);
     } catch (err) {}
 }
 exports._Scheduler = Scheduler;
@@ -10333,4 +10338,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.3.0-native-fb-748ee74e-20260203";
+exports.version = "19.3.0-native-fb-3ce1316b-20260203";
