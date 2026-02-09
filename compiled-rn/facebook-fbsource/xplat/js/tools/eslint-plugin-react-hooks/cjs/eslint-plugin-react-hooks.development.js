@@ -12,7 +12,7 @@
  * @lightSyntaxTransform
  * @preventMunge
  * @oncall react_core
- * @generated SignedSource<<c7707934356b5add5065c05b16782693>>
+ * @generated SignedSource<<0a1c7b83185390f237a6237c40208b58>>
  */
 
 'use strict';
@@ -341,7 +341,7 @@ const rule$1 = {
             const optionalChains = new Map();
             gatherDependenciesRecursively(scope);
             function gatherDependenciesRecursively(currentScope) {
-                var _a, _b, _c, _d, _e;
+                var _a, _b, _c, _d, _e, _f;
                 for (const reference of currentScope.references) {
                     if (!reference.resolved) {
                         continue;
@@ -379,7 +379,8 @@ const rule$1 = {
                     if (def.node != null && def.node.init === node.parent) {
                         continue;
                     }
-                    if (def.type === 'TypeParameter') {
+                    if (def.type === 'TypeParameter' ||
+                        ((_e = dependencyNode.parent) === null || _e === void 0 ? void 0 : _e.type) === 'GenericTypeAnnotation') {
                         continue;
                     }
                     if (!dependencies.has(dependency)) {
@@ -392,7 +393,7 @@ const rule$1 = {
                         });
                     }
                     else {
-                        (_e = dependencies.get(dependency)) === null || _e === void 0 ? void 0 : _e.references.push(reference);
+                        (_f = dependencies.get(dependency)) === null || _f === void 0 ? void 0 : _f.references.push(reference);
                     }
                 }
                 for (const childScope of currentScope.childScopes) {
@@ -19128,7 +19129,8 @@ function printTerminal(terminal) {
             break;
         }
         case 'maybe-throw': {
-            value = `[${terminal.id}] MaybeThrow continuation=bb${terminal.continuation} handler=bb${terminal.handler}`;
+            const handlerStr = terminal.handler !== null ? `bb${terminal.handler}` : '(none)';
+            value = `[${terminal.id}] MaybeThrow continuation=bb${terminal.continuation} handler=${handlerStr}`;
             if (terminal.effects != null) {
                 value += `\n    ${terminal.effects.map(printAliasingEffect).join('\n    ')}`;
             }
@@ -20530,7 +20532,7 @@ function mapTerminalSuccessors(terminal, fn) {
         }
         case 'maybe-throw': {
             const continuation = fn(terminal.continuation);
-            const handler = fn(terminal.handler);
+            const handler = terminal.handler !== null ? fn(terminal.handler) : null;
             return {
                 kind: 'maybe-throw',
                 continuation,
@@ -20681,7 +20683,9 @@ function* eachTerminalSuccessor(terminal) {
         }
         case 'maybe-throw': {
             yield terminal.continuation;
-            yield terminal.handler;
+            if (terminal.handler !== null) {
+                yield terminal.handler;
+            }
             break;
         }
         case 'try': {
@@ -34222,13 +34226,7 @@ function pruneMaybeThrowsImpl(fn) {
         if (!canThrow) {
             const source = (_a = terminalMapping.get(block.id)) !== null && _a !== void 0 ? _a : block.id;
             terminalMapping.set(terminal.continuation, source);
-            block.terminal = {
-                kind: 'goto',
-                block: terminal.continuation,
-                variant: GotoVariant.Break,
-                id: terminal.id,
-                loc: terminal.loc,
-            };
+            terminal.handler = null;
         }
     }
     return terminalMapping.size > 0 ? terminalMapping : null;
@@ -35422,6 +35420,31 @@ class Driver {
         };
         return { block: blockId, place, value: sequence, id: instr.id };
     }
+    valueBlockResultToSequence(result, loc) {
+        const instructions = [];
+        let innerValue = result.value;
+        while (innerValue.kind === 'SequenceExpression') {
+            instructions.push(...innerValue.instructions);
+            innerValue = innerValue.value;
+        }
+        const isLoadOfSamePlace = innerValue.kind === 'LoadLocal' &&
+            innerValue.place.identifier.id === result.place.identifier.id;
+        if (!isLoadOfSamePlace) {
+            instructions.push({
+                id: result.id,
+                lvalue: result.place,
+                value: innerValue,
+                loc,
+            });
+        }
+        return {
+            kind: 'SequenceExpression',
+            instructions,
+            id: result.id,
+            value: { kind: 'Primitive', value: undefined, loc },
+            loc,
+        };
+    }
     traverseBlock(block) {
         const blockValue = [];
         this.visitBlock(block, blockValue);
@@ -35674,30 +35697,7 @@ class Driver {
                 const scheduleId = this.cx.scheduleLoop(terminal.fallthrough, (_a = terminal.update) !== null && _a !== void 0 ? _a : terminal.test, terminal.loop);
                 scheduleIds.push(scheduleId);
                 const init = this.visitValueBlock(terminal.init, terminal.loc);
-                const initBlock = this.cx.ir.blocks.get(init.block);
-                let initValue = init.value;
-                if (initValue.kind === 'SequenceExpression') {
-                    const last = initBlock.instructions.at(-1);
-                    initValue.instructions.push(last);
-                    initValue.value = {
-                        kind: 'Primitive',
-                        value: undefined,
-                        loc: terminal.loc,
-                    };
-                }
-                else {
-                    initValue = {
-                        kind: 'SequenceExpression',
-                        instructions: [initBlock.instructions.at(-1)],
-                        id: terminal.id,
-                        loc: terminal.loc,
-                        value: {
-                            kind: 'Primitive',
-                            value: undefined,
-                            loc: terminal.loc,
-                        },
-                    };
-                }
+                const initValue = this.valueBlockResultToSequence(init, terminal.loc);
                 const testValue = this.visitValueBlock(terminal.test, terminal.loc).value;
                 const updateValue = terminal.update !== null
                     ? this.visitValueBlock(terminal.update, terminal.loc).value
@@ -35742,55 +35742,9 @@ class Driver {
                 const scheduleId = this.cx.scheduleLoop(terminal.fallthrough, terminal.init, terminal.loop);
                 scheduleIds.push(scheduleId);
                 const init = this.visitValueBlock(terminal.init, terminal.loc);
-                const initBlock = this.cx.ir.blocks.get(init.block);
-                let initValue = init.value;
-                if (initValue.kind === 'SequenceExpression') {
-                    const last = initBlock.instructions.at(-1);
-                    initValue.instructions.push(last);
-                    initValue.value = {
-                        kind: 'Primitive',
-                        value: undefined,
-                        loc: terminal.loc,
-                    };
-                }
-                else {
-                    initValue = {
-                        kind: 'SequenceExpression',
-                        instructions: [initBlock.instructions.at(-1)],
-                        id: terminal.id,
-                        loc: terminal.loc,
-                        value: {
-                            kind: 'Primitive',
-                            value: undefined,
-                            loc: terminal.loc,
-                        },
-                    };
-                }
+                const initValue = this.valueBlockResultToSequence(init, terminal.loc);
                 const test = this.visitValueBlock(terminal.test, terminal.loc);
-                const testBlock = this.cx.ir.blocks.get(test.block);
-                let testValue = test.value;
-                if (testValue.kind === 'SequenceExpression') {
-                    const last = testBlock.instructions.at(-1);
-                    testValue.instructions.push(last);
-                    testValue.value = {
-                        kind: 'Primitive',
-                        value: undefined,
-                        loc: terminal.loc,
-                    };
-                }
-                else {
-                    testValue = {
-                        kind: 'SequenceExpression',
-                        instructions: [testBlock.instructions.at(-1)],
-                        id: terminal.id,
-                        loc: terminal.loc,
-                        value: {
-                            kind: 'Primitive',
-                            value: undefined,
-                            loc: terminal.loc,
-                        },
-                    };
-                }
+                const testValue = this.valueBlockResultToSequence(test, terminal.loc);
                 let loopBody;
                 if (loopId) {
                     loopBody = this.traverseBlock(this.cx.ir.blocks.get(loopId));
@@ -35830,30 +35784,7 @@ class Driver {
                 const scheduleId = this.cx.scheduleLoop(terminal.fallthrough, terminal.init, terminal.loop);
                 scheduleIds.push(scheduleId);
                 const init = this.visitValueBlock(terminal.init, terminal.loc);
-                const initBlock = this.cx.ir.blocks.get(init.block);
-                let initValue = init.value;
-                if (initValue.kind === 'SequenceExpression') {
-                    const last = initBlock.instructions.at(-1);
-                    initValue.instructions.push(last);
-                    initValue.value = {
-                        kind: 'Primitive',
-                        value: undefined,
-                        loc: terminal.loc,
-                    };
-                }
-                else {
-                    initValue = {
-                        kind: 'SequenceExpression',
-                        instructions: [initBlock.instructions.at(-1)],
-                        id: terminal.id,
-                        loc: terminal.loc,
-                        value: {
-                            kind: 'Primitive',
-                            value: undefined,
-                            loc: terminal.loc,
-                        },
-                    };
-                }
+                const initValue = this.valueBlockResultToSequence(init, terminal.loc);
                 let loopBody;
                 if (loopId) {
                     loopBody = this.traverseBlock(this.cx.ir.blocks.get(loopId));
@@ -39722,7 +39653,7 @@ function inferBlock(context, state, block) {
     if (terminal.kind === 'try' && terminal.handlerBinding != null) {
         context.catchHandlers.set(terminal.handler, terminal.handlerBinding);
     }
-    else if (terminal.kind === 'maybe-throw') {
+    else if (terminal.kind === 'maybe-throw' && terminal.handler !== null) {
         const handlerParam = context.catchHandlers.get(terminal.handler);
         if (handlerParam != null) {
             CompilerError.invariant(state.kind(handlerParam) != null, {
@@ -49605,7 +49536,7 @@ function validateNoSetStateInEffects(fn, env) {
                 case 'MethodCall':
                 case 'CallExpression': {
                     const callee = instr.value.kind === 'MethodCall'
-                        ? instr.value.receiver
+                        ? instr.value.property
                         : instr.value.callee;
                     if (isUseEffectEventType(callee.identifier)) {
                         const arg = instr.value.args[0];
