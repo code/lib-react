@@ -352,9 +352,7 @@ __DEV__ &&
         case 8:
           return type === REACT_STRICT_MODE_TYPE ? "StrictMode" : "Mode";
         case 22:
-          if (null !== fiber.return)
-            return getComponentNameFromFiber(fiber.return);
-          break;
+          return "Offscreen";
         case 12:
           return "Profiler";
         case 21:
@@ -15821,10 +15819,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-www-classic-8374c2ab-20260211",
+        version: "19.3.0-www-classic-e49335e9-20260211",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-8374c2ab-20260211"
+        reconcilerVersion: "19.3.0-www-classic-e49335e9-20260211"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -15960,5 +15958,5 @@ __DEV__ &&
     exports.unstable_batchedUpdates = function (fn, a) {
       return fn(a);
     };
-    exports.version = "19.3.0-www-classic-8374c2ab-20260211";
+    exports.version = "19.3.0-www-classic-e49335e9-20260211";
   })();

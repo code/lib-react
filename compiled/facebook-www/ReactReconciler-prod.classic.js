@@ -252,9 +252,7 @@ module.exports = function ($$$config) {
       case 8:
         return type === REACT_STRICT_MODE_TYPE ? "StrictMode" : "Mode";
       case 22:
-        if (null !== fiber.return)
-          return getComponentNameFromFiber(fiber.return);
-        break;
+        return "Offscreen";
       case 12:
         return "Profiler";
       case 21:
@@ -7986,7 +7984,7 @@ module.exports = function ($$$config) {
   }
   function commitNewChildToFragmentInstances(fiber, parentFragmentInstances) {
     if (
-      (5 === fiber.tag || (enableFragmentRefsTextNodes && 6 === fiber.tag)) &&
+      5 === fiber.tag &&
       null === fiber.alternate &&
       null !== parentFragmentInstances
     )
@@ -9212,8 +9210,7 @@ module.exports = function ($$$config) {
         offscreenSubtreeWasHidden ||
           safelyDetachRef(deletedFiber, nearestMountedAncestor),
           enableFragmentRefs &&
-            (5 === deletedFiber.tag ||
-              (enableFragmentRefsTextNodes && 6 === deletedFiber.tag)) &&
+            5 === deletedFiber.tag &&
             commitFragmentInstanceDeletionEffects(deletedFiber);
       case 6:
         if (supportsMutation) {
@@ -10100,8 +10097,7 @@ module.exports = function ($$$config) {
         case 5:
           safelyDetachRef(finishedWork, finishedWork.return);
           enableFragmentRefs &&
-            (5 === finishedWork.tag ||
-              (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
+            5 === finishedWork.tag &&
             commitFragmentInstanceDeletionEffects(finishedWork);
           recursivelyTraverseDisappearLayoutEffects(finishedWork);
           break;
@@ -13194,8 +13190,6 @@ module.exports = function ($$$config) {
     transitionLaneExpirationMs = dynamicFeatureFlags.transitionLaneExpirationMs,
     enableViewTransition = dynamicFeatureFlags.enableViewTransition,
     enableFragmentRefs = dynamicFeatureFlags.enableFragmentRefs,
-    enableFragmentRefsTextNodes =
-      dynamicFeatureFlags.enableFragmentRefsTextNodes,
     enableParallelTransitions = dynamicFeatureFlags.enableParallelTransitions,
     REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"),
     REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"),
@@ -14431,7 +14425,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-classic-8374c2ab-20260211"
+      reconcilerVersion: "19.3.0-www-classic-e49335e9-20260211"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);
