@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<4312e6f2e94aa48d8c3f55c1b2af9d0f>>
+ * @generated SignedSource<<97642994f723dfbc5d794201ab8a0f56>>
  */
 
 "use strict";
@@ -592,9 +592,7 @@ __DEV__ &&
         case 8:
           return type === REACT_STRICT_MODE_TYPE ? "StrictMode" : "Mode";
         case 22:
-          if (null !== fiber.return)
-            return getComponentNameFromFiber(fiber.return);
-          break;
+          return "Offscreen";
         case 12:
           return "Profiler";
         case 21:
@@ -11512,13 +11510,11 @@ __DEV__ &&
     function commitFragmentInstanceDeletionEffects(fiber) {
       for (var parent = fiber.return; null !== parent; ) {
         if (isFragmentInstanceParent(parent)) {
-          var childInstance = fiber.stateNode,
-            fragmentInstance = parent.stateNode;
-          (enableFragmentRefsTextNodes && null == childInstance.canonical) ||
-            ((childInstance = getPublicInstance(childInstance)),
-            enableFragmentRefsInstanceHandles &&
-              null != childInstance.unstable_reactFragments &&
-              childInstance.unstable_reactFragments.delete(fragmentInstance));
+          var fragmentInstance = parent.stateNode,
+            publicInstance = getPublicInstance(fiber.stateNode);
+          enableFragmentRefsInstanceHandles &&
+            null != publicInstance.unstable_reactFragments &&
+            publicInstance.unstable_reactFragments.delete(fragmentInstance);
         }
         if (isHostParent(parent)) break;
         parent = parent.return;
@@ -11558,8 +11554,7 @@ __DEV__ &&
       if (enableFragmentRefs)
         if (5 === finishedWork.tag) {
           if (
-            (5 === finishedWork.tag ||
-              (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
+            5 === finishedWork.tag &&
             null === finishedWork.alternate &&
             null !== parentFragmentInstances
           )
@@ -11991,8 +11986,7 @@ __DEV__ &&
           offscreenSubtreeWasHidden ||
             safelyDetachRef(deletedFiber, nearestMountedAncestor),
             enableFragmentRefs &&
-              (5 === deletedFiber.tag ||
-                (enableFragmentRefsTextNodes && 6 === deletedFiber.tag)) &&
+              5 === deletedFiber.tag &&
               commitFragmentInstanceDeletionEffects(deletedFiber);
         case 6:
           recursivelyTraverseDeletionEffects(
@@ -12514,8 +12508,7 @@ __DEV__ &&
         case 5:
           safelyDetachRef(finishedWork, finishedWork.return);
           enableFragmentRefs &&
-            (5 === finishedWork.tag ||
-              (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
+            5 === finishedWork.tag &&
             commitFragmentInstanceDeletionEffects(finishedWork);
           recursivelyTraverseDisappearLayoutEffects(finishedWork);
           break;
@@ -17043,20 +17036,16 @@ __DEV__ &&
         instance.unstable_reactFragments.add(fragmentInstance));
     }
     function commitNewChildToFragmentInstance(childInstance, fragmentInstance) {
-      if (!enableFragmentRefsTextNodes || null != childInstance.canonical) {
-        var publicInstance = getPublicInstance(childInstance);
-        if (null !== fragmentInstance._observers) {
-          if (null == publicInstance)
-            throw Error(
-              "Expected to find a host node. This is a bug in React."
-            );
-          fragmentInstance._observers.forEach(function (observer) {
-            observer.observe(publicInstance);
-          });
-        }
-        enableFragmentRefsInstanceHandles &&
-          addFragmentHandleToInstance(publicInstance, fragmentInstance);
+      var publicInstance = getPublicInstance(childInstance);
+      if (null !== fragmentInstance._observers) {
+        if (null == publicInstance)
+          throw Error("Expected to find a host node. This is a bug in React.");
+        fragmentInstance._observers.forEach(function (observer) {
+          observer.observe(publicInstance);
+        });
       }
+      enableFragmentRefsInstanceHandles &&
+        addFragmentHandleToInstance(publicInstance, fragmentInstance);
     }
     function nativeOnUncaughtError(error, errorInfo) {
       !1 !==
@@ -20147,10 +20136,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-8374c2ab-20260211",
+        version: "19.3.0-native-fb-e49335e9-20260211",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-8374c2ab-20260211"
+        reconcilerVersion: "19.3.0-native-fb-e49335e9-20260211"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
