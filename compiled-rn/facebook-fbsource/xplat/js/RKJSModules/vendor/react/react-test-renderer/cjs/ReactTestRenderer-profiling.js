@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<9f2df8b7306c5bdee680b1c39a2bc4f1>>
+ * @generated SignedSource<<bd3a7cacf532a73b9b7bb2ccf4152f10>>
  */
 
 "use strict";
@@ -254,7 +254,8 @@ function getComponentNameFromFiber(fiber) {
     case 8:
       return type === REACT_STRICT_MODE_TYPE ? "StrictMode" : "Mode";
     case 22:
-      return "Offscreen";
+      if (null !== fiber.return) return getComponentNameFromFiber(fiber.return);
+      break;
     case 12:
       return "Profiler";
     case 21:
@@ -10826,10 +10827,10 @@ function wrapFiber(fiber) {
 }
 var internals$jscomp$inline_1267 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-e49335e9-20260211",
+  version: "19.3.0-native-fb-6066c782-20260212",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-e49335e9-20260211",
+  reconcilerVersion: "19.3.0-native-fb-6066c782-20260212",
   getLaneLabelMap: function () {
     for (
       var map = new Map(), lane = 1, index$151 = 0;
@@ -10980,4 +10981,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.3.0-native-fb-e49335e9-20260211";
+exports.version = "19.3.0-native-fb-6066c782-20260212";

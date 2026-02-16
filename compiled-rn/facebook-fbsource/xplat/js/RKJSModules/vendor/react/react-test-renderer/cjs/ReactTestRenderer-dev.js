@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<66dcdfb17e13f307c1a7f6bb998eea9e>>
+ * @generated SignedSource<<248b19bd086270124ac024025c1e7706>>
  */
 
 "use strict";
@@ -345,7 +345,9 @@ __DEV__ &&
         case 8:
           return type === REACT_STRICT_MODE_TYPE ? "StrictMode" : "Mode";
         case 22:
-          return "Offscreen";
+          if (null !== fiber.return)
+            return getComponentNameFromFiber(fiber.return);
+          break;
         case 12:
           return "Profiler";
         case 21:
@@ -16130,10 +16132,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-e49335e9-20260211",
+        version: "19.3.0-native-fb-6066c782-20260212",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-e49335e9-20260211"
+        reconcilerVersion: "19.3.0-native-fb-6066c782-20260212"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -16279,5 +16281,5 @@ __DEV__ &&
             flushSyncWorkAcrossRoots_impl(0, !0));
       }
     };
-    exports.version = "19.3.0-native-fb-e49335e9-20260211";
+    exports.version = "19.3.0-native-fb-6066c782-20260212";
   })();
