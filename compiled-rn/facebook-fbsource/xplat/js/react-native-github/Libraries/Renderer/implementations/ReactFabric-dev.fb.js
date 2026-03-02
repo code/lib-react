@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<31517f81306eedfb2143cb1ce5c990d4>>
+ * @generated SignedSource<<7b420066dbe007a8dc7420ec2b3e2f6b>>
  */
 
 "use strict";
@@ -175,6 +175,19 @@ __DEV__ &&
     }
     function batchedUpdatesImpl(fn, bookkeeping) {
       return fn(bookkeeping);
+    }
+    function currentTimeStamp() {
+      currentTimeStamp =
+        "object" === typeof performance &&
+        null !== performance &&
+        "function" === typeof performance.now
+          ? function () {
+              return performance.now();
+            }
+          : function () {
+              return Date.now();
+            };
+      return currentTimeStamp();
     }
     function disabledLog() {}
     function disableLogs() {
@@ -727,11 +740,14 @@ __DEV__ &&
     }
     function executeDispatch(event, listener, inst) {
       event.currentTarget = getNodeFromInstance$1(inst);
+      inst = global.event;
+      global.event = event;
       try {
         listener(event);
       } catch (error) {
         hasError || ((hasError = !0), (caughtError = error));
       }
+      global.event = inst;
       event.currentTarget = null;
     }
     function executeDirectDispatch(event) {
@@ -17292,7 +17308,7 @@ __DEV__ &&
       bubbles: null,
       cancelable: null,
       timeStamp: function (event) {
-        return event.timeStamp || Date.now();
+        return event.timeStamp || event.timestamp || currentTimeStamp();
       },
       defaultPrevented: null,
       isTrusted: null
@@ -20169,10 +20185,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-074d96b9-20260225",
+        version: "19.3.0-native-fb-98ce535f-20260226",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-074d96b9-20260225"
+        reconcilerVersion: "19.3.0-native-fb-98ce535f-20260226"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
