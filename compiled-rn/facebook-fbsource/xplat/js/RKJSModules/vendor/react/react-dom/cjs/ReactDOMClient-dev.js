@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<e818b549d5e87e7cb239b4ce984fd23a>>
+ * @generated SignedSource<<5e8b9e28aa551022b737796c5c6f1697>>
  */
 
 /*
@@ -15397,13 +15397,11 @@ __DEV__ &&
         case 11:
         case 14:
         case 15:
-          (!enableHiddenSubtreeInsertionEffectCleanup &&
-            offscreenSubtreeWasHidden) ||
-            commitHookEffectListUnmount(
-              Insertion,
-              deletedFiber,
-              nearestMountedAncestor
-            );
+          commitHookEffectListUnmount(
+            Insertion,
+            deletedFiber,
+            nearestMountedAncestor
+          );
           offscreenSubtreeWasHidden ||
             commitHookLayoutUnmountEffects(
               deletedFiber,
@@ -26130,8 +26128,6 @@ __DEV__ &&
       alwaysThrottleRetries = dynamicFlagsUntyped.alwaysThrottleRetries,
       enableEffectEventMutationPhase =
         dynamicFlagsUntyped.enableEffectEventMutationPhase,
-      enableHiddenSubtreeInsertionEffectCleanup =
-        dynamicFlagsUntyped.enableHiddenSubtreeInsertionEffectCleanup,
       enableObjectFiber = dynamicFlagsUntyped.enableObjectFiber,
       enableFragmentRefs = dynamicFlagsUntyped.enableFragmentRefs,
       enableFragmentRefsScrollIntoView =
@@ -26482,6 +26478,7 @@ __DEV__ &&
         ["markerEnd", "marker-end"],
         ["markerMid", "marker-mid"],
         ["markerStart", "marker-start"],
+        ["maskType", "mask-type"],
         ["overlinePosition", "overline-position"],
         ["overlineThickness", "overline-thickness"],
         ["paintOrder", "paint-order"],
@@ -26825,6 +26822,7 @@ __DEV__ &&
         markerwidth: "markerWidth",
         mask: "mask",
         maskcontentunits: "maskContentUnits",
+        masktype: "maskType",
         maskunits: "maskUnits",
         mathematical: "mathematical",
         mode: "mode",
@@ -30238,11 +30236,11 @@ __DEV__ &&
     };
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-native-fb-b4a8d298-20260226" !== isomorphicReactPackageVersion)
+      if ("19.3.0-native-fb-e0cc7202-20260227" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-native-fb-b4a8d298-20260226\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-native-fb-e0cc7202-20260227\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -30279,10 +30277,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-native-fb-b4a8d298-20260226",
+          version: "19.3.0-native-fb-e0cc7202-20260227",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-native-fb-b4a8d298-20260226"
+          reconcilerVersion: "19.3.0-native-fb-e0cc7202-20260227"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -30432,5 +30430,5 @@ __DEV__ &&
       listenToAllSupportedEvents(container);
       return new ReactDOMHydrationRoot(initialChildren);
     };
-    exports.version = "19.3.0-native-fb-b4a8d298-20260226";
+    exports.version = "19.3.0-native-fb-e0cc7202-20260227";
   })();

@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<007b1c1b6035a47e9134b652b94f3629>>
+ * @generated SignedSource<<abac2feb9f5657abecff622b885b3fd3>>
  */
 
 /*
@@ -36,8 +36,6 @@ function formatProdErrorMessage(code) {
 var alwaysThrottleRetries = dynamicFlagsUntyped.alwaysThrottleRetries,
   enableEffectEventMutationPhase =
     dynamicFlagsUntyped.enableEffectEventMutationPhase,
-  enableHiddenSubtreeInsertionEffectCleanup =
-    dynamicFlagsUntyped.enableHiddenSubtreeInsertionEffectCleanup,
   enableObjectFiber = dynamicFlagsUntyped.enableObjectFiber,
   enableFragmentRefs = dynamicFlagsUntyped.enableFragmentRefs,
   enableFragmentRefsScrollIntoView =
@@ -1571,6 +1569,7 @@ var aliases = new Map([
     ["markerEnd", "marker-end"],
     ["markerMid", "marker-mid"],
     ["markerStart", "marker-start"],
+    ["maskType", "mask-type"],
     ["overlinePosition", "overline-position"],
     ["overlineThickness", "overline-thickness"],
     ["paintOrder", "paint-order"],
@@ -11108,9 +11107,7 @@ function commitDeletionEffectsOnFiber(
     case 11:
     case 14:
     case 15:
-      (!enableHiddenSubtreeInsertionEffectCleanup &&
-        offscreenSubtreeWasHidden) ||
-        commitHookEffectListUnmount(2, deletedFiber, nearestMountedAncestor);
+      commitHookEffectListUnmount(2, deletedFiber, nearestMountedAncestor);
       offscreenSubtreeWasHidden ||
         commitHookLayoutUnmountEffects(deletedFiber, nearestMountedAncestor, 4);
       recursivelyTraverseDeletionEffects(
@@ -19784,14 +19781,14 @@ ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function (target) {
 };
 var isomorphicReactPackageVersion$jscomp$inline_2396 = React.version;
 if (
-  "19.3.0-native-fb-b4a8d298-20260226" !==
+  "19.3.0-native-fb-e0cc7202-20260227" !==
   isomorphicReactPackageVersion$jscomp$inline_2396
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2396,
-      "19.3.0-native-fb-b4a8d298-20260226"
+      "19.3.0-native-fb-e0cc7202-20260227"
     )
   );
 ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
@@ -19813,10 +19810,10 @@ ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
 };
 var internals$jscomp$inline_2403 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-b4a8d298-20260226",
+  version: "19.3.0-native-fb-e0cc7202-20260227",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-b4a8d298-20260226",
+  reconcilerVersion: "19.3.0-native-fb-e0cc7202-20260227",
   getLaneLabelMap: function () {
     for (
       var map = new Map(), lane = 1, index$338 = 0;
@@ -19939,4 +19936,4 @@ exports.hydrateRoot = function (container, initialChildren, options) {
   listenToAllSupportedEvents(container);
   return new ReactDOMHydrationRoot(initialChildren);
 };
-exports.version = "19.3.0-native-fb-b4a8d298-20260226";
+exports.version = "19.3.0-native-fb-e0cc7202-20260227";
