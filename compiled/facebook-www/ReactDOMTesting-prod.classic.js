@@ -40,8 +40,6 @@ var dynamicFeatureFlags = require("ReactFeatureFlags"),
     dynamicFeatureFlags.disableSchedulerTimeoutInWorkLoop,
   enableEffectEventMutationPhase =
     dynamicFeatureFlags.enableEffectEventMutationPhase,
-  enableHiddenSubtreeInsertionEffectCleanup =
-    dynamicFeatureFlags.enableHiddenSubtreeInsertionEffectCleanup,
   enableInfiniteRenderLoopDetection =
     dynamicFeatureFlags.enableInfiniteRenderLoopDetection,
   enableNoCloningMemoCache = dynamicFeatureFlags.enableNoCloningMemoCache,
@@ -1679,6 +1677,7 @@ var aliases = new Map([
     ["markerEnd", "marker-end"],
     ["markerMid", "marker-mid"],
     ["markerStart", "marker-start"],
+    ["maskType", "mask-type"],
     ["overlinePosition", "overline-position"],
     ["overlineThickness", "overline-thickness"],
     ["paintOrder", "paint-order"],
@@ -10683,9 +10682,7 @@ function commitDeletionEffectsOnFiber(
     case 11:
     case 14:
     case 15:
-      (!enableHiddenSubtreeInsertionEffectCleanup &&
-        offscreenSubtreeWasHidden) ||
-        commitHookEffectListUnmount(2, deletedFiber, nearestMountedAncestor);
+      commitHookEffectListUnmount(2, deletedFiber, nearestMountedAncestor);
       offscreenSubtreeWasHidden ||
         commitHookEffectListUnmount(4, deletedFiber, nearestMountedAncestor);
       recursivelyTraverseDeletionEffects(
@@ -20558,14 +20555,14 @@ function getCrossOriginStringAs(as, input) {
 }
 var isomorphicReactPackageVersion$jscomp$inline_2085 = React.version;
 if (
-  "19.3.0-www-classic-b4a8d298-20260226" !==
+  "19.3.0-www-classic-e0cc7202-20260227" !==
   isomorphicReactPackageVersion$jscomp$inline_2085
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2085,
-      "19.3.0-www-classic-b4a8d298-20260226"
+      "19.3.0-www-classic-e0cc7202-20260227"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -20583,10 +20580,10 @@ Internals.Events = [
 ];
 var internals$jscomp$inline_2656 = {
   bundleType: 0,
-  version: "19.3.0-www-classic-b4a8d298-20260226",
+  version: "19.3.0-www-classic-e0cc7202-20260227",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-classic-b4a8d298-20260226"
+  reconcilerVersion: "19.3.0-www-classic-e0cc7202-20260227"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_2657 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -21166,4 +21163,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-classic-b4a8d298-20260226";
+exports.version = "19.3.0-www-classic-e0cc7202-20260227";
