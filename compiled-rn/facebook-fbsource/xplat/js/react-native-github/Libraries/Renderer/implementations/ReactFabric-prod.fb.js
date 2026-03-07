@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<e9d3e21f63a9bc36256a3c95f9c9567c>>
+ * @generated SignedSource<<e5b25301cd2efb4e483d41bb70e45604>>
  */
 
 "use strict";
@@ -8204,8 +8204,8 @@ function commitFragmentInstanceDeletionEffects(fiber) {
       (enableFragmentRefsTextNodes && null == childInstance.canonical) ||
         ((childInstance = getPublicInstance(childInstance)),
         enableFragmentRefsInstanceHandles &&
-          null != childInstance.reactFragments &&
-          childInstance.reactFragments.delete(fragmentInstance));
+          null != childInstance.unstable_reactFragments &&
+          childInstance.unstable_reactFragments.delete(fragmentInstance));
     }
     if (isHostParent(parent)) break;
     parent = parent.return;
@@ -11353,8 +11353,9 @@ function addFragmentHandleToFiber(child, fragmentInstance) {
 }
 function addFragmentHandleToInstance(instance, fragmentInstance) {
   enableFragmentRefsInstanceHandles &&
-    (null == instance.reactFragments && (instance.reactFragments = new Set()),
-    instance.reactFragments.add(fragmentInstance));
+    (null == instance.unstable_reactFragments &&
+      (instance.unstable_reactFragments = new Set()),
+    instance.unstable_reactFragments.add(fragmentInstance));
 }
 function commitNewChildToFragmentInstance(childInstance, fragmentInstance) {
   if (!enableFragmentRefsTextNodes || null != childInstance.canonical) {
@@ -11455,10 +11456,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1313 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-4b568a8d-20260304",
+    version: "19.3.0-native-fb-4cc5b7a9-20260303",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-4b568a8d-20260304"
+    reconcilerVersion: "19.3.0-native-fb-4cc5b7a9-20260303"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1313.rendererConfig = extraDevToolsConfig);
