@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<e5b25301cd2efb4e483d41bb70e45604>>
+ * @generated SignedSource<<fefb8c42aa80cedf92f715d6c3f0a3f7>>
  */
 
 "use strict";
@@ -4382,7 +4382,7 @@ function dispatchActionState(
   payload
 ) {
   if (isRenderPhaseUpdate(fiber))
-    throw Error("Cannot update form state while rendering.");
+    throw Error("Cannot update action state while rendering.");
   fiber = actionQueue.action;
   if (null !== fiber) {
     var actionNode = {
@@ -8204,8 +8204,8 @@ function commitFragmentInstanceDeletionEffects(fiber) {
       (enableFragmentRefsTextNodes && null == childInstance.canonical) ||
         ((childInstance = getPublicInstance(childInstance)),
         enableFragmentRefsInstanceHandles &&
-          null != childInstance.unstable_reactFragments &&
-          childInstance.unstable_reactFragments.delete(fragmentInstance));
+          null != childInstance.reactFragments &&
+          childInstance.reactFragments.delete(fragmentInstance));
     }
     if (isHostParent(parent)) break;
     parent = parent.return;
@@ -11353,9 +11353,8 @@ function addFragmentHandleToFiber(child, fragmentInstance) {
 }
 function addFragmentHandleToInstance(instance, fragmentInstance) {
   enableFragmentRefsInstanceHandles &&
-    (null == instance.unstable_reactFragments &&
-      (instance.unstable_reactFragments = new Set()),
-    instance.unstable_reactFragments.add(fragmentInstance));
+    (null == instance.reactFragments && (instance.reactFragments = new Set()),
+    instance.reactFragments.add(fragmentInstance));
 }
 function commitNewChildToFragmentInstance(childInstance, fragmentInstance) {
   if (!enableFragmentRefsTextNodes || null != childInstance.canonical) {
@@ -11456,10 +11455,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1313 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-4cc5b7a9-20260303",
+    version: "19.3.0-native-fb-93882bd4-20260304",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-4cc5b7a9-20260303"
+    reconcilerVersion: "19.3.0-native-fb-93882bd4-20260304"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1313.rendererConfig = extraDevToolsConfig);
