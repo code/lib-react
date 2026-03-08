@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<9824ca41d3b508086fa13667a9d79399>>
+ * @generated SignedSource<<c3294f2b2da9a54ffa0d4e7274adf010>>
  */
 
 "use strict";
@@ -2560,28 +2560,20 @@ function startUpdateTimerByLane(lane) {
       blockingUpdateTime = now();
       0 !== (executionContext & 6) &&
         ((componentEffectSpawnedUpdate = !0), (blockingUpdateType = 1));
-      lane = resolveEventTimeStamp();
-      var newEventType$19 = resolveEventType();
-      lane !== blockingEventRepeatTime || newEventType$19 !== blockingEventType
-        ? (blockingEventRepeatTime = -1.1)
-        : null !== newEventType$19 && (blockingUpdateType = 1);
-      blockingEventTime = lane;
-      blockingEventType = newEventType$19;
+      if (-1.1 !== blockingEventRepeatTime || null !== blockingEventType)
+        blockingEventRepeatTime = -1.1;
+      blockingEventTime = -1.1;
+      blockingEventType = null;
     }
   } else if (
     0 !== (lane & 4194048) &&
     0 > transitionUpdateTime &&
     ((transitionUpdateTime = now()), 0 > transitionStartTime)
   ) {
-    lane = resolveEventTimeStamp();
-    newEventType$19 = resolveEventType();
-    if (
-      lane !== transitionEventRepeatTime ||
-      newEventType$19 !== transitionEventType
-    )
+    if (-1.1 !== transitionEventRepeatTime || null !== transitionEventType)
       transitionEventRepeatTime = -1.1;
-    transitionEventTime = lane;
-    transitionEventType = newEventType$19;
+    transitionEventTime = -1.1;
+    transitionEventType = null;
   }
 }
 function pushNestedEffectDurations() {
@@ -2736,7 +2728,6 @@ function flushSyncWorkAcrossRoots_impl(syncTransitionLanes, onlyLegacy) {
   }
 }
 function processRootScheduleInImmediateTask() {
-  schedulerEvent = global.event;
   processRootScheduleInMicrotask();
 }
 function processRootScheduleInMicrotask() {
@@ -2875,7 +2866,6 @@ function scheduleTaskForRootDuringMicrotask(root, currentTime) {
 }
 function performWorkOnRootViaSchedulerTask(root, didTimeout) {
   nestedUpdateScheduled = currentUpdateIsNested = !1;
-  schedulerEvent = global.event;
   if (0 !== pendingEffectsStatus && 5 !== pendingEffectsStatus)
     return (root.callbackNode = null), (root.callbackPriority = 0), null;
   var originalCallbackNode = root.callbackNode;
@@ -3015,15 +3005,10 @@ ReactSharedInternals.S = function (transition, returnValue) {
   ) {
     if (0 > transitionStartTime && 0 > transitionUpdateTime) {
       transitionStartTime = now();
-      var newEventTime = resolveEventTimeStamp(),
-        newEventType = resolveEventType();
-      if (
-        newEventTime !== transitionEventRepeatTime ||
-        newEventType !== transitionEventType
-      )
+      if (-1.1 !== transitionEventRepeatTime || null !== transitionEventType)
         transitionEventRepeatTime = -1.1;
-      transitionEventTime = newEventTime;
-      transitionEventType = newEventType;
+      transitionEventTime = -1.1;
+      transitionEventType = null;
     }
     entangleAsyncAction(transition, returnValue);
   }
@@ -8908,8 +8893,8 @@ function commitFragmentInstanceDeletionEffects(fiber) {
       (enableFragmentRefsTextNodes && null == childInstance.canonical) ||
         ((childInstance = getPublicInstance(childInstance)),
         enableFragmentRefsInstanceHandles &&
-          null != childInstance.reactFragments &&
-          childInstance.reactFragments.delete(fragmentInstance));
+          null != childInstance.unstable_reactFragments &&
+          childInstance.unstable_reactFragments.delete(fragmentInstance));
     }
     if (isHostParent(parent)) break;
     parent = parent.return;
@@ -12118,7 +12103,6 @@ function commitRoot(
     ? ((root.callbackNode = null),
       (root.callbackPriority = 0),
       scheduleCallback(NormalPriority$1, function () {
-        schedulerEvent = global.event;
         0 === pendingDelayedCommitReason && (pendingDelayedCommitReason = 2);
         flushPassiveEffects();
         return null;
@@ -13145,30 +13129,6 @@ function resolveUpdatePriority() {
     }
   return 32;
 }
-var schedulerEvent = void 0;
-function resolveEventType() {
-  var event = global.event;
-  event && event !== schedulerEvent
-    ? event.type
-      ? (event = event.type)
-      : ((event = event.dispatchConfig),
-        (event =
-          null == event || null == event.phasedRegistrationNames
-            ? null
-            : (event =
-                  event.phasedRegistrationNames.bubbled ||
-                  event.phasedRegistrationNames.captured)
-              ? event.startsWith("on")
-                ? event.slice(2).toLowerCase()
-                : event.toLowerCase()
-              : null))
-    : (event = null);
-  return event;
-}
-function resolveEventTimeStamp() {
-  var event = global.event;
-  return event && event !== schedulerEvent ? event.timeStamp : -1.1;
-}
 var scheduleTimeout = setTimeout,
   cancelTimeout = clearTimeout;
 function cloneHiddenInstance(instance) {
@@ -13314,8 +13274,9 @@ function addFragmentHandleToFiber(child, fragmentInstance) {
 }
 function addFragmentHandleToInstance(instance, fragmentInstance) {
   enableFragmentRefsInstanceHandles &&
-    (null == instance.reactFragments && (instance.reactFragments = new Set()),
-    instance.reactFragments.add(fragmentInstance));
+    (null == instance.unstable_reactFragments &&
+      (instance.unstable_reactFragments = new Set()),
+    instance.unstable_reactFragments.add(fragmentInstance));
 }
 function commitNewChildToFragmentInstance(childInstance, fragmentInstance) {
   if (!enableFragmentRefsTextNodes || null != childInstance.canonical) {
@@ -13414,16 +13375,16 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1641 = {
+  internals$jscomp$inline_1638 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-9c0323e2-20260303",
+    version: "19.3.0-native-fb-aac12ce5-20260303",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-9c0323e2-20260303"
+    reconcilerVersion: "19.3.0-native-fb-aac12ce5-20260303"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1641.rendererConfig = extraDevToolsConfig);
-internals$jscomp$inline_1641.getLaneLabelMap = function () {
+  (internals$jscomp$inline_1638.rendererConfig = extraDevToolsConfig);
+internals$jscomp$inline_1638.getLaneLabelMap = function () {
   for (
     var map = new Map(), lane = 1, index$179 = 0;
     31 > index$179;
@@ -13435,20 +13396,20 @@ internals$jscomp$inline_1641.getLaneLabelMap = function () {
   }
   return map;
 };
-internals$jscomp$inline_1641.injectProfilingHooks = function (profilingHooks) {
+internals$jscomp$inline_1638.injectProfilingHooks = function (profilingHooks) {
   injectedProfilingHooks = profilingHooks;
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1999 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1991 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1999.isDisabled &&
-    hook$jscomp$inline_1999.supportsFiber
+    !hook$jscomp$inline_1991.isDisabled &&
+    hook$jscomp$inline_1991.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1999.inject(
-        internals$jscomp$inline_1641
+      (rendererID = hook$jscomp$inline_1991.inject(
+        internals$jscomp$inline_1638
       )),
-        (injectedHook = hook$jscomp$inline_1999);
+        (injectedHook = hook$jscomp$inline_1991);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {

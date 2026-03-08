@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<23486dcd2bdedb70439ca7bc03fca51a>>
+ * @generated SignedSource<<21b4a73da324527f8ad68c13e164c5ac>>
  */
 
 "use strict";
@@ -3575,23 +3575,21 @@ __DEV__ &&
         });
     }
     function startUpdateTimerByLane(lane, method, fiber) {
-      if (0 !== (lane & 127))
-        0 > blockingUpdateTime &&
-          ((blockingUpdateTime = now()),
-          (blockingUpdateTask = createTask(method)),
-          (blockingUpdateMethodName = method),
+      if (0 !== (lane & 127)) {
+        if (0 > blockingUpdateTime) {
+          blockingUpdateTime = now();
+          blockingUpdateTask = createTask(method);
+          blockingUpdateMethodName = method;
           null != fiber &&
-            (blockingUpdateComponentName = getComponentNameFromFiber(fiber)),
+            (blockingUpdateComponentName = getComponentNameFromFiber(fiber));
           (executionContext & (RenderContext | CommitContext)) !== NoContext &&
-            ((componentEffectSpawnedUpdate = !0), (blockingUpdateType = 1)),
-          (lane = resolveEventTimeStamp()),
-          (method = resolveEventType()),
-          lane !== blockingEventRepeatTime || method !== blockingEventType
-            ? (blockingEventRepeatTime = -1.1)
-            : null !== method && (blockingUpdateType = 1),
-          (blockingEventTime = lane),
-          (blockingEventType = method));
-      else if (
+            ((componentEffectSpawnedUpdate = !0), (blockingUpdateType = 1));
+          if (-1.1 !== blockingEventRepeatTime || null !== blockingEventType)
+            blockingEventRepeatTime = -1.1;
+          blockingEventTime = -1.1;
+          blockingEventType = null;
+        }
+      } else if (
         0 !== (lane & 4194048) &&
         0 > transitionUpdateTime &&
         ((transitionUpdateTime = now()),
@@ -3601,15 +3599,10 @@ __DEV__ &&
           (transitionUpdateComponentName = getComponentNameFromFiber(fiber)),
         0 > transitionStartTime)
       ) {
-        lane = resolveEventTimeStamp();
-        method = resolveEventType();
-        if (
-          lane !== transitionEventRepeatTime ||
-          method !== transitionEventType
-        )
+        if (-1.1 !== transitionEventRepeatTime || null !== transitionEventType)
           transitionEventRepeatTime = -1.1;
-        transitionEventTime = lane;
-        transitionEventType = method;
+        transitionEventTime = -1.1;
+        transitionEventType = null;
       }
     }
     function pushNestedEffectDurations() {
@@ -3765,7 +3758,6 @@ __DEV__ &&
       }
     }
     function processRootScheduleInImmediateTask() {
-      schedulerEvent = global.event;
       processRootScheduleInMicrotask();
     }
     function processRootScheduleInMicrotask() {
@@ -3915,7 +3907,6 @@ __DEV__ &&
     }
     function performWorkOnRootViaSchedulerTask(root, didTimeout) {
       nestedUpdateScheduled = currentUpdateIsNested = !1;
-      schedulerEvent = global.event;
       if (
         pendingEffectsStatus !== NO_PENDING_EFFECTS &&
         pendingEffectsStatus !== PENDING_PASSIVE_PHASE
@@ -11564,8 +11555,8 @@ __DEV__ &&
           (enableFragmentRefsTextNodes && null == childInstance.canonical) ||
             ((childInstance = getPublicInstance(childInstance)),
             enableFragmentRefsInstanceHandles &&
-              null != childInstance.reactFragments &&
-              childInstance.reactFragments.delete(fragmentInstance));
+              null != childInstance.unstable_reactFragments &&
+              childInstance.unstable_reactFragments.delete(fragmentInstance));
         }
         if (isHostParent(parent)) break;
         parent = parent.return;
@@ -15354,7 +15345,6 @@ __DEV__ &&
         ? ((root.callbackNode = null),
           (root.callbackPriority = 0),
           scheduleCallback(NormalPriority$1, function () {
-            schedulerEvent = global.event;
             pendingDelayedCommitReason === IMMEDIATE_COMMIT &&
               (pendingDelayedCommitReason = DELAYED_PASSIVE_COMMIT);
             flushPassiveEffects();
@@ -17039,29 +17029,6 @@ __DEV__ &&
         }
       return DefaultEventPriority;
     }
-    function resolveEventType() {
-      var event = global.event;
-      event && event !== schedulerEvent
-        ? event.type
-          ? (event = event.type)
-          : ((event = event.dispatchConfig),
-            (event =
-              null == event || null == event.phasedRegistrationNames
-                ? null
-                : (event =
-                      event.phasedRegistrationNames.bubbled ||
-                      event.phasedRegistrationNames.captured)
-                  ? event.startsWith("on")
-                    ? event.slice(2).toLowerCase()
-                    : event.toLowerCase()
-                  : null))
-        : (event = null);
-      return event;
-    }
-    function resolveEventTimeStamp() {
-      var event = global.event;
-      return event && event !== schedulerEvent ? event.timeStamp : -1.1;
-    }
     function cloneHiddenInstance(instance) {
       var node = instance.node,
         updatePayload = ReactNativePrivateInterface.createAttributePayload(
@@ -17107,9 +17074,9 @@ __DEV__ &&
     }
     function addFragmentHandleToInstance(instance, fragmentInstance) {
       enableFragmentRefsInstanceHandles &&
-        (null == instance.reactFragments &&
-          (instance.reactFragments = new Set()),
-        instance.reactFragments.add(fragmentInstance));
+        (null == instance.unstable_reactFragments &&
+          (instance.unstable_reactFragments = new Set()),
+        instance.unstable_reactFragments.add(fragmentInstance));
     }
     function commitNewChildToFragmentInstance(childInstance, fragmentInstance) {
       if (!enableFragmentRefsTextNodes || null != childInstance.canonical) {
@@ -18113,15 +18080,13 @@ __DEV__ &&
       ) {
         if (0 > transitionStartTime && 0 > transitionUpdateTime) {
           transitionStartTime = now();
-          var newEventTime = resolveEventTimeStamp(),
-            newEventType = resolveEventType();
           if (
-            newEventTime !== transitionEventRepeatTime ||
-            newEventType !== transitionEventType
+            -1.1 !== transitionEventRepeatTime ||
+            null !== transitionEventType
           )
             transitionEventRepeatTime = -1.1;
-          transitionEventTime = newEventTime;
-          transitionEventType = newEventType;
+          transitionEventTime = -1.1;
+          transitionEventType = null;
         }
         entangleAsyncAction(transition, returnValue);
       }
@@ -20023,7 +19988,6 @@ __DEV__ &&
       nextReactTag = 2;
     registerEventHandler && registerEventHandler(dispatchEvent);
     var currentUpdatePriority = 0,
-      schedulerEvent = void 0,
       warnsIfNotActing = !1,
       scheduleTimeout = setTimeout,
       cancelTimeout = clearTimeout,
@@ -20217,10 +20181,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-9c0323e2-20260303",
+        version: "19.3.0-native-fb-aac12ce5-20260303",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-9c0323e2-20260303"
+        reconcilerVersion: "19.3.0-native-fb-aac12ce5-20260303"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
