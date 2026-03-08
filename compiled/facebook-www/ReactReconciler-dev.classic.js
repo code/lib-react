@@ -6591,7 +6591,7 @@ __DEV__ &&
       payload
     ) {
       if (isRenderPhaseUpdate(fiber))
-        throw Error("Cannot update form state while rendering.");
+        throw Error("Cannot update action state while rendering.");
       fiber = actionQueue.action;
       if (null !== fiber) {
         var actionNode = {
@@ -23068,7 +23068,7 @@ __DEV__ &&
         version: rendererVersion,
         rendererPackageName: rendererPackageName,
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-3bc2d414-20260304"
+        reconcilerVersion: "19.3.0-www-classic-46103596-20260305"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
