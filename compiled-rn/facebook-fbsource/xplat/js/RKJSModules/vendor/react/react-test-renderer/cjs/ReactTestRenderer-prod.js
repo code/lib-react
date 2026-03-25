@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<ae5faeafe4193caff42cbb686eaafc6c>>
+ * @generated SignedSource<<19187bd9b6f80b46235072e00e287da0>>
  */
 
 "use strict";
@@ -10263,7 +10263,9 @@ function pingSuspendedRoot(root, wakeable, pingedLanes) {
       (workInProgressRootRenderLanes & 62914560) ===
         workInProgressRootRenderLanes &&
       300 > now() - globalMostRecentFallbackTime)
-      ? 0 === (executionContext & 2) && prepareFreshStack(root, 0)
+      ? 0 === (executionContext & 2)
+        ? prepareFreshStack(root, 0)
+        : (workInProgressRootPingedLanes |= pingedLanes)
       : (workInProgressRootPingedLanes |= pingedLanes),
     workInProgressSuspendedRetryLanes === workInProgressRootRenderLanes &&
       (workInProgressSuspendedRetryLanes = 0));
@@ -10964,10 +10966,10 @@ function wrapFiber(fiber) {
 }
 var internals$jscomp$inline_1583 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-8b2e903a-20260320",
+  version: "19.3.0-native-fb-c0d218f0-20260324",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-8b2e903a-20260320"
+  reconcilerVersion: "19.3.0-native-fb-c0d218f0-20260324"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_1584 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -11103,4 +11105,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.3.0-native-fb-8b2e903a-20260320";
+exports.version = "19.3.0-native-fb-c0d218f0-20260324";

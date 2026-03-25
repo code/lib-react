@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<5a3682a21a69002b9f17b5f6b7b69b8d>>
+ * @generated SignedSource<<f72c352a9c9d0dd5678ca6c849c14230>>
  */
 
 "use strict";
@@ -10884,7 +10884,9 @@ function pingSuspendedRoot(root, wakeable, pingedLanes) {
       (workInProgressRootRenderLanes & 62914560) ===
         workInProgressRootRenderLanes &&
       300 > now$1() - globalMostRecentFallbackTime)
-      ? 0 === (executionContext & 2) && prepareFreshStack(root, 0)
+      ? 0 === (executionContext & 2)
+        ? prepareFreshStack(root, 0)
+        : (workInProgressRootPingedLanes |= pingedLanes)
       : (workInProgressRootPingedLanes |= pingedLanes),
     workInProgressSuspendedRetryLanes === workInProgressRootRenderLanes &&
       (workInProgressSuspendedRetryLanes = 0));
@@ -11602,10 +11604,10 @@ function wrapFiber(fiber) {
 }
 var internals$jscomp$inline_1329 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-8b2e903a-20260320",
+  version: "19.3.0-native-fb-c0d218f0-20260324",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-8b2e903a-20260320",
+  reconcilerVersion: "19.3.0-native-fb-c0d218f0-20260324",
   getLaneLabelMap: function () {
     for (
       var map = new Map(), lane = 1, index$156 = 0;
@@ -11756,4 +11758,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.3.0-native-fb-8b2e903a-20260320";
+exports.version = "19.3.0-native-fb-c0d218f0-20260324";
