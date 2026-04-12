@@ -12,7 +12,7 @@
 
 'use strict';
 
-if (__DEV__) {
+if (process.env.NODE_ENV !== "production") {
   (function() {
 'use strict';
 
@@ -25235,6 +25235,16 @@ function isReorderableExpression(builder, expr, allowLocalIdentifiers) {
             return (callee.isExpression() &&
                 isReorderableExpression(builder, callee, allowLocalIdentifiers) &&
                 call
+                    .get('arguments')
+                    .every(arg => arg.isExpression() &&
+                    isReorderableExpression(builder, arg, allowLocalIdentifiers)));
+        }
+        case 'NewExpression': {
+            const newExpr = expr;
+            const callee = newExpr.get('callee');
+            return (callee.isExpression() &&
+                isReorderableExpression(builder, callee, allowLocalIdentifiers) &&
+                newExpr
                     .get('arguments')
                     .every(arg => arg.isExpression() &&
                     isReorderableExpression(builder, arg, allowLocalIdentifiers)));
