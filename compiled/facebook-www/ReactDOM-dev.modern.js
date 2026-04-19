@@ -12721,7 +12721,6 @@ __DEV__ &&
       var JSCompiler_temp;
       if (
         (JSCompiler_temp =
-          enableSuspenseyImages ||
           (workInProgress.mode & SuspenseyImagesMode) !== NoMode)
       )
         JSCompiler_temp =
@@ -21624,8 +21623,7 @@ __DEV__ &&
           case REACT_VIEW_TRANSITION_TYPE:
             if (enableViewTransition)
               return (
-                (type = mode),
-                enableSuspenseyImages || (type |= SuspenseyImagesMode),
+                (type = mode | SuspenseyImagesMode),
                 (key = createFiber(30, pendingProps, key, type)),
                 (key.elementType = REACT_VIEW_TRANSITION_TYPE),
                 (key.lanes = lanes),
@@ -27646,7 +27644,7 @@ __DEV__ &&
       return !1;
     }
     function maySuspendCommit(type, props) {
-      return enableSuspenseyImages || enableViewTransition
+      return enableViewTransition
         ? "img" === type &&
             null != props.src &&
             "" !== props.src &&
@@ -27669,7 +27667,7 @@ __DEV__ &&
       );
     }
     function suspendInstance(state, instance) {
-      (enableSuspenseyImages || enableViewTransition) &&
+      enableViewTransition &&
         "function" === typeof instance.decode &&
         (state.imgCount++,
         instance.complete ||
@@ -28745,7 +28743,6 @@ __DEV__ &&
       syncLaneExpirationMs = dynamicFeatureFlags.syncLaneExpirationMs,
       transitionLaneExpirationMs =
         dynamicFeatureFlags.transitionLaneExpirationMs,
-      enableSuspenseyImages = dynamicFeatureFlags.enableSuspenseyImages,
       enableViewTransition = dynamicFeatureFlags.enableViewTransition,
       enableScrollEndPolyfill = dynamicFeatureFlags.enableScrollEndPolyfill,
       enableFragmentRefs = dynamicFeatureFlags.enableFragmentRefs,
@@ -32964,11 +32961,11 @@ __DEV__ &&
       return_targetInst = null;
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-www-modern-00f063c3-20260415" !== isomorphicReactPackageVersion)
+      if ("19.3.0-www-modern-56824423-20260414" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-www-modern-00f063c3-20260415\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-www-modern-56824423-20260414\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -33011,10 +33008,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-www-modern-00f063c3-20260415",
+          version: "19.3.0-www-modern-56824423-20260414",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-www-modern-00f063c3-20260415"
+          reconcilerVersion: "19.3.0-www-modern-56824423-20260414"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -33627,7 +33624,7 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-www-modern-00f063c3-20260415";
+    exports.version = "19.3.0-www-modern-56824423-20260414";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&

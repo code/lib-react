@@ -11180,7 +11180,7 @@ __DEV__ &&
       renderLanes
     ) {
       if (
-        (enableSuspenseyImages || (workInProgress.mode & 32) !== NoMode) &&
+        (workInProgress.mode & 32) !== NoMode &&
         (null === oldProps
           ? maySuspendCommit(type, newProps)
           : maySuspendCommitOnUpdate(type, oldProps, newProps))
@@ -19917,8 +19917,7 @@ __DEV__ &&
           case REACT_VIEW_TRANSITION_TYPE:
             if (enableViewTransition)
               return (
-                (type = mode),
-                enableSuspenseyImages || (type |= 32),
+                (type = mode | 32),
                 (key = createFiber(30, pendingProps, key, type)),
                 (key.elementType = REACT_VIEW_TRANSITION_TYPE),
                 (key.lanes = lanes),
@@ -20318,7 +20317,6 @@ __DEV__ &&
       syncLaneExpirationMs = dynamicFeatureFlags.syncLaneExpirationMs,
       transitionLaneExpirationMs =
         dynamicFeatureFlags.transitionLaneExpirationMs,
-      enableSuspenseyImages = dynamicFeatureFlags.enableSuspenseyImages,
       enableViewTransition = dynamicFeatureFlags.enableViewTransition,
       enableFragmentRefs = dynamicFeatureFlags.enableFragmentRefs,
       enableFragmentRefsTextNodes =
@@ -23101,7 +23099,7 @@ __DEV__ &&
         version: rendererVersion,
         rendererPackageName: rendererPackageName,
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-00f063c3-20260415"
+        reconcilerVersion: "19.3.0-www-classic-56824423-20260414"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);

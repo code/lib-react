@@ -47,7 +47,6 @@ var dynamicFeatureFlags = require("ReactFeatureFlags"),
   retryLaneExpirationMs = dynamicFeatureFlags.retryLaneExpirationMs,
   syncLaneExpirationMs = dynamicFeatureFlags.syncLaneExpirationMs,
   transitionLaneExpirationMs = dynamicFeatureFlags.transitionLaneExpirationMs,
-  enableSuspenseyImages = dynamicFeatureFlags.enableSuspenseyImages,
   enableViewTransition = dynamicFeatureFlags.enableViewTransition,
   enableScrollEndPolyfill = dynamicFeatureFlags.enableScrollEndPolyfill,
   enableFragmentRefs = dynamicFeatureFlags.enableFragmentRefs,
@@ -8023,10 +8022,7 @@ function preloadInstanceAndSuspendIfNeeded(
   renderLanes
 ) {
   var JSCompiler_temp;
-  if (
-    (JSCompiler_temp =
-      enableSuspenseyImages || 0 !== (workInProgress.mode & 32))
-  )
+  if ((JSCompiler_temp = 0 !== (workInProgress.mode & 32)))
     JSCompiler_temp =
       null === oldProps
         ? maySuspendCommit(type, newProps)
@@ -14253,8 +14249,7 @@ function createFiberFromTypeAndProps(
       case REACT_VIEW_TRANSITION_TYPE:
         if (enableViewTransition)
           return (
-            (type = mode),
-            enableSuspenseyImages || (type |= 32),
+            (type = mode | 32),
             (type = createFiber(30, pendingProps, key, type)),
             (type.elementType = REACT_VIEW_TRANSITION_TYPE),
             (type.lanes = lanes),
@@ -19339,7 +19334,7 @@ function isHostHoistableType(type, props, hostContext) {
   return !1;
 }
 function maySuspendCommit(type, props) {
-  return enableSuspenseyImages || enableViewTransition
+  return enableViewTransition
     ? "img" === type &&
         null != props.src &&
         "" !== props.src &&
@@ -19361,7 +19356,7 @@ function estimateImageBytes(instance) {
   );
 }
 function suspendInstance(state, instance) {
-  (enableSuspenseyImages || enableViewTransition) &&
+  enableViewTransition &&
     "function" === typeof instance.decode &&
     (state.imgCount++,
     instance.complete ||
@@ -20306,14 +20301,14 @@ function getCrossOriginStringAs(as, input) {
 }
 var isomorphicReactPackageVersion$jscomp$inline_2075 = React.version;
 if (
-  "19.3.0-www-modern-00f063c3-20260415" !==
+  "19.3.0-www-modern-56824423-20260414" !==
   isomorphicReactPackageVersion$jscomp$inline_2075
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2075,
-      "19.3.0-www-modern-00f063c3-20260415"
+      "19.3.0-www-modern-56824423-20260414"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -20331,10 +20326,10 @@ Internals.Events = [
 ];
 var internals$jscomp$inline_2638 = {
   bundleType: 0,
-  version: "19.3.0-www-modern-00f063c3-20260415",
+  version: "19.3.0-www-modern-56824423-20260414",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-modern-00f063c3-20260415"
+  reconcilerVersion: "19.3.0-www-modern-56824423-20260414"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_2639 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -20914,4 +20909,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-modern-00f063c3-20260415";
+exports.version = "19.3.0-www-modern-56824423-20260414";
