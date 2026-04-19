@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<d6fd54fb634ce2e0ce827eff61901c6a>>
+ * @generated SignedSource<<ab919e6d3e1ce64919da645085d216f2>>
  */
 
 "use strict";
@@ -10698,8 +10698,7 @@ __DEV__ &&
             }
             requiredContext(contextStackCursor.current);
             current = requiredContext(rootInstanceStackCursor.current);
-            renderLanes = nextReactTag;
-            nextReactTag += 2;
+            renderLanes = allocateTag();
             _type2 = getViewConfigForType(_type2);
             for (hasOffscreenComponentChild in _type2.validAttributes)
               newProps.hasOwnProperty(hasOffscreenComponentChild) &&
@@ -14939,14 +14938,16 @@ __DEV__ &&
     ) {
       root.timeoutHandle = noTimeout;
       var subtreeFlags = finishedWork.subtreeFlags,
+        isViewTransitionEligible = (lanes & 335544064) === lanes,
         suspendedState = null;
       if (
-        (lanes & 335544064) === lanes ||
+        isViewTransitionEligible ||
         subtreeFlags & 8192 ||
         16785408 === (subtreeFlags & 16785408)
       )
         (appearingViewTransitions = suspendedState = null),
           accumulateSuspenseyCommitOnFiber(finishedWork),
+          isViewTransitionEligible && fabricSuspendOnActiveViewTransition(),
           (lanes & 62914560) === lanes
             ? globalMostRecentFallbackTime - now$1()
             : (lanes & 4194048) === lanes
@@ -17835,6 +17836,8 @@ __DEV__ &&
       };
     }
     function createViewTransitionInstance(name) {
+      var tag = allocateTag();
+      fabricCreateViewTransitionInstance(name, tag);
       return {
         name: name,
         old: new ViewTransitionPseudoElement("old", name),
@@ -17868,11 +17871,17 @@ __DEV__ &&
         );
       suspendedState.ready.then(function () {
         spawnedWorkCallback();
+        fabricStartViewTransitionReadyFinished();
       });
       suspendedState.finished.finally(function () {
         passiveCallback();
       });
       return suspendedState;
+    }
+    function allocateTag() {
+      var tag = nextReactTag;
+      nextReactTag += 2;
+      return tag;
     }
     function createTextInstance(
       text,
@@ -17884,8 +17893,7 @@ __DEV__ &&
         console.error(
           "Text strings must be rendered within a <Text> component."
         );
-      hostContext = nextReactTag;
-      nextReactTag += 2;
+      hostContext = allocateTag();
       return {
         node: createNode(
           hostContext,
@@ -20848,7 +20856,11 @@ __DEV__ &&
       _nativeFabricUIManage$1 = nativeFabricUIManager,
       fabricApplyViewTransitionName =
         _nativeFabricUIManage$1.applyViewTransitionName,
+      fabricCreateViewTransitionInstance =
+        _nativeFabricUIManage$1.createViewTransitionInstance,
       fabricStartViewTransition = _nativeFabricUIManage$1.startViewTransition,
+      fabricStartViewTransitionReadyFinished =
+        _nativeFabricUIManage$1.startViewTransitionReadyFinished,
       _nativeFabricUIManage = nativeFabricUIManager,
       createNode = _nativeFabricUIManage.createNode,
       cloneNodeWithNewChildren = _nativeFabricUIManage.cloneNodeWithNewChildren,
@@ -20867,6 +20879,8 @@ __DEV__ &&
       FabricIdlePriority = _nativeFabricUIManage.unstable_IdleEventPriority,
       fabricGetCurrentEventPriority =
         _nativeFabricUIManage.unstable_getCurrentEventPriority,
+      fabricSuspendOnActiveViewTransition =
+        _nativeFabricUIManage.suspendOnActiveViewTransition,
       extraDevToolsConfig = {
         getInspectorDataForInstance: getInspectorDataForInstance,
         getInspectorDataForViewAtPoint: function (
@@ -21136,10 +21150,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-56922cf7-20260416",
+        version: "19.3.0-native-fb-77319e2a-20260416",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-56922cf7-20260416"
+        reconcilerVersion: "19.3.0-native-fb-77319e2a-20260416"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);

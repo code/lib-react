@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<28734dc72e9c145d7bee29ae3f64a3a7>>
+ * @generated SignedSource<<df6f228459137cca6cc5b63027ffc9c2>>
  */
 
 "use strict";
@@ -7698,8 +7698,7 @@ function completeWork(current, workInProgress, renderLanes) {
           return null;
         }
         current = rootInstanceStackCursor.current;
-        previousCache = nextReactTag;
-        nextReactTag += 2;
+        previousCache = allocateTag();
         renderLanes = getViewConfigForType(renderLanes);
         oldProps = ReactNativePrivateInterface.createAttributePayload(
           newProps,
@@ -10528,14 +10527,16 @@ function completeRootWhenReady(
 ) {
   root.timeoutHandle = -1;
   didIncludeRenderPhaseUpdate = finishedWork.subtreeFlags;
-  var suspendedState = null;
+  var isViewTransitionEligible = (lanes & 335544064) === lanes,
+    suspendedState = null;
   if (
-    (lanes & 335544064) === lanes ||
+    isViewTransitionEligible ||
     didIncludeRenderPhaseUpdate & 8192 ||
     16785408 === (didIncludeRenderPhaseUpdate & 16785408)
   )
     (appearingViewTransitions = suspendedState = null),
       accumulateSuspenseyCommitOnFiber(finishedWork),
+      isViewTransitionEligible && fabricSuspendOnActiveViewTransition(),
       (lanes & 62914560) === lanes
         ? globalMostRecentFallbackTime - now()
         : (lanes & 4194048) === lanes
@@ -11876,7 +11877,11 @@ function shim() {
 var _nativeFabricUIManage$1 = nativeFabricUIManager,
   fabricApplyViewTransitionName =
     _nativeFabricUIManage$1.applyViewTransitionName,
-  fabricStartViewTransition = _nativeFabricUIManage$1.startViewTransition;
+  fabricCreateViewTransitionInstance =
+    _nativeFabricUIManage$1.createViewTransitionInstance,
+  fabricStartViewTransition = _nativeFabricUIManage$1.startViewTransition,
+  fabricStartViewTransitionReadyFinished =
+    _nativeFabricUIManage$1.startViewTransitionReadyFinished;
 function ViewTransitionPseudoElement(pseudo, name) {
   this._pseudo = pseudo;
   this._name = name;
@@ -11890,6 +11895,8 @@ function measureClonedInstance() {
   };
 }
 function createViewTransitionInstance(name) {
+  var tag = allocateTag();
+  fabricCreateViewTransitionInstance(name, tag);
   return {
     name: name,
     old: new ViewTransitionPseudoElement("old", name),
@@ -11915,6 +11922,7 @@ function startViewTransition(
     return mutationCallback(), layoutCallback(), spawnedWorkCallback(), null;
   suspendedState.ready.then(function () {
     spawnedWorkCallback();
+    fabricStartViewTransitionReadyFinished();
   });
   suspendedState.finished.finally(function () {
     passiveCallback();
@@ -11938,6 +11946,8 @@ var _nativeFabricUIManage = nativeFabricUIManager,
   FabricIdlePriority = _nativeFabricUIManage.unstable_IdleEventPriority,
   fabricGetCurrentEventPriority =
     _nativeFabricUIManage.unstable_getCurrentEventPriority,
+  fabricSuspendOnActiveViewTransition =
+    _nativeFabricUIManage.suspendOnActiveViewTransition,
   extraDevToolsConfig = {
     getInspectorDataForInstance: void 0,
     getInspectorDataForViewAtPoint: function () {
@@ -11949,6 +11959,11 @@ var _nativeFabricUIManage = nativeFabricUIManager,
   getViewConfigForType =
     ReactNativePrivateInterface.ReactNativeViewConfigRegistry.get,
   nextReactTag = 2;
+function allocateTag() {
+  var tag = nextReactTag;
+  nextReactTag += 2;
+  return tag;
+}
 registerEventHandler && registerEventHandler(dispatchEvent);
 var PROD_HOST_CONTEXT = { isInAParentText: !0 };
 function createTextInstance(
@@ -11957,8 +11972,7 @@ function createTextInstance(
   hostContext,
   internalInstanceHandle
 ) {
-  hostContext = nextReactTag;
-  nextReactTag += 2;
+  hostContext = allocateTag();
   return {
     node: createNode(
       hostContext,
@@ -12258,26 +12272,26 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1360 = {
+  internals$jscomp$inline_1363 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-56922cf7-20260416",
+    version: "19.3.0-native-fb-77319e2a-20260416",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-56922cf7-20260416"
+    reconcilerVersion: "19.3.0-native-fb-77319e2a-20260416"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1360.rendererConfig = extraDevToolsConfig);
+  (internals$jscomp$inline_1363.rendererConfig = extraDevToolsConfig);
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1721 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1724 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1721.isDisabled &&
-    hook$jscomp$inline_1721.supportsFiber
+    !hook$jscomp$inline_1724.isDisabled &&
+    hook$jscomp$inline_1724.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1721.inject(
-        internals$jscomp$inline_1360
+      (rendererID = hook$jscomp$inline_1724.inject(
+        internals$jscomp$inline_1363
       )),
-        (injectedHook = hook$jscomp$inline_1721);
+        (injectedHook = hook$jscomp$inline_1724);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {
