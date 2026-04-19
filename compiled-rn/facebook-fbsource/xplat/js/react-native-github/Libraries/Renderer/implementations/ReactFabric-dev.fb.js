@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<3ae9f8060f0624a026914006c7603aaa>>
+ * @generated SignedSource<<d6fd54fb634ce2e0ce827eff61901c6a>>
  */
 
 "use strict";
@@ -31,43 +31,19 @@ __DEV__ &&
         : emptyObject;
     }
     function createHierarchy(fiberHierarchy) {
-      return fiberHierarchy.map(function (fiber$jscomp$0) {
+      return fiberHierarchy.map(function (fiber) {
         return {
-          name: getComponentNameFromType(fiber$jscomp$0.type),
+          name: getComponentNameFromType(fiber.type),
           getInspectorData: function () {
             return {
-              props: getHostProps(fiber$jscomp$0),
+              props: getHostProps(fiber),
               measure: function (callback) {
-                var hostFiber = findCurrentHostFiber(fiber$jscomp$0);
-                if (
-                  (hostFiber =
-                    null != hostFiber &&
-                    null !== hostFiber.stateNode &&
-                    hostFiber.stateNode.node)
-                )
+                var hostFiber = findCurrentHostFiber(fiber);
+                (hostFiber =
+                  null != hostFiber &&
+                  null !== hostFiber.stateNode &&
+                  hostFiber.stateNode.node) &&
                   nativeFabricUIManager.measure(hostFiber, callback);
-                else {
-                  hostFiber = ReactNativePrivateInterface.UIManager;
-                  var JSCompiler_temp_const = hostFiber.measure,
-                    JSCompiler_inline_result;
-                  a: {
-                    for (var fiber = fiber$jscomp$0; fiber; ) {
-                      null !== fiber.stateNode &&
-                        5 === fiber.tag &&
-                        (JSCompiler_inline_result = findNodeHandle(
-                          fiber.stateNode
-                        ));
-                      if (JSCompiler_inline_result) break a;
-                      fiber = fiber.child;
-                    }
-                    JSCompiler_inline_result = null;
-                  }
-                  return JSCompiler_temp_const.call(
-                    hostFiber,
-                    JSCompiler_inline_result,
-                    callback
-                  );
-                }
               }
             };
           }
@@ -1855,18 +1831,6 @@ __DEV__ &&
         node = node.sibling;
       }
       return null;
-    }
-    function doesFiberContain(parentFiber, childFiber) {
-      for (
-        var parentFiberAlternate = parentFiber.alternate;
-        null !== childFiber;
-
-      ) {
-        if (childFiber === parentFiber || childFiber === parentFiberAlternate)
-          return !0;
-        childFiber = childFiber.return;
-      }
-      return !1;
     }
     function traverseVisibleHostChildren(
       child,
@@ -17840,44 +17804,6 @@ __DEV__ &&
       }
       return map;
     }
-    function findNodeHandle(componentOrHandle) {
-      var owner = current;
-      null !== owner &&
-        isRendering &&
-        null !== owner.stateNode &&
-        (owner.stateNode._warnedAboutRefsInRender ||
-          console.error(
-            "%s is accessing findNodeHandle inside its render(). render() should be a pure function of props and state. It should never access something that requires stale data from the previous render, such as refs. Move this logic to componentDidMount and componentDidUpdate instead.",
-            getComponentNameFromType(owner.type) || "A component"
-          ),
-        (owner.stateNode._warnedAboutRefsInRender = !0));
-      if (null == componentOrHandle) return null;
-      if ("number" === typeof componentOrHandle) return componentOrHandle;
-      if (componentOrHandle._nativeTag) return componentOrHandle._nativeTag;
-      if (
-        null != componentOrHandle.canonical &&
-        null != componentOrHandle.canonical.nativeTag
-      )
-        return componentOrHandle.canonical.nativeTag;
-      if (
-        (owner =
-          ReactNativePrivateInterface.getNativeTagFromPublicInstance(
-            componentOrHandle
-          ))
-      )
-        return owner;
-      componentOrHandle = findHostInstanceWithWarning(
-        componentOrHandle,
-        "findNodeHandle"
-      );
-      return null == componentOrHandle
-        ? componentOrHandle
-        : null != componentOrHandle._nativeTag
-          ? componentOrHandle._nativeTag
-          : ReactNativePrivateInterface.getNativeTagFromPublicInstance(
-              componentOrHandle
-            );
-    }
     function getNodeFromInternalInstanceHandle(internalInstanceHandle) {
       return (
         internalInstanceHandle &&
@@ -17988,12 +17914,9 @@ __DEV__ &&
         }
         return instance.canonical.publicInstance;
       }
-      return null != instance.containerInfo &&
-        null != instance.containerInfo.publicInstance
+      return null != instance.containerInfo
         ? instance.containerInfo.publicInstance
-        : null != instance._nativeTag
-          ? instance
-          : null;
+        : null;
     }
     function getPublicInstanceFromHostFiber(fiber) {
       fiber = getPublicInstance(fiber.stateNode);
@@ -18893,7 +18816,6 @@ __DEV__ &&
       DefaultEventPriority = 32,
       IdleEventPriority = 268435456,
       searchTarget = null,
-      instanceCache = new Map(),
       bind = Function.prototype.bind,
       valueStack = [];
     var fiberStack = [];
@@ -20947,24 +20869,19 @@ __DEV__ &&
         _nativeFabricUIManage.unstable_getCurrentEventPriority,
       extraDevToolsConfig = {
         getInspectorDataForInstance: getInspectorDataForInstance,
-        getInspectorDataForViewTag: function (viewTag) {
-          viewTag = instanceCache.get(viewTag) || null;
-          return getInspectorDataForInstance(viewTag);
-        },
         getInspectorDataForViewAtPoint: function (
           inspectedView,
           locationX,
           locationY,
           callback
         ) {
-          var closestInstance = null,
-            fabricNode =
-              ReactNativePrivateInterface.getNodeFromPublicInstance(
-                inspectedView
-              );
-          fabricNode
+          var closestInstance = null;
+          (inspectedView =
+            ReactNativePrivateInterface.getNodeFromPublicInstance(
+              inspectedView
+            ))
             ? nativeFabricUIManager.findNodeAtPoint(
-                fabricNode,
+                inspectedView,
                 locationX,
                 locationY,
                 function (internalInstanceHandle) {
@@ -21015,32 +20932,9 @@ __DEV__ &&
                   }
                 }
               )
-            : null != inspectedView._internalFiberInstanceHandleDEV
-              ? ReactNativePrivateInterface.UIManager.findSubviewIn(
-                  findNodeHandle(inspectedView),
-                  [locationX, locationY],
-                  function (nativeViewTag, left, top, width, height) {
-                    var inspectorData = getInspectorDataForInstance(
-                      instanceCache.get(nativeViewTag) || null
-                    );
-                    callback(
-                      assign({}, inspectorData, {
-                        pointerY: locationY,
-                        frame: {
-                          left: left,
-                          top: top,
-                          width: width,
-                          height: height
-                        },
-                        touchedViewTag: nativeViewTag,
-                        closestPublicInstance: nativeViewTag
-                      })
-                    );
-                  }
-                )
-              : console.error(
-                  "getInspectorDataForViewAtPoint expects to receive a host component"
-                );
+            : console.error(
+                "getInspectorDataForViewAtPoint expects to receive a host component"
+              );
         }
       },
       getViewConfigForType =
@@ -21242,10 +21136,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-0418c8a8-20260414",
+        version: "19.3.0-native-fb-56922cf7-20260416",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-0418c8a8-20260414"
+        reconcilerVersion: "19.3.0-native-fb-56922cf7-20260416"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
@@ -21276,23 +21170,12 @@ __DEV__ &&
       );
     };
     exports.dispatchCommand = function (handle, command, args) {
-      var nativeTag =
-        null != handle._nativeTag
-          ? handle._nativeTag
-          : ReactNativePrivateInterface.getNativeTagFromPublicInstance(handle);
-      null == nativeTag
-        ? console.error(
+      handle = ReactNativePrivateInterface.getNodeFromPublicInstance(handle);
+      null != handle
+        ? nativeFabricUIManager.dispatchCommand(handle, command, args)
+        : console.error(
             "dispatchCommand was called with a ref that isn't a native component. Use React.forwardRef to get access to the underlying native component"
-          )
-        : ((handle =
-            ReactNativePrivateInterface.getNodeFromPublicInstance(handle)),
-          null != handle
-            ? nativeFabricUIManager.dispatchCommand(handle, command, args)
-            : ReactNativePrivateInterface.UIManager.dispatchViewManagerCommand(
-                nativeTag,
-                command,
-                args
-              ));
+          );
     };
     exports.findHostInstance_DEPRECATED = function (componentOrHandle) {
       var owner = current;
@@ -21310,14 +21193,46 @@ __DEV__ &&
         : componentOrHandle.canonical &&
             componentOrHandle.canonical.publicInstance
           ? componentOrHandle.canonical.publicInstance
-          : componentOrHandle._nativeTag
-            ? componentOrHandle
-            : findHostInstanceWithWarning(
-                componentOrHandle,
-                "findHostInstance_DEPRECATED"
-              );
+          : findHostInstanceWithWarning(
+              componentOrHandle,
+              "findHostInstance_DEPRECATED"
+            );
     };
-    exports.findNodeHandle = findNodeHandle;
+    exports.findNodeHandle = function (componentOrHandle) {
+      var owner = current;
+      null !== owner &&
+        isRendering &&
+        null !== owner.stateNode &&
+        (owner.stateNode._warnedAboutRefsInRender ||
+          console.error(
+            "%s is accessing findNodeHandle inside its render(). render() should be a pure function of props and state. It should never access something that requires stale data from the previous render, such as refs. Move this logic to componentDidMount and componentDidUpdate instead.",
+            getComponentNameFromType(owner.type) || "A component"
+          ),
+        (owner.stateNode._warnedAboutRefsInRender = !0));
+      if (null == componentOrHandle) return null;
+      if ("number" === typeof componentOrHandle) return componentOrHandle;
+      if (
+        null != componentOrHandle.canonical &&
+        null != componentOrHandle.canonical.nativeTag
+      )
+        return componentOrHandle.canonical.nativeTag;
+      if (
+        (owner =
+          ReactNativePrivateInterface.getNativeTagFromPublicInstance(
+            componentOrHandle
+          ))
+      )
+        return owner;
+      componentOrHandle = findHostInstanceWithWarning(
+        componentOrHandle,
+        "findNodeHandle"
+      );
+      return null == componentOrHandle
+        ? componentOrHandle
+        : ReactNativePrivateInterface.getNativeTagFromPublicInstance(
+            componentOrHandle
+          );
+    };
     exports.getNodeFromInternalInstanceHandle =
       getNodeFromInternalInstanceHandle;
     exports.getPublicInstanceFromInternalInstanceHandle = function (
@@ -21341,14 +21256,6 @@ __DEV__ &&
         : null;
     };
     exports.isChildPublicInstance = function (parentInstance, childInstance) {
-      if (
-        parentInstance._internalFiberInstanceHandleDEV &&
-        childInstance._internalFiberInstanceHandleDEV
-      )
-        return doesFiberContain(
-          parentInstance._internalFiberInstanceHandleDEV,
-          childInstance._internalFiberInstanceHandleDEV
-        );
       parentInstance =
         ReactNativePrivateInterface.getInternalInstanceHandleFromPublicInstance(
           parentInstance
@@ -21357,9 +21264,27 @@ __DEV__ &&
         ReactNativePrivateInterface.getInternalInstanceHandleFromPublicInstance(
           childInstance
         );
-      return null != parentInstance && null != childInstance
-        ? doesFiberContain(parentInstance, childInstance)
-        : !1;
+      if (null != parentInstance && null != childInstance) {
+        a: {
+          for (
+            var parentFiberAlternate = parentInstance.alternate;
+            null !== childInstance;
+
+          ) {
+            if (
+              childInstance === parentInstance ||
+              childInstance === parentFiberAlternate
+            ) {
+              parentInstance = !0;
+              break a;
+            }
+            childInstance = childInstance.return;
+          }
+          parentInstance = !1;
+        }
+        return parentInstance;
+      }
+      return !1;
     };
     exports.render = function (
       element,
@@ -21440,22 +21365,12 @@ __DEV__ &&
       return element;
     };
     exports.sendAccessibilityEvent = function (handle, eventType) {
-      var nativeTag =
-        null != handle._nativeTag
-          ? handle._nativeTag
-          : ReactNativePrivateInterface.getNativeTagFromPublicInstance(handle);
-      null == nativeTag
-        ? console.error(
+      handle = ReactNativePrivateInterface.getNodeFromPublicInstance(handle);
+      null != handle
+        ? nativeFabricUIManager.sendAccessibilityEvent(handle, eventType)
+        : console.error(
             "sendAccessibilityEvent was called with a ref that isn't a native component. Use React.forwardRef to get access to the underlying native component"
-          )
-        : ((handle =
-            ReactNativePrivateInterface.getNodeFromPublicInstance(handle)),
-          null != handle
-            ? nativeFabricUIManager.sendAccessibilityEvent(handle, eventType)
-            : ReactNativePrivateInterface.legacySendAccessibilityEvent(
-                nativeTag,
-                eventType
-              ));
+          );
     };
     exports.stopSurface = function (containerTag) {
       var root = roots.get(containerTag);

@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<fec122d6acb807fc566f53f9bbe92feb>>
+ * @generated SignedSource<<6ad97c60c1a1cd254444a8142134ea16>>
  */
 
 "use strict";
@@ -13934,11 +13934,6 @@ var _nativeFabricUIManage = nativeFabricUIManager,
     _nativeFabricUIManage.unstable_getCurrentEventPriority,
   extraDevToolsConfig = {
     getInspectorDataForInstance: void 0,
-    getInspectorDataForViewTag: function () {
-      throw Error(
-        "getInspectorDataForViewTag() is not available in production"
-      );
-    },
     getInspectorDataForViewAtPoint: function () {
       throw Error(
         "getInspectorDataForViewAtPoint() is not available in production."
@@ -13985,12 +13980,9 @@ function getPublicInstance(instance) {
     }
     return instance.canonical.publicInstance;
   }
-  return null != instance.containerInfo &&
-    null != instance.containerInfo.publicInstance
+  return null != instance.containerInfo
     ? instance.containerInfo.publicInstance
-    : null != instance._nativeTag
-      ? instance
-      : null;
+    : null;
 }
 function getPublicInstanceFromHostFiber(fiber) {
   fiber = getPublicInstance(fiber.stateNode);
@@ -14286,10 +14278,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1683 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-0418c8a8-20260414",
+    version: "19.3.0-native-fb-56922cf7-20260416",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-0418c8a8-20260414"
+    reconcilerVersion: "19.3.0-native-fb-56922cf7-20260416"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1683.rendererConfig = extraDevToolsConfig);
@@ -14330,33 +14322,20 @@ exports.createPortal = function (children, containerTag) {
   );
 };
 exports.dispatchCommand = function (handle, command, args) {
-  var nativeTag =
-    null != handle._nativeTag
-      ? handle._nativeTag
-      : ReactNativePrivateInterface.getNativeTagFromPublicInstance(handle);
-  null != nativeTag &&
-    ((handle = ReactNativePrivateInterface.getNodeFromPublicInstance(handle)),
-    null != handle
-      ? nativeFabricUIManager.dispatchCommand(handle, command, args)
-      : ReactNativePrivateInterface.UIManager.dispatchViewManagerCommand(
-          nativeTag,
-          command,
-          args
-        ));
+  handle = ReactNativePrivateInterface.getNodeFromPublicInstance(handle);
+  null != handle &&
+    nativeFabricUIManager.dispatchCommand(handle, command, args);
 };
 exports.findHostInstance_DEPRECATED = function (componentOrHandle) {
   return null == componentOrHandle
     ? null
     : componentOrHandle.canonical && componentOrHandle.canonical.publicInstance
       ? componentOrHandle.canonical.publicInstance
-      : componentOrHandle._nativeTag
-        ? componentOrHandle
-        : findHostInstance(componentOrHandle);
+      : findHostInstance(componentOrHandle);
 };
 exports.findNodeHandle = function (componentOrHandle) {
   if (null == componentOrHandle) return null;
   if ("number" === typeof componentOrHandle) return componentOrHandle;
-  if (componentOrHandle._nativeTag) return componentOrHandle._nativeTag;
   if (
     null != componentOrHandle.canonical &&
     null != componentOrHandle.canonical.nativeTag
@@ -14370,11 +14349,9 @@ exports.findNodeHandle = function (componentOrHandle) {
   componentOrHandle = findHostInstance(componentOrHandle);
   return null == componentOrHandle
     ? componentOrHandle
-    : null != componentOrHandle._nativeTag
-      ? componentOrHandle._nativeTag
-      : ReactNativePrivateInterface.getNativeTagFromPublicInstance(
-          componentOrHandle
-        );
+    : ReactNativePrivateInterface.getNativeTagFromPublicInstance(
+        componentOrHandle
+      );
 };
 exports.getNodeFromInternalInstanceHandle = function (internalInstanceHandle) {
   return (
@@ -14486,18 +14463,9 @@ exports.render = function (
   return element;
 };
 exports.sendAccessibilityEvent = function (handle, eventType) {
-  var nativeTag =
-    null != handle._nativeTag
-      ? handle._nativeTag
-      : ReactNativePrivateInterface.getNativeTagFromPublicInstance(handle);
-  null != nativeTag &&
-    ((handle = ReactNativePrivateInterface.getNodeFromPublicInstance(handle)),
-    null != handle
-      ? nativeFabricUIManager.sendAccessibilityEvent(handle, eventType)
-      : ReactNativePrivateInterface.legacySendAccessibilityEvent(
-          nativeTag,
-          eventType
-        ));
+  handle = ReactNativePrivateInterface.getNodeFromPublicInstance(handle);
+  null != handle &&
+    nativeFabricUIManager.sendAccessibilityEvent(handle, eventType);
 };
 exports.stopSurface = function (containerTag) {
   var root = roots.get(containerTag);
