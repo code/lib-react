@@ -76,6 +76,7 @@ var dynamicFeatureFlags = require("ReactFeatureFlags"),
   retryLaneExpirationMs = dynamicFeatureFlags.retryLaneExpirationMs,
   syncLaneExpirationMs = dynamicFeatureFlags.syncLaneExpirationMs,
   transitionLaneExpirationMs = dynamicFeatureFlags.transitionLaneExpirationMs,
+  enableSuspenseyImages = dynamicFeatureFlags.enableSuspenseyImages,
   enableViewTransition = dynamicFeatureFlags.enableViewTransition,
   enableFragmentRefs = dynamicFeatureFlags.enableFragmentRefs,
   enableParallelTransitions = dynamicFeatureFlags.enableParallelTransitions;
@@ -2598,7 +2599,7 @@ function markUpdateLaneFromFiberToRoot(sourceFiber, update, lane) {
     : null;
 }
 function getRootForUpdatedFiber(sourceFiber) {
-  throwIfInfiniteUpdateLoopDetected();
+  throwIfInfiniteUpdateLoopDetected(!1);
   for (var parent = sourceFiber.return; null !== parent; )
     (sourceFiber = parent), (parent = sourceFiber.return);
   return 3 === sourceFiber.tag ? sourceFiber.stateNode : null;
@@ -9943,7 +9944,7 @@ function markRootUpdated(root, updatedLanes) {
     (executionContext & 2
       ? (workInProgressRootDidIncludeRecursiveRenderUpdate = !0)
       : executionContext & 4 && (didIncludeCommitPhaseUpdate = !0),
-    throwIfInfiniteUpdateLoopDetected());
+    throwIfInfiniteUpdateLoopDetected(!0));
 }
 function markRootSuspended(
   root,
@@ -10769,7 +10770,7 @@ function pingSuspendedRoot(root, wakeable, pingedLanes) {
     (executionContext & 2
       ? (workInProgressRootDidIncludeRecursiveRenderUpdate = !0)
       : executionContext & 4 && (didIncludeCommitPhaseUpdate = !0),
-    throwIfInfiniteUpdateLoopDetected());
+    throwIfInfiniteUpdateLoopDetected(!0));
   workInProgressRoot === root &&
     (workInProgressRootRenderLanes & pingedLanes) === pingedLanes &&
     (4 === workInProgressRootExitStatus ||
@@ -10819,7 +10820,9 @@ function resolveRetryWakeable(boundaryFiber, wakeable) {
   null !== retryCache && retryCache.delete(wakeable);
   retryTimedOutBoundary(boundaryFiber, retryLane);
 }
-function throwIfInfiniteUpdateLoopDetected() {
+function throwIfInfiniteUpdateLoopDetected(
+  isFromInfiniteRenderLoopDetectionInstrumentation
+) {
   if (50 < nestedUpdateCount) {
     nestedUpdateCount = 0;
     rootWithNestedUpdates = null;
@@ -10828,7 +10831,10 @@ function throwIfInfiniteUpdateLoopDetected() {
     if (enableInfiniteRenderLoopDetection) {
       if (
         1 === updateKind &&
-        !(executionContext & 2 && null !== workInProgressRoot)
+        !(
+          isFromInfiniteRenderLoopDetectionInstrumentation ||
+          (executionContext & 2 && null !== workInProgressRoot)
+        )
       )
         throw Error(formatProdErrorMessage(185));
     } else throw Error(formatProdErrorMessage(185));
@@ -11025,7 +11031,8 @@ function createFiberFromTypeAndProps(
       case REACT_VIEW_TRANSITION_TYPE:
         if (enableViewTransition)
           return (
-            (type = mode | 32),
+            (type = mode),
+            enableSuspenseyImages || (type |= 32),
             (type = createFiber(30, pendingProps, key, type)),
             (type.elementType = REACT_VIEW_TRANSITION_TYPE),
             (type.lanes = lanes),
@@ -11322,10 +11329,10 @@ var slice = Array.prototype.slice,
   })(React.Component);
 var internals$jscomp$inline_1602 = {
   bundleType: 0,
-  version: "19.3.0-www-modern-705268dc-20260409",
+  version: "19.3.0-www-modern-00f063c3-20260415",
   rendererPackageName: "react-art",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-modern-705268dc-20260409"
+  reconcilerVersion: "19.3.0-www-modern-00f063c3-20260415"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_1603 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -11351,4 +11358,4 @@ exports.RadialGradient = RadialGradient;
 exports.Shape = TYPES.SHAPE;
 exports.Surface = Surface;
 exports.Text = Text;
-exports.version = "19.3.0-www-modern-705268dc-20260409";
+exports.version = "19.3.0-www-modern-00f063c3-20260415";

@@ -5357,7 +5357,7 @@ __DEV__ &&
         : null;
     }
     function getRootForUpdatedFiber(sourceFiber) {
-      throwIfInfiniteUpdateLoopDetected();
+      throwIfInfiniteUpdateLoopDetected(!1);
       null === sourceFiber.alternate &&
         0 !== (sourceFiber.flags & 4098) &&
         warnAboutUpdateOnNotYetMountedFiberInDEV(sourceFiber);
@@ -11180,7 +11180,7 @@ __DEV__ &&
       renderLanes
     ) {
       if (
-        (workInProgress.mode & 32) !== NoMode &&
+        (enableSuspenseyImages || (workInProgress.mode & 32) !== NoMode) &&
         (null === oldProps
           ? maySuspendCommit(type, newProps)
           : maySuspendCommitOnUpdate(type, oldProps, newProps))
@@ -17476,7 +17476,7 @@ __DEV__ &&
           ? (workInProgressRootDidIncludeRecursiveRenderUpdate = !0)
           : executionContext & CommitContext &&
             (didIncludeCommitPhaseUpdate = !0),
-        throwIfInfiniteUpdateLoopDetected());
+        throwIfInfiniteUpdateLoopDetected(!0));
     }
     function markRootSuspended(
       root,
@@ -19309,7 +19309,7 @@ __DEV__ &&
           ? (workInProgressRootDidIncludeRecursiveRenderUpdate = !0)
           : executionContext & CommitContext &&
             (didIncludeCommitPhaseUpdate = !0),
-        throwIfInfiniteUpdateLoopDetected());
+        throwIfInfiniteUpdateLoopDetected(!0));
       0 !== (pingedLanes & 127)
         ? 0 > blockingUpdateTime &&
           ((blockingClampTime = blockingUpdateTime = now()),
@@ -19376,7 +19376,9 @@ __DEV__ &&
       null !== retryCache && retryCache.delete(wakeable);
       retryTimedOutBoundary(boundaryFiber, retryLane);
     }
-    function throwIfInfiniteUpdateLoopDetected() {
+    function throwIfInfiniteUpdateLoopDetected(
+      isFromInfiniteRenderLoopDetectionInstrumentation
+    ) {
       if (nestedUpdateCount > NESTED_UPDATE_LIMIT) {
         nestedPassiveUpdateCount = nestedUpdateCount = 0;
         rootWithPassiveNestedUpdates = rootWithNestedUpdates = null;
@@ -19384,7 +19386,10 @@ __DEV__ &&
         nestedUpdateKind = NO_NESTED_UPDATE;
         if (enableInfiniteRenderLoopDetection)
           if (updateKind === NESTED_UPDATE_SYNC_LANE)
-            if (executionContext & RenderContext && null !== workInProgressRoot)
+            if (
+              isFromInfiniteRenderLoopDetectionInstrumentation ||
+              (executionContext & RenderContext && null !== workInProgressRoot)
+            )
               console.error(
                 "Maximum update depth exceeded. This could be an infinite loop. This can happen when a component repeatedly calls setState during render phase or inside useLayoutEffect, causing infinite render loop. React limits the number of nested updates to prevent infinite loops."
               );
@@ -19912,7 +19917,8 @@ __DEV__ &&
           case REACT_VIEW_TRANSITION_TYPE:
             if (enableViewTransition)
               return (
-                (type = mode | 32),
+                (type = mode),
+                enableSuspenseyImages || (type |= 32),
                 (key = createFiber(30, pendingProps, key, type)),
                 (key.elementType = REACT_VIEW_TRANSITION_TYPE),
                 (key.lanes = lanes),
@@ -20312,6 +20318,7 @@ __DEV__ &&
       syncLaneExpirationMs = dynamicFeatureFlags.syncLaneExpirationMs,
       transitionLaneExpirationMs =
         dynamicFeatureFlags.transitionLaneExpirationMs,
+      enableSuspenseyImages = dynamicFeatureFlags.enableSuspenseyImages,
       enableViewTransition = dynamicFeatureFlags.enableViewTransition,
       enableFragmentRefs = dynamicFeatureFlags.enableFragmentRefs,
       enableFragmentRefsTextNodes =
@@ -23094,7 +23101,7 @@ __DEV__ &&
         version: rendererVersion,
         rendererPackageName: rendererPackageName,
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-705268dc-20260409"
+        reconcilerVersion: "19.3.0-www-classic-00f063c3-20260415"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
