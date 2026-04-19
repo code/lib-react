@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<7f0e6aac3ff9181be66191248f4625c7>>
+ * @generated SignedSource<<adcc0c2355577994cff146023bc13c63>>
  */
 
 "use strict";
@@ -1270,7 +1270,7 @@ eventPluginOrder = Array.prototype.slice.call([
   "ReactNativeBridgeEventPlugin"
 ]);
 recomputePluginOrdering();
-var injectedNamesToPlugins$jscomp$inline_334 = {
+var injectedNamesToPlugins$jscomp$inline_335 = {
     ResponderEventPlugin: ResponderEventPlugin,
     ReactNativeBridgeEventPlugin: {
       eventTypes: {},
@@ -1316,32 +1316,32 @@ var injectedNamesToPlugins$jscomp$inline_334 = {
       }
     }
   },
-  isOrderingDirty$jscomp$inline_335 = !1,
-  pluginName$jscomp$inline_336;
-for (pluginName$jscomp$inline_336 in injectedNamesToPlugins$jscomp$inline_334)
+  isOrderingDirty$jscomp$inline_336 = !1,
+  pluginName$jscomp$inline_337;
+for (pluginName$jscomp$inline_337 in injectedNamesToPlugins$jscomp$inline_335)
   if (
-    injectedNamesToPlugins$jscomp$inline_334.hasOwnProperty(
-      pluginName$jscomp$inline_336
+    injectedNamesToPlugins$jscomp$inline_335.hasOwnProperty(
+      pluginName$jscomp$inline_337
     )
   ) {
-    var pluginModule$jscomp$inline_337 =
-      injectedNamesToPlugins$jscomp$inline_334[pluginName$jscomp$inline_336];
+    var pluginModule$jscomp$inline_338 =
+      injectedNamesToPlugins$jscomp$inline_335[pluginName$jscomp$inline_337];
     if (
-      !namesToPlugins.hasOwnProperty(pluginName$jscomp$inline_336) ||
-      namesToPlugins[pluginName$jscomp$inline_336] !==
-        pluginModule$jscomp$inline_337
+      !namesToPlugins.hasOwnProperty(pluginName$jscomp$inline_337) ||
+      namesToPlugins[pluginName$jscomp$inline_337] !==
+        pluginModule$jscomp$inline_338
     ) {
-      if (namesToPlugins[pluginName$jscomp$inline_336])
+      if (namesToPlugins[pluginName$jscomp$inline_337])
         throw Error(
           "EventPluginRegistry: Cannot inject two different event plugins using the same name, `" +
-            (pluginName$jscomp$inline_336 + "`.")
+            (pluginName$jscomp$inline_337 + "`.")
         );
-      namesToPlugins[pluginName$jscomp$inline_336] =
-        pluginModule$jscomp$inline_337;
-      isOrderingDirty$jscomp$inline_335 = !0;
+      namesToPlugins[pluginName$jscomp$inline_337] =
+        pluginModule$jscomp$inline_338;
+      isOrderingDirty$jscomp$inline_336 = !0;
     }
   }
-isOrderingDirty$jscomp$inline_335 && recomputePluginOrdering();
+isOrderingDirty$jscomp$inline_336 && recomputePluginOrdering();
 function batchedUpdatesImpl(fn, bookkeeping) {
   return fn(bookkeeping);
 }
@@ -1375,46 +1375,67 @@ function executeDispatchesAndReleaseTopLevel(e) {
     e.isPersistent() || e.constructor.release(e);
   }
 }
-function dispatchEvent(target, topLevelType, nativeEvent) {
-  var eventTarget = null;
-  if (null != target) {
-    var stateNode = target.stateNode;
-    null != stateNode && (eventTarget = getPublicInstance(stateNode));
-  }
+var _enableNativeEventTargetEventDispatching = null;
+function dispatchEvent(target, topLevelType, nativeEventParam) {
+  var nativeEvent =
+      null != nativeEventParam && "object" === typeof nativeEventParam
+        ? nativeEventParam
+        : {},
+    eventTarget = null;
+  null != target &&
+    ((nativeEventParam = target.stateNode),
+    null != nativeEventParam &&
+      (eventTarget = getPublicInstance(nativeEventParam)));
   batchedUpdates$1(function () {
     var event = { eventName: topLevelType, nativeEvent: nativeEvent };
     ReactNativePrivateInterface.RawEventEmitter.emit(topLevelType, event);
     ReactNativePrivateInterface.RawEventEmitter.emit("*", event);
-    event = eventTarget;
-    for (
-      var events = null, legacyPlugins = plugins, i = 0;
-      i < legacyPlugins.length;
-      i++
-    ) {
-      var possiblePlugin = legacyPlugins[i];
-      possiblePlugin &&
-        (possiblePlugin = possiblePlugin.extractEvents(
+    null == _enableNativeEventTargetEventDispatching &&
+      (_enableNativeEventTargetEventDispatching =
+        "function" === typeof RN$isNativeEventTargetEventDispatchingEnabled &&
+        RN$isNativeEventTargetEventDispatchingEnabled());
+    if (_enableNativeEventTargetEventDispatching)
+      null != eventTarget &&
+        ReactNativePrivateInterface.dispatchNativeEvent(
+          eventTarget,
           topLevelType,
-          target,
-          nativeEvent,
-          event
-        )) &&
-        (events = accumulateInto(events, possiblePlugin));
-    }
-    event = events;
-    null !== event && (eventQueue = accumulateInto(eventQueue, event));
-    event = eventQueue;
-    eventQueue = null;
-    if (event) {
-      forEachAccumulated(event, executeDispatchesAndReleaseTopLevel);
-      if (eventQueue)
-        throw Error(
-          "processEventQueue(): Additional events were enqueued while processing an event queue. Support for this has not yet been implemented."
+          nativeEvent
         );
-      if (hasError)
-        throw (
-          ((event = caughtError), (hasError = !1), (caughtError = null), event)
-        );
+    else {
+      event = eventTarget;
+      for (
+        var events = null, legacyPlugins = plugins, i = 0;
+        i < legacyPlugins.length;
+        i++
+      ) {
+        var possiblePlugin = legacyPlugins[i];
+        possiblePlugin &&
+          (possiblePlugin = possiblePlugin.extractEvents(
+            topLevelType,
+            target,
+            nativeEvent,
+            event
+          )) &&
+          (events = accumulateInto(events, possiblePlugin));
+      }
+      event = events;
+      null !== event && (eventQueue = accumulateInto(eventQueue, event));
+      event = eventQueue;
+      eventQueue = null;
+      if (event) {
+        forEachAccumulated(event, executeDispatchesAndReleaseTopLevel);
+        if (eventQueue)
+          throw Error(
+            "processEventQueue(): Additional events were enqueued while processing an event queue. Support for this has not yet been implemented."
+          );
+        if (hasError)
+          throw (
+            ((event = caughtError),
+            (hasError = !1),
+            (caughtError = null),
+            event)
+          );
+      }
     }
   });
 }
@@ -14263,16 +14284,16 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1680 = {
+  internals$jscomp$inline_1683 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-733d3aaf-20260408",
+    version: "19.3.0-native-fb-00f063c3-20260415",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-733d3aaf-20260408"
+    reconcilerVersion: "19.3.0-native-fb-00f063c3-20260415"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1680.rendererConfig = extraDevToolsConfig);
-internals$jscomp$inline_1680.getLaneLabelMap = function () {
+  (internals$jscomp$inline_1683.rendererConfig = extraDevToolsConfig);
+internals$jscomp$inline_1683.getLaneLabelMap = function () {
   for (
     var map = new Map(), lane = 1, index$184 = 0;
     31 > index$184;
@@ -14284,20 +14305,20 @@ internals$jscomp$inline_1680.getLaneLabelMap = function () {
   }
   return map;
 };
-internals$jscomp$inline_1680.injectProfilingHooks = function (profilingHooks) {
+internals$jscomp$inline_1683.injectProfilingHooks = function (profilingHooks) {
   injectedProfilingHooks = profilingHooks;
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2074 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2077 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2074.isDisabled &&
-    hook$jscomp$inline_2074.supportsFiber
+    !hook$jscomp$inline_2077.isDisabled &&
+    hook$jscomp$inline_2077.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2074.inject(
-        internals$jscomp$inline_1680
+      (rendererID = hook$jscomp$inline_2077.inject(
+        internals$jscomp$inline_1683
       )),
-        (injectedHook = hook$jscomp$inline_2074);
+        (injectedHook = hook$jscomp$inline_2077);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {

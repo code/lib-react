@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<ecc05e7994ae94c662dfe9eb856638fb>>
+ * @generated SignedSource<<0347aca211936584b5e78f53ffa5a9b7>>
  */
 
 "use strict";
@@ -1277,49 +1277,67 @@ __DEV__ &&
         e.isPersistent() || e.constructor.release(e);
       }
     }
-    function dispatchEvent(target, topLevelType, nativeEvent) {
-      var eventTarget = null;
-      if (null != target) {
-        var stateNode = target.stateNode;
-        null != stateNode && (eventTarget = getPublicInstance(stateNode));
-      }
+    function dispatchEvent(target, topLevelType, nativeEventParam) {
+      var nativeEvent =
+          null != nativeEventParam && "object" === typeof nativeEventParam
+            ? nativeEventParam
+            : {},
+        eventTarget = null;
+      null != target &&
+        ((nativeEventParam = target.stateNode),
+        null != nativeEventParam &&
+          (eventTarget = getPublicInstance(nativeEventParam)));
       batchedUpdates$1(function () {
         var event = { eventName: topLevelType, nativeEvent: nativeEvent };
         ReactNativePrivateInterface.RawEventEmitter.emit(topLevelType, event);
         ReactNativePrivateInterface.RawEventEmitter.emit("*", event);
-        event = eventTarget;
-        for (
-          var events = null, legacyPlugins = plugins, i = 0;
-          i < legacyPlugins.length;
-          i++
-        ) {
-          var possiblePlugin = legacyPlugins[i];
-          possiblePlugin &&
-            (possiblePlugin = possiblePlugin.extractEvents(
+        null == _enableNativeEventTargetEventDispatching &&
+          (_enableNativeEventTargetEventDispatching =
+            "function" ===
+              typeof RN$isNativeEventTargetEventDispatchingEnabled &&
+            RN$isNativeEventTargetEventDispatchingEnabled());
+        if (_enableNativeEventTargetEventDispatching)
+          null != eventTarget &&
+            ReactNativePrivateInterface.dispatchNativeEvent(
+              eventTarget,
               topLevelType,
-              target,
-              nativeEvent,
-              event
-            )) &&
-            (events = accumulateInto(events, possiblePlugin));
-        }
-        event = events;
-        null !== event && (eventQueue = accumulateInto(eventQueue, event));
-        event = eventQueue;
-        eventQueue = null;
-        if (event) {
-          forEachAccumulated(event, executeDispatchesAndReleaseTopLevel);
-          if (eventQueue)
-            throw Error(
-              "processEventQueue(): Additional events were enqueued while processing an event queue. Support for this has not yet been implemented."
+              nativeEvent
             );
-          if (hasError)
-            throw (
-              ((event = caughtError),
-              (hasError = !1),
-              (caughtError = null),
-              event)
-            );
+        else {
+          event = eventTarget;
+          for (
+            var events = null, legacyPlugins = plugins, i = 0;
+            i < legacyPlugins.length;
+            i++
+          ) {
+            var possiblePlugin = legacyPlugins[i];
+            possiblePlugin &&
+              (possiblePlugin = possiblePlugin.extractEvents(
+                topLevelType,
+                target,
+                nativeEvent,
+                event
+              )) &&
+              (events = accumulateInto(events, possiblePlugin));
+          }
+          event = events;
+          null !== event && (eventQueue = accumulateInto(eventQueue, event));
+          event = eventQueue;
+          eventQueue = null;
+          if (event) {
+            forEachAccumulated(event, executeDispatchesAndReleaseTopLevel);
+            if (eventQueue)
+              throw Error(
+                "processEventQueue(): Additional events were enqueued while processing an event queue. Support for this has not yet been implemented."
+              );
+            if (hasError)
+              throw (
+                ((event = caughtError),
+                (hasError = !1),
+                (caughtError = null),
+                event)
+              );
+          }
         }
       });
     }
@@ -18846,6 +18864,7 @@ __DEV__ &&
     });
     var isInsideEventHandler = !1,
       eventQueue = null,
+      _enableNativeEventTargetEventDispatching = null,
       BeforeMutationMask = 1024 | (enableEffectEventMutationPhase ? 0 : 4),
       scheduleCallback$3 = Scheduler.unstable_scheduleCallback,
       cancelCallback$1 = Scheduler.unstable_cancelCallback,
@@ -21223,10 +21242,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-733d3aaf-20260408",
+        version: "19.3.0-native-fb-00f063c3-20260415",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-733d3aaf-20260408"
+        reconcilerVersion: "19.3.0-native-fb-00f063c3-20260415"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
