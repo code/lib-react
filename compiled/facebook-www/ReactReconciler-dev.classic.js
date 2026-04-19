@@ -8416,7 +8416,7 @@ __DEV__ &&
               null !== current &&
                 restoreSuspendedTreeContext(workInProgress, current)),
             (workInProgress = mountActivityChildren(workInProgress, nextProps)),
-            (workInProgress.flags |= 4096);
+            (workInProgress.flags |= 134221824);
         return workInProgress;
       }
       prevState = current.child;
@@ -9468,7 +9468,7 @@ __DEV__ &&
                 workInProgress,
                 nextProps.children
               )),
-              (workInProgress.flags |= 4096));
+              (workInProgress.flags |= 134221824));
         return workInProgress;
       }
       if (showFallback)
@@ -10159,7 +10159,7 @@ __DEV__ &&
         null === workInProgress
           ? ((returnFiber.deletions = [current]), (returnFiber.flags |= 16))
           : workInProgress.push(current);
-        renderLanes.flags |= 2;
+        renderLanes.flags |= 134217730;
         return renderLanes;
       }
       if (null !== current)
@@ -10387,7 +10387,7 @@ __DEV__ &&
                   current;
 
                 )
-                  (current.flags = (current.flags & -3) | 4096),
+                  (current.flags = (current.flags & -3) | 134221824),
                     (current = current.sibling);
             else {
               resetHydrationState();
@@ -19440,7 +19440,7 @@ __DEV__ &&
                   isStrictModeFiber
                 )
             : null === fiber.memoizedState &&
-              (isStrictModeFiber && fiber.flags & 8192
+              (isStrictModeFiber && fiber.flags & 134225920
                 ? runWithFiberInDEV(
                     fiber,
                     doubleInvokeEffectsOnFiber,
@@ -23101,7 +23101,7 @@ __DEV__ &&
         version: rendererVersion,
         rendererPackageName: rendererPackageName,
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-bf45a68d-20260417"
+        reconcilerVersion: "19.3.0-www-classic-1ddff43c-20260417"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
