@@ -18255,7 +18255,12 @@ function normalizeListenerOptions(opts) {
     ? "0"
     : "boolean" === typeof opts
       ? "c=" + (opts ? "1" : "0")
-      : "c=" + (opts.capture ? "1" : "0");
+      : "c=" +
+        (opts.capture ? "1" : "0") +
+        "&o=" +
+        (opts.once ? "1" : "0") +
+        "&p=" +
+        (opts.passive ? "1" : "0");
 }
 function indexOfEventListener(
   eventListeners,
@@ -20574,14 +20579,14 @@ function getCrossOriginStringAs(as, input) {
 }
 var isomorphicReactPackageVersion$jscomp$inline_2085 = React.version;
 if (
-  "19.3.0-www-classic-142cfde8-20260422" !==
+  "19.3.0-www-classic-94643c3b-20260421" !==
   isomorphicReactPackageVersion$jscomp$inline_2085
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2085,
-      "19.3.0-www-classic-142cfde8-20260422"
+      "19.3.0-www-classic-94643c3b-20260421"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -20599,10 +20604,10 @@ Internals.Events = [
 ];
 var internals$jscomp$inline_2656 = {
   bundleType: 0,
-  version: "19.3.0-www-classic-142cfde8-20260422",
+  version: "19.3.0-www-classic-94643c3b-20260421",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-classic-142cfde8-20260422"
+  reconcilerVersion: "19.3.0-www-classic-94643c3b-20260421"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_2657 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -21182,4 +21187,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-classic-142cfde8-20260422";
+exports.version = "19.3.0-www-classic-94643c3b-20260421";
