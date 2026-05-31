@@ -5700,19 +5700,22 @@ function abortTask(task, request, error) {
   }
   var errorInfo = getThrownInfo(task.componentStack);
   if (null === boundary) {
-    if (13 !== request.status && 14 !== request.status) {
-      boundary = task.replay;
-      if (null === boundary) {
-        null !== request.trackedPostpones && null !== segment
-          ? ((boundary = request.trackedPostpones),
-            logRecoverableError(request, error, errorInfo),
-            trackPostpone(request, boundary, task, segment),
-            finishedTask(request, null, task.row, segment))
-          : (logRecoverableError(request, error, errorInfo),
+    boundary = task.replay;
+    if (null === boundary) {
+      null !== request.trackedPostpones && null !== segment
+        ? ((boundary = request.trackedPostpones),
+          logRecoverableError(request, error, errorInfo),
+          trackPostpone(request, boundary, task, segment),
+          finishedTask(request, null, task.row, segment))
+        : (logRecoverableError(request, error, errorInfo),
+          13 !== request.status &&
+            14 !== request.status &&
             fatalError(request, error));
-        return;
-      }
-      boundary.pendingTasks--;
+      return;
+    }
+    13 !== request.status &&
+      14 !== request.status &&
+      (boundary.pendingTasks--,
       0 === boundary.pendingTasks &&
         0 < boundary.nodes.length &&
         ((segment = logRecoverableError(request, error, errorInfo)),
@@ -5723,10 +5726,9 @@ function abortTask(task, request, error) {
           boundary.slots,
           error,
           segment
-        ));
-      request.pendingRootTasks--;
-      0 === request.pendingRootTasks && completeShell(request);
-    }
+        )),
+      request.pendingRootTasks--,
+      0 === request.pendingRootTasks && completeShell(request));
   } else {
     var trackedPostpones$65 = request.trackedPostpones;
     if (4 !== boundary.status) {
@@ -6602,28 +6604,30 @@ function enqueueFlush(request) {
     (request.flushScheduled = !0);
 }
 function abort(request, reason) {
-  if (11 === request.status || 10 === request.status) request.status = 12;
-  try {
-    var abortableTasks = request.abortableTasks;
-    if (0 < abortableTasks.size) {
-      var error =
-        void 0 === reason
-          ? Error("The render was aborted by the server without a reason.")
-          : "object" === typeof reason &&
-              null !== reason &&
-              "function" === typeof reason.then
-            ? Error("The render was aborted by the server with a promise.")
-            : reason;
-      request.fatalError = error;
-      abortableTasks.forEach(function (task) {
-        return abortTask(task, request, error);
-      });
-      abortableTasks.clear();
+  if (11 === request.status || 10 === request.status) {
+    request.status = 12;
+    try {
+      var abortableTasks = request.abortableTasks;
+      if (0 < abortableTasks.size) {
+        var error =
+          void 0 === reason
+            ? Error("The render was aborted by the server without a reason.")
+            : "object" === typeof reason &&
+                null !== reason &&
+                "function" === typeof reason.then
+              ? Error("The render was aborted by the server with a promise.")
+              : reason;
+        request.fatalError = error;
+        abortableTasks.forEach(function (task) {
+          return abortTask(task, request, error);
+        });
+        abortableTasks.clear();
+      }
+      null !== request.destination &&
+        flushCompletedQueues(request, request.destination);
+    } catch (error$73) {
+      logRecoverableError(request, error$73, {}), fatalError(request, error$73);
     }
-    null !== request.destination &&
-      flushCompletedQueues(request, request.destination);
-  } catch (error$73) {
-    logRecoverableError(request, error$73, {}), fatalError(request, error$73);
   }
 }
 function addToReplayParent(node, parentKeyPath, trackedPostpones) {
