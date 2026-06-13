@@ -1,10 +1,10 @@
 {
   "name": "eslint-plugin-react-hooks",
   "description": "ESLint rules for React Hooks",
-  "version": "0.0.0-experimental-34b78a28-20260609",
+  "version": "0.0.0-experimental-e730b5e6-20260612",
   "repository": {
     "type": "git",
-    "url": "https://github.com/facebook/react.git",
+    "url": "https://github.com/react/react.git",
     "directory": "packages/eslint-plugin-react-hooks"
   },
   "files": [
@@ -27,7 +27,7 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/facebook/react/issues"
+    "url": "https://github.com/react/react/issues"
   },
   "main": "./index.js",
   "types": "./index.d.ts",
