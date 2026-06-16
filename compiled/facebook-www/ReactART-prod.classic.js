@@ -11653,10 +11653,10 @@ var slice = Array.prototype.slice,
   })(React.Component);
 var internals$jscomp$inline_1629 = {
   bundleType: 0,
-  version: "19.3.0-www-classic-34b78a28-20260609",
+  version: "19.3.0-www-classic-d9158919-20260615",
   rendererPackageName: "react-art",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-classic-34b78a28-20260609"
+  reconcilerVersion: "19.3.0-www-classic-d9158919-20260615"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_1630 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -11682,4 +11682,4 @@ exports.RadialGradient = RadialGradient;
 exports.Shape = TYPES.SHAPE;
 exports.Surface = Surface;
 exports.Text = Text;
-exports.version = "19.3.0-www-classic-34b78a28-20260609";
+exports.version = "19.3.0-www-classic-d9158919-20260615";
