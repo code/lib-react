@@ -32435,10 +32435,13 @@ function findDisjointMutableValues(fn) {
     }
     for (const [_, block] of fn.body.blocks) {
         for (const phi of block.phis) {
-            if (phi.place.identifier.mutableRange.start + 1 !==
+            const firstInstructionIdOfBlock = (_b = (_a = block.instructions.at(0)) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : block.terminal.id;
+            const isPhiMutatedAfterCreation = phi.place.identifier.mutableRange.start + 1 !==
                 phi.place.identifier.mutableRange.end &&
-                phi.place.identifier.mutableRange.end >
-                    ((_b = (_a = block.instructions.at(0)) === null || _a === void 0 ? void 0 : _a.id) !== null && _b !== void 0 ? _b : block.terminal.id)) {
+                phi.place.identifier.mutableRange.end > firstInstructionIdOfBlock;
+            const isLoopCarriedReassignment = !isPhiMutatedAfterCreation &&
+                Iterable_some(phi.operands.values(), operand => operand.identifier.mutableRange.start >= firstInstructionIdOfBlock);
+            if (isPhiMutatedAfterCreation || isLoopCarriedReassignment) {
                 const operands = [phi.place.identifier];
                 const declaration = declarations.get(phi.place.identifier.declarationId);
                 if (declaration !== undefined) {
