@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<df34f296e3aa226d84920f2ce77807a9>>
+ * @generated SignedSource<<33073c3592f3f18d63a93a1f3b72c41a>>
  */
 
 "use strict";
@@ -27,8 +27,6 @@ var ReactNativePrivateInterface = require("react-native/Libraries/ReactPrivate/R
   enableEffectEventMutationPhase =
     dynamicFlagsUntyped.enableEffectEventMutationPhase,
   enableObjectFiber = dynamicFlagsUntyped.enableObjectFiber,
-  enableEagerAlternateStateNodeCleanup =
-    dynamicFlagsUntyped.enableEagerAlternateStateNodeCleanup,
   passChildrenWhenCloningPersistedNodes =
     dynamicFlagsUntyped.passChildrenWhenCloningPersistedNodes,
   enableFragmentRefs = dynamicFlagsUntyped.enableFragmentRefs,
@@ -10141,8 +10139,7 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
         (offscreenSubtreeWasHidden ||
           null === current ||
           safelyDetachRef(current, current.return));
-      enableEagerAlternateStateNodeCleanup &&
-        null !== finishedWork.alternate &&
+      null !== finishedWork.alternate &&
         (finishedWork.alternate.stateNode = finishedWork.stateNode);
       break;
     case 6:
@@ -14315,10 +14312,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1686 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-560db514-20260617",
+    version: "19.3.0-native-fb-99e86060-20260623",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-560db514-20260617"
+    reconcilerVersion: "19.3.0-native-fb-99e86060-20260623"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1686.rendererConfig = extraDevToolsConfig);
