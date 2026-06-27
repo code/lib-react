@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<3cdd1dd9d9871730a1672d20c82f67a3>>
+ * @generated SignedSource<<d3a60dc9672af950f0e6b06d369181ed>>
  */
 
 "use strict";
@@ -292,7 +292,11 @@ __DEV__ &&
                     ? options.integrity
                     : void 0,
                 nonce:
-                  "string" === typeof options.nonce ? options.nonce : void 0
+                  "string" === typeof options.nonce ? options.nonce : void 0,
+                fetchPriority:
+                  "string" === typeof options.fetchPriority
+                    ? options.fetchPriority
+                    : void 0
               });
         } else null == options && Internals.d.M(href);
     };
@@ -394,6 +398,10 @@ __DEV__ &&
               integrity:
                 "string" === typeof options.integrity
                   ? options.integrity
+                  : void 0,
+              fetchPriority:
+                "string" === typeof options.fetchPriority
+                  ? options.fetchPriority
                   : void 0
             }))
           : Internals.d.m(href));
@@ -410,5 +418,5 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-native-fb-99e86060-20260623";
+    exports.version = "19.3.0-native-fb-39c2c1d4-20260624";
   })();
