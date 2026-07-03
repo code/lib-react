@@ -12,7 +12,7 @@
  * @lightSyntaxTransform
  * @preventMunge
  * @oncall react_core
- * @generated SignedSource<<f40db3e318d1f6b86c566330c92e2620>>
+ * @generated SignedSource<<aa15b34bb5a8d2f67120533ecfe3f9b2>>
  */
 
 'use strict';
@@ -52114,10 +52114,38 @@ function primaryLocation(detail) {
     }
     return (_b = detail.loc) !== null && _b !== void 0 ? _b : null;
 }
-function printErrorMessage(detail) {
-    const buffer = [`[ReactCompilerError] ${detail.reason}`];
-    if (detail.description != null) {
-        buffer.push(`\n\n${detail.description}.`);
+function printErrorMessage(source, error) {
+    var _a, _b, _c, _d;
+    const buffer = [`[ReactCompilerError] ${error.reason}`];
+    if (error.description != null) {
+        buffer.push(`\n\n${error.description}.`);
+    }
+    const details = (_a = error.details) !== null && _a !== void 0 ? _a : (error.loc != null
+        ? [{ kind: 'error', loc: error.loc, message: error.reason }]
+        : []);
+    for (const detail of details) {
+        if (detail.kind === 'error') {
+            const loc = detail.loc;
+            if (loc == null || typeof loc === 'symbol') {
+                continue;
+            }
+            let codeFrame;
+            try {
+                codeFrame = printCodeFrame(source, loc, (_b = detail.message) !== null && _b !== void 0 ? _b : '');
+            }
+            catch (_e) {
+                codeFrame = (_c = detail.message) !== null && _c !== void 0 ? _c : '';
+            }
+            buffer.push('\n\n');
+            if (loc.filename != null) {
+                buffer.push(`${loc.filename}:${loc.start.line}:${loc.start.column + 1}\n`);
+            }
+            buffer.push(codeFrame);
+        }
+        else if (detail.kind === 'hint') {
+            buffer.push('\n\n');
+            buffer.push((_d = detail.message) !== null && _d !== void 0 ? _d : '');
+        }
     }
     return buffer.join('');
 }
@@ -52204,7 +52232,7 @@ function makeRule(rule) {
                         continue;
                     }
                     context.report({
-                        message: printErrorMessage(detail),
+                        message: printErrorMessage(result.sourceCode, detail),
                         loc,
                         suggest: makeSuggestions(detail),
                     });
