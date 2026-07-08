@@ -1806,7 +1806,7 @@ module.exports = function ($$$config) {
         return (
           (newIndex = newIndex.index),
           newIndex < lastPlacedIndex
-            ? ((newFiber.flags |= 134217730), lastPlacedIndex)
+            ? ((newFiber.flags |= 2), lastPlacedIndex)
             : newIndex
         );
       newFiber.flags |= 134217730;
@@ -14341,7 +14341,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-modern-fc08d760-20260706"
+      reconcilerVersion: "19.3.0-www-modern-12a4baec-20260707"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);
