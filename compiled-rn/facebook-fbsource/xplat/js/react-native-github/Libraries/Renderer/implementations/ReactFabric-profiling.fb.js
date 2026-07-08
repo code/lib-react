@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<1239ccee3006628f433d336b4d36913e>>
+ * @generated SignedSource<<dc56c24be3a730fdf2c57850d61160ab>>
  */
 
 "use strict";
@@ -3381,7 +3381,7 @@ function createChildReconciler(shouldTrackSideEffects) {
       return (
         (newIndex = newIndex.index),
         newIndex < lastPlacedIndex
-          ? ((newFiber.flags |= 134217730), lastPlacedIndex)
+          ? ((newFiber.flags |= 2), lastPlacedIndex)
           : newIndex
       );
     newFiber.flags |= 134217730;
@@ -14402,10 +14402,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1686 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-fc08d760-20260706",
+    version: "19.3.0-native-fb-12a4baec-20260707",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-fc08d760-20260706"
+    reconcilerVersion: "19.3.0-native-fb-12a4baec-20260707"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1686.rendererConfig = extraDevToolsConfig);
