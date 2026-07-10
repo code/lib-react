@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<8bee71bbb4eebd611bc686c2bf64487f>>
+ * @generated SignedSource<<2bed27b9d4b628baf9f5005e08df27e0>>
  */
 
 "use strict";
@@ -8249,7 +8249,11 @@ __DEV__ &&
       renderLanes
     ) {
       Component = Component.render;
-      var ref = workInProgress.ref;
+      var resolvedRender = resolveTypeForHotReloading(Component);
+      resolvedRender !== Component &&
+        ((Component = resolvedRender),
+        null !== current && (didReceiveUpdate = !0));
+      resolvedRender = workInProgress.ref;
       if ("ref" in nextProps) {
         var propsWithoutRef = {};
         for (var key in nextProps)
@@ -8262,7 +8266,7 @@ __DEV__ &&
         workInProgress,
         Component,
         propsWithoutRef,
-        ref,
+        resolvedRender,
         renderLanes
       );
       markComponentRenderStopped();
@@ -8291,7 +8295,7 @@ __DEV__ &&
           null === Component.compare
         )
           return (
-            (Component = resolveFunctionForHotReloading(type)),
+            (Component = resolveTypeForHotReloading(type)),
             (workInProgress.tag = 15),
             (workInProgress.type = Component),
             validateFunctionComponentInDev(workInProgress, type),
@@ -9812,13 +9816,8 @@ __DEV__ &&
     }
     function beginWork(current, workInProgress, renderLanes) {
       if (workInProgress._debugNeedsRemount && null !== current) {
-        renderLanes = workInProgress.type;
-        if (null !== resolveFamily) {
-          var family = resolveFamily(workInProgress.elementType);
-          renderLanes = void 0 === family ? renderLanes : family.current;
-        }
         renderLanes = createFiberFromTypeAndProps(
-          renderLanes,
+          resolveTypeForHotReloading(workInProgress.elementType),
           workInProgress.key,
           workInProgress.pendingProps,
           workInProgress._debugOwner || null,
@@ -9827,8 +9826,8 @@ __DEV__ &&
         );
         renderLanes._debugStack = workInProgress._debugStack;
         renderLanes._debugTask = workInProgress._debugTask;
-        family = workInProgress.return;
-        if (null === family) throw Error("Cannot swap the root fiber.");
+        var returnFiber = workInProgress.return;
+        if (null === returnFiber) throw Error("Cannot swap the root fiber.");
         current.alternate = null;
         workInProgress.alternate = null;
         renderLanes.index = workInProgress.index;
@@ -9836,9 +9835,10 @@ __DEV__ &&
         renderLanes.return = workInProgress.return;
         renderLanes.ref = workInProgress.ref;
         renderLanes._debugInfo = workInProgress._debugInfo;
-        if (workInProgress === family.child) family.child = renderLanes;
+        if (workInProgress === returnFiber.child)
+          returnFiber.child = renderLanes;
         else {
-          var prevSibling = family.child;
+          var prevSibling = returnFiber.child;
           if (null === prevSibling)
             throw Error("Expected parent to have a child.");
           for (; prevSibling.sibling !== workInProgress; )
@@ -9846,9 +9846,9 @@ __DEV__ &&
               throw Error("Expected to find the previous sibling.");
           prevSibling.sibling = renderLanes;
         }
-        workInProgress = family.deletions;
+        workInProgress = returnFiber.deletions;
         null === workInProgress
-          ? ((family.deletions = [current]), (family.flags |= 16))
+          ? ((returnFiber.deletions = [current]), (returnFiber.flags |= 16))
           : workInProgress.push(current);
         renderLanes.flags |= 134217730;
         return renderLanes;
@@ -9882,32 +9882,32 @@ __DEV__ &&
           a: if (
             ((prevSibling = workInProgress.elementType),
             resetSuspendedCurrentOnMountInLegacyMode(current, workInProgress),
-            (family = workInProgress.pendingProps),
+            (returnFiber = workInProgress.pendingProps),
             (current = resolveLazy(prevSibling)),
+            (current = resolveTypeForHotReloading(current)),
             (workInProgress.type = current),
             "function" === typeof current)
           )
             shouldConstruct(current)
-              ? ((family = resolveClassComponentProps(current, family)),
+              ? ((returnFiber = resolveClassComponentProps(
+                  current,
+                  returnFiber
+                )),
                 (workInProgress.tag = 1),
-                (workInProgress.type = current =
-                  resolveFunctionForHotReloading(current)),
                 (workInProgress = updateClassComponent(
                   null,
                   workInProgress,
                   current,
-                  family,
+                  returnFiber,
                   renderLanes
                 )))
               : ((workInProgress.tag = 0),
                 validateFunctionComponentInDev(workInProgress, current),
-                (workInProgress.type = current =
-                  resolveFunctionForHotReloading(current)),
                 (workInProgress = updateFunctionComponent(
                   null,
                   workInProgress,
                   current,
-                  family,
+                  returnFiber,
                   renderLanes
                 )));
           else {
@@ -9917,13 +9917,11 @@ __DEV__ &&
                 prevSibling === REACT_FORWARD_REF_TYPE)
               ) {
                 workInProgress.tag = 11;
-                workInProgress.type = current =
-                  resolveForwardRefForHotReloading(current);
                 workInProgress = updateForwardRef(
                   null,
                   workInProgress,
                   current,
-                  family,
+                  returnFiber,
                   renderLanes
                 );
                 break a;
@@ -9933,7 +9931,7 @@ __DEV__ &&
                   null,
                   workInProgress,
                   current,
-                  family,
+                  returnFiber,
                   renderLanes
                 );
                 break a;
@@ -9953,10 +9951,10 @@ __DEV__ &&
               current.$$typeof === REACT_LAZY_TYPE &&
               (workInProgress =
                 " Did you wrap a component in React.lazy() more than once?");
-            current = getComponentNameFromType(current) || current;
+            renderLanes = getComponentNameFromType(current) || current;
             throw Error(
               "Element type is invalid. Received a promise that resolves to: " +
-                current +
+                renderLanes +
                 ". Lazy element type must resolve to a class or function." +
                 workInProgress
             );
@@ -9972,15 +9970,15 @@ __DEV__ &&
           );
         case 1:
           return (
-            (family = workInProgress.type),
+            (returnFiber = workInProgress.type),
             (prevSibling = resolveClassComponentProps(
-              family,
+              returnFiber,
               workInProgress.pendingProps
             )),
             updateClassComponent(
               current,
               workInProgress,
-              family,
+              returnFiber,
               prevSibling,
               renderLanes
             )
@@ -9991,7 +9989,7 @@ __DEV__ &&
             throw Error("Should have a current fiber. This is a bug in React.");
           var nextProps = workInProgress.pendingProps;
           prevSibling = workInProgress.memoizedState;
-          family = prevSibling.element;
+          returnFiber = prevSibling.element;
           cloneUpdateQueue(current, workInProgress);
           processUpdateQueue(workInProgress, nextProps, null, renderLanes);
           nextProps = workInProgress.memoizedState;
@@ -10006,7 +10004,7 @@ __DEV__ &&
             );
           suspendIfUpdateReadFromEntangledAsyncAction();
           prevSibling = nextProps.element;
-          prevSibling === family
+          prevSibling === returnFiber
             ? (workInProgress = bailoutOnAlreadyFinishedWork(
                 current,
                 workInProgress,
@@ -10025,7 +10023,7 @@ __DEV__ &&
         case 5:
           return (
             pushHostContext(workInProgress),
-            (family = workInProgress.pendingProps.children),
+            (returnFiber = workInProgress.pendingProps.children),
             null !== workInProgress.memoizedState &&
               ((prevSibling = renderWithHooks(
                 current,
@@ -10037,7 +10035,12 @@ __DEV__ &&
               )),
               (HostTransitionContext._currentValue2 = prevSibling)),
             markRef(current, workInProgress),
-            reconcileChildren(current, workInProgress, family, renderLanes),
+            reconcileChildren(
+              current,
+              workInProgress,
+              returnFiber,
+              renderLanes
+            ),
             workInProgress.child
           );
         case 6:
@@ -10050,15 +10053,20 @@ __DEV__ &&
               workInProgress,
               workInProgress.stateNode.containerInfo
             ),
-            (family = workInProgress.pendingProps),
+            (returnFiber = workInProgress.pendingProps),
             null === current
               ? (workInProgress.child = reconcileChildFibers(
                   workInProgress,
                   null,
-                  family,
+                  returnFiber,
                   renderLanes
                 ))
-              : reconcileChildren(current, workInProgress, family, renderLanes),
+              : reconcileChildren(
+                  current,
+                  workInProgress,
+                  returnFiber,
+                  renderLanes
+                ),
             workInProgress.child
           );
         case 11:
@@ -10071,9 +10079,14 @@ __DEV__ &&
           );
         case 7:
           return (
-            (family = workInProgress.pendingProps),
+            (returnFiber = workInProgress.pendingProps),
             enableFragmentRefs && markRef(current, workInProgress),
-            reconcileChildren(current, workInProgress, family, renderLanes),
+            reconcileChildren(
+              current,
+              workInProgress,
+              returnFiber,
+              renderLanes
+            ),
             workInProgress.child
           );
         case 8:
@@ -10090,9 +10103,9 @@ __DEV__ &&
           return (
             (workInProgress.flags |= 4),
             (workInProgress.flags |= 2048),
-            (family = workInProgress.stateNode),
-            (family.effectDuration = -0),
-            (family.passiveEffectDuration = -0),
+            (returnFiber = workInProgress.stateNode),
+            (returnFiber.effectDuration = -0),
+            (returnFiber.passiveEffectDuration = -0),
             reconcileChildren(
               current,
               workInProgress,
@@ -10106,18 +10119,27 @@ __DEV__ &&
         case 9:
           return (
             (prevSibling = workInProgress.type._context),
-            (family = workInProgress.pendingProps.children),
-            "function" !== typeof family &&
+            (returnFiber = workInProgress.pendingProps.children),
+            "function" !== typeof returnFiber &&
               console.error(
                 "A context consumer was rendered with multiple children, or a child that isn't a function. A context consumer expects a single child that is a function. If you did pass a function, make sure there is no trailing or leading whitespace around it."
               ),
             prepareToReadContext(workInProgress),
             (prevSibling = readContext(prevSibling)),
             markComponentRenderStarted(workInProgress),
-            (family = callComponentInDEV(family, prevSibling, void 0)),
+            (returnFiber = callComponentInDEV(
+              returnFiber,
+              prevSibling,
+              void 0
+            )),
             markComponentRenderStopped(),
             (workInProgress.flags |= 1),
-            reconcileChildren(current, workInProgress, family, renderLanes),
+            reconcileChildren(
+              current,
+              workInProgress,
+              returnFiber,
+              renderLanes
+            ),
             workInProgress.child
           );
         case 14:
@@ -10138,28 +10160,28 @@ __DEV__ &&
           );
         case 17:
           return (
-            (family = workInProgress.type),
+            (returnFiber = workInProgress.type),
             (prevSibling = resolveClassComponentProps(
-              family,
+              returnFiber,
               workInProgress.pendingProps
             )),
             resetSuspendedCurrentOnMountInLegacyMode(current, workInProgress),
             (workInProgress.tag = 1),
-            isContextProvider(family)
+            isContextProvider(returnFiber)
               ? ((current = !0), pushContextProvider(workInProgress))
               : (current = !1),
             prepareToReadContext(workInProgress),
-            constructClassInstance(workInProgress, family, prevSibling),
+            constructClassInstance(workInProgress, returnFiber, prevSibling),
             mountClassInstance(
               workInProgress,
-              family,
+              returnFiber,
               prevSibling,
               renderLanes
             ),
             finishClassComponent(
               null,
               workInProgress,
-              family,
+              returnFiber,
               !0,
               current,
               renderLanes
@@ -10167,9 +10189,9 @@ __DEV__ &&
           );
         case 28:
           return (
-            (family = workInProgress.type),
+            (returnFiber = workInProgress.type),
             (prevSibling = resolveClassComponentProps(
-              family,
+              returnFiber,
               workInProgress.pendingProps
             )),
             resetSuspendedCurrentOnMountInLegacyMode(current, workInProgress),
@@ -10177,7 +10199,7 @@ __DEV__ &&
             updateFunctionComponent(
               null,
               workInProgress,
-              family,
+              returnFiber,
               prevSibling,
               renderLanes
             )
@@ -10194,7 +10216,9 @@ __DEV__ &&
           workInProgress.flags &= -129;
           if (null === current)
             workInProgress = mountActivityChildren(workInProgress, prevSibling);
-          else if (((family = current.memoizedState), null !== family))
+          else if (
+            ((returnFiber = current.memoizedState), null !== returnFiber)
+          )
             b: {
               pushDehydratedActivitySuspenseHandler(workInProgress);
               if (nextProps) {
@@ -10235,10 +10259,10 @@ __DEV__ &&
                     prevSibling,
                     renderLanes
                   )),
-                  0 !== nextProps && nextProps !== family.retryLane)
+                  0 !== nextProps && nextProps !== returnFiber.retryLane)
                 )
                   throw (
-                    ((family.retryLane = nextProps),
+                    ((returnFiber.retryLane = nextProps),
                     enqueueConcurrentRenderForLane(current, nextProps),
                     scheduleUpdateOnFiber(prevSibling, current, nextProps),
                     SelectiveHydrationException)
@@ -10257,7 +10281,7 @@ __DEV__ &&
                   (workInProgress.flags |= 134221824);
             }
           else
-            (family = current.child),
+            (returnFiber = current.child),
               (prevSibling = {
                 mode: prevSibling.mode,
                 children: prevSibling.children
@@ -10265,11 +10289,11 @@ __DEV__ &&
               0 !== (renderLanes & 536870912) &&
                 0 !== (renderLanes & current.lanes) &&
                 markRenderDerivedCause(workInProgress),
-              (current = createWorkInProgress(family, prevSibling)),
-              (current.ref = workInProgress.ref),
-              (workInProgress.child = current),
-              (current.return = workInProgress),
-              (workInProgress = current);
+              (renderLanes = createWorkInProgress(returnFiber, prevSibling)),
+              (renderLanes.ref = workInProgress.ref),
+              (workInProgress.child = renderLanes),
+              (renderLanes.return = workInProgress),
+              (workInProgress = renderLanes);
           return workInProgress;
         case 22:
           return updateOffscreenComponent(
@@ -10281,7 +10305,7 @@ __DEV__ &&
         case 24:
           return (
             prepareToReadContext(workInProgress),
-            (family = readContext(CacheContext)),
+            (returnFiber = readContext(CacheContext)),
             null === current
               ? ((prevSibling = peekCacheFromPool()),
                 null === prevSibling &&
@@ -10293,7 +10317,7 @@ __DEV__ &&
                     (prevSibling.pooledCacheLanes |= renderLanes),
                   (prevSibling = nextProps)),
                 (workInProgress.memoizedState = {
-                  parent: family,
+                  parent: returnFiber,
                   cache: prevSibling
                 }),
                 initializeUpdateQueue(workInProgress),
@@ -10304,17 +10328,20 @@ __DEV__ &&
                   suspendIfUpdateReadFromEntangledAsyncAction()),
                 (prevSibling = current.memoizedState),
                 (nextProps = workInProgress.memoizedState),
-                prevSibling.parent !== family
-                  ? ((prevSibling = { parent: family, cache: family }),
+                prevSibling.parent !== returnFiber
+                  ? ((prevSibling = {
+                      parent: returnFiber,
+                      cache: returnFiber
+                    }),
                     (workInProgress.memoizedState = prevSibling),
                     0 === workInProgress.lanes &&
                       (workInProgress.memoizedState =
                         workInProgress.updateQueue.baseState =
                           prevSibling),
-                    pushProvider(workInProgress, CacheContext, family))
-                  : ((family = nextProps.cache),
-                    pushProvider(workInProgress, CacheContext, family),
-                    family !== prevSibling.cache &&
+                    pushProvider(workInProgress, CacheContext, returnFiber))
+                  : ((returnFiber = nextProps.cache),
+                    pushProvider(workInProgress, CacheContext, returnFiber),
+                    returnFiber !== prevSibling.cache &&
                       propagateContextChanges(
                         workInProgress,
                         [CacheContext],
@@ -10338,14 +10365,14 @@ __DEV__ &&
                 clones: null,
                 ref: null
               }),
-            (family = workInProgress.pendingProps),
-            null != family.name &&
-              "auto" !== family.name &&
+            (returnFiber = workInProgress.pendingProps),
+            null != returnFiber.name &&
+              "auto" !== returnFiber.name &&
               (workInProgress.flags |= null === current ? 18882560 : 18874368),
-            void 0 !== family.className &&
+            void 0 !== returnFiber.className &&
               ((prevSibling =
-                "string" === typeof family.className
-                  ? JSON.stringify(family.className)
+                "string" === typeof returnFiber.className
+                  ? JSON.stringify(returnFiber.className)
                   : "{...}"),
               didWarnAboutClassNameOnViewTransition[prevSibling] ||
                 ((didWarnAboutClassNameOnViewTransition[prevSibling] = !0),
@@ -10354,13 +10381,13 @@ __DEV__ &&
                   prevSibling,
                   prevSibling
                 ))),
-            null !== current && current.memoizedProps.name !== family.name
+            null !== current && current.memoizedProps.name !== returnFiber.name
               ? (workInProgress.flags |= 4194816)
               : markRef(current, workInProgress),
             reconcileChildren(
               current,
               workInProgress,
-              family.children,
+              returnFiber.children,
               renderLanes
             ),
             workInProgress.child
@@ -17181,26 +17208,10 @@ __DEV__ &&
           );
         });
     }
-    function resolveFunctionForHotReloading(type) {
+    function resolveTypeForHotReloading(type) {
       if (null === resolveFamily) return type;
       var family = resolveFamily(type);
       return void 0 === family ? type : family.current;
-    }
-    function resolveForwardRefForHotReloading(type) {
-      if (null === resolveFamily) return type;
-      var family = resolveFamily(type);
-      return void 0 === family
-        ? null !== type &&
-          void 0 !== type &&
-          "function" === typeof type.render &&
-          ((family = resolveFunctionForHotReloading(type.render)),
-          type.render !== family)
-          ? ((family = { $$typeof: REACT_FORWARD_REF_TYPE, render: family }),
-            void 0 !== type.displayName &&
-              (family.displayName = type.displayName),
-            family)
-          : type
-        : family.current;
     }
     function isCompatibleFamilyForHotReloading(fiber, element) {
       if (null === resolveFamily) return !1;
@@ -17294,7 +17305,14 @@ __DEV__ &&
         type ||
           null === _fiber ||
           ((tag = resolve(_fiber)),
-          void 0 !== tag && staleFamilies.has(tag) && (type = !0));
+          void 0 !== tag && staleFamilies.has(tag)
+            ? (type = !0)
+            : "object" === typeof _fiber &&
+              _fiber.$$typeof === REACT_LAZY_TYPE &&
+              ((tag = _fiber._payload),
+              1 === tag._status &&
+                ((tag = resolve(tag._result.default)),
+                void 0 !== tag && staleFamilies.has(tag) && (type = !0))));
         null !== failedBoundaries &&
           (failedBoundaries.has(fiber) ||
             (null !== alternate && failedBoundaries.has(alternate))) &&
@@ -17451,13 +17469,10 @@ __DEV__ &&
       switch (workInProgress.tag) {
         case 0:
         case 15:
-          workInProgress.type = resolveFunctionForHotReloading(current.type);
-          break;
+        case 14:
         case 1:
-          workInProgress.type = resolveFunctionForHotReloading(current.type);
-          break;
         case 11:
-          workInProgress.type = resolveForwardRefForHotReloading(current.type);
+          workInProgress.type = resolveTypeForHotReloading(current.type);
       }
       return workInProgress;
     }
@@ -17506,14 +17521,13 @@ __DEV__ &&
       mode,
       lanes
     ) {
-      var fiberTag = 0,
-        resolvedType = type;
-      if ("function" === typeof type)
-        shouldConstruct(type) && (fiberTag = 1),
-          (resolvedType = resolveFunctionForHotReloading(resolvedType));
-      else if ("string" === typeof type) fiberTag = 5;
+      var fiberTag = 0;
+      var resolvedType = resolveTypeForHotReloading(type);
+      if ("function" === typeof resolvedType)
+        shouldConstruct(resolvedType) && (fiberTag = 1);
+      else if ("string" === typeof resolvedType) fiberTag = 5;
       else
-        a: switch (type) {
+        a: switch (resolvedType) {
           case REACT_ACTIVITY_TYPE:
             return (
               (key = createFiber(31, pendingProps, key, mode)),
@@ -17578,8 +17592,8 @@ __DEV__ &&
               key
             );
           default:
-            if ("object" === typeof type && null !== type)
-              switch (type.$$typeof) {
+            if ("object" === typeof resolvedType && null !== resolvedType)
+              switch (resolvedType.$$typeof) {
                 case REACT_CONTEXT_TYPE:
                   fiberTag = 10;
                   break a;
@@ -17588,7 +17602,6 @@ __DEV__ &&
                   break a;
                 case REACT_FORWARD_REF_TYPE:
                   fiberTag = 11;
-                  resolvedType = resolveForwardRefForHotReloading(resolvedType);
                   break a;
                 case REACT_MEMO_TYPE:
                   fiberTag = 14;
@@ -21265,10 +21278,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-5a90a5a7-20260707",
+        version: "19.3.0-native-fb-5123b063-20260708",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-5a90a5a7-20260707"
+        reconcilerVersion: "19.3.0-native-fb-5123b063-20260708"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
