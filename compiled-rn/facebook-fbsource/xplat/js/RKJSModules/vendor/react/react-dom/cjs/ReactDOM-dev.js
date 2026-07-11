@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<f3fdb7f015eafcb7612b030efbfc94bd>>
+ * @generated SignedSource<<7f128386fb0e157f4fd615f5e41ca70c>>
  */
 
 "use strict";
@@ -419,5 +419,5 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-native-fb-5123b063-20260708";
+    exports.version = "19.3.0-native-fb-c0c39a6b-20260709";
   })();
