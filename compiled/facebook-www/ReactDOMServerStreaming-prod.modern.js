@@ -67,7 +67,9 @@ var REACT_OPTIMISTIC_KEY = Symbol.for("react.optimistic_key"),
   isArrayImpl = Array.isArray,
   dynamicFeatureFlags = require("ReactFeatureFlags"),
   enableTransitionTracing = dynamicFeatureFlags.enableTransitionTracing,
-  enableViewTransition = dynamicFeatureFlags.enableViewTransition;
+  enableViewTransition = dynamicFeatureFlags.enableViewTransition,
+  enableViewTransitionParentEnterExit =
+    dynamicFeatureFlags.enableViewTransitionParentEnterExit;
 function murmurhash3_32_gc(key, seed) {
   var remainder = key.length & 3;
   var bytes = key.length - remainder;
@@ -383,6 +385,8 @@ function getSuspenseViewTransition(parentViewTransition) {
         enter: "none",
         exit: "none",
         share: parentViewTransition.update,
+        parentEnter: "none",
+        parentExit: "none",
         name: parentViewTransition.autoName,
         autoName: parentViewTransition.autoName,
         nameIdx: 0
@@ -443,7 +447,21 @@ function pushViewTransitionAttributes(target, formatContext) {
       "none" !== formatContext.exit &&
         pushStringAttribute(target, "vt-exit", formatContext.exit),
       "none" !== formatContext.share &&
-        pushStringAttribute(target, "vt-share", formatContext.share)));
+        pushStringAttribute(target, "vt-share", formatContext.share),
+      enableViewTransitionParentEnterExit &&
+        "none" !== formatContext.parentEnter &&
+        pushStringAttribute(
+          target,
+          "vt-parent-enter",
+          formatContext.parentEnter
+        ),
+      enableViewTransitionParentEnterExit &&
+        "none" !== formatContext.parentExit &&
+        pushStringAttribute(
+          target,
+          "vt-parent-exit",
+          formatContext.parentExit
+        )));
 }
 var styleNameCache = new Map();
 function pushStyleAttribute(target, style) {
@@ -4613,6 +4631,20 @@ function renderElement(request, task, keyPath, type, props, ref) {
             enter = getViewTransitionClassName(props.default, props.enter),
             exit = getViewTransitionClassName(props.default, props.exit),
             share = getViewTransitionClassName(props.default, props.share),
+            parentEnter =
+              enableViewTransitionParentEnterExit &&
+              void 0 !== props.parentEnter
+                ? getViewTransitionClassName(props.default, props.parentEnter)
+                : void 0,
+            parentExit =
+              enableViewTransitionParentEnterExit && void 0 !== props.parentExit
+                ? getViewTransitionClassName(props.default, props.parentExit)
+                : void 0,
+            hasParentEnterHandler =
+              enableViewTransitionParentEnterExit &&
+              null != props.onParentEnter,
+            hasParentExitHandler =
+              enableViewTransitionParentEnterExit && null != props.onParentExit,
             name = props.name;
           null == update && (update = "auto");
           null == enter && (enter = "auto");
@@ -4633,11 +4665,22 @@ function renderElement(request, task, keyPath, type, props, ref) {
           prevContext$jscomp$0.tagScope & 16
             ? (resumableState$jscomp$1.instructions |= 128)
             : (enter = "none");
+          var resolvedParentEnter = "none",
+            resolvedParentExit = "none";
+          enableViewTransitionParentEnterExit &&
+            (null != parentEnter &&
+              0 !== (prevContext$jscomp$0.tagScope & 256) &&
+              (resolvedParentEnter = parentEnter),
+            null != parentExit &&
+              0 !== (prevContext$jscomp$0.tagScope & 128) &&
+              (resolvedParentExit = parentExit));
           var viewTransition = {
               update: update,
               enter: enter,
               exit: exit,
               share: share,
+              parentEnter: resolvedParentEnter,
+              parentExit: resolvedParentExit,
               name: name,
               autoName: autoName,
               nameIdx: 0
@@ -4646,6 +4689,19 @@ function renderElement(request, task, keyPath, type, props, ref) {
           subtreeScope =
             "none" !== update ? subtreeScope | 32 : subtreeScope & -33;
           "none" !== enter && (subtreeScope |= 64);
+          enableViewTransitionParentEnterExit &&
+            ("none" !== enter
+              ? (subtreeScope |= 256)
+              : 0 === (prevContext$jscomp$0.tagScope & 256) ||
+                ("none" !== parentEnter &&
+                  (void 0 !== parentEnter || hasParentEnterHandler)) ||
+                (subtreeScope &= -257),
+            "none" !== exit
+              ? (subtreeScope |= 128)
+              : 0 === (prevContext$jscomp$0.tagScope & 128) ||
+                ("none" !== parentExit &&
+                  (void 0 !== parentExit || hasParentExitHandler)) ||
+                (subtreeScope &= -129));
           var JSCompiler_inline_result$jscomp$3 = createFormatContext(
             prevContext$jscomp$0.insertionMode,
             prevContext$jscomp$0.selectedValue,
@@ -5079,7 +5135,8 @@ function retryNode(request, task) {
                         "object" === typeof x &&
                         null !== x &&
                         (x === SuspenseException ||
-                          "function" === typeof x.then)
+                          "function" === typeof x.then ||
+                          "Maximum call stack size exceeded" === x.message)
                       )
                         throw (
                           (task.node === currentNode
@@ -6217,7 +6274,7 @@ function flushCompletedBoundary(request, destination, boundary) {
             ((completedSegments.instructions |= 256),
             writeChunk(
               destination,
-              '$RV=function(A,g){function k(a,b){var e=a.getAttribute(b);e&&(b=a.style,l.push(a,b.viewTransitionName,b.viewTransitionClass),"auto"!==e&&(b.viewTransitionClass=e),(a=a.getAttribute("vt-name"))||(a="_T_"+K++ +"_"),a=CSS.escape(a)!==a?"r-"+btoa(a).replace(/=/g,""):a,b.viewTransitionName=a,B=!0)}var B=!1,K=0,l=[];try{var f=document.__reactViewTransition;if(f){f.finished.finally($RV.bind(null,g));return}var m=new Map;for(f=1;f<g.length;f+=2)for(var h=g[f].querySelectorAll("[vt-share]"),d=0;d<h.length;d++){var c=h[d];m.set(c.getAttribute("vt-name"),c)}var u=[];for(h=0;h<g.length;h+=2){var C=g[h],x=C.parentNode;if(x){var v=x.getBoundingClientRect();if(v.left||v.top||v.width||v.height){c=C;for(f=0;c;){if(8===c.nodeType){var r=c.data;if("/$"===r)if(0===f)break;else f--;else"$"!==r&&"$?"!==r&&"$~"!==r&&"$!"!==r||f++}else if(1===c.nodeType){d=c;var D=d.getAttribute("vt-name"),y=m.get(D);k(d,y?"vt-share":"vt-exit");y&&(k(y,"vt-share"),m.set(D,null));var E=d.querySelectorAll("[vt-share]");\nfor(d=0;d<E.length;d++){var F=E[d],G=F.getAttribute("vt-name"),H=m.get(G);H&&(k(F,"vt-share"),k(H,"vt-share"),m.set(G,null))}}c=c.nextSibling}for(var I=g[h+1],t=I.firstElementChild;t;)null!==m.get(t.getAttribute("vt-name"))&&k(t,"vt-enter"),t=t.nextElementSibling;c=x;do for(var n=c.firstElementChild;n;){var J=n.getAttribute("vt-update");J&&"none"!==J&&!l.includes(n)&&k(n,"vt-update");n=n.nextElementSibling}while((c=c.parentNode)&&1===c.nodeType&&"none"!==c.getAttribute("vt-update"));u.push.apply(u,\nI.querySelectorAll(\'img[src]:not([loading="lazy"])\'))}}}if(B){var z=document.__reactViewTransition=document.startViewTransition({update:function(){A(g);for(var a=[document.documentElement.clientHeight,document.fonts.ready],b={},e=0;e<u.length;b={g:b.g},e++)if(b.g=u[e],!b.g.complete){var p=b.g.getBoundingClientRect();0<p.bottom&&0<p.right&&p.top<window.innerHeight&&p.left<window.innerWidth&&(p=new Promise(function(w){return function(q){w.g.addEventListener("load",q);w.g.addEventListener("error",q)}}(b)),\na.push(p))}return Promise.race([Promise.all(a),new Promise(function(w){var q=performance.now();setTimeout(w,2300>q&&2E3<q?2300-q:500)})])},types:[]});z.ready.finally(function(){for(var a=l.length-3;0<=a;a-=3){var b=l[a],e=b.style;e.viewTransitionName=l[a+1];e.viewTransitionClass=l[a+1];""===b.getAttribute("style")&&b.removeAttribute("style")}});z.finished.finally(function(){document.__reactViewTransition===z&&(document.__reactViewTransition=null)});$RB=[];return}}catch(a){}A(g)}.bind(null,\n$RV);'
+              '$RV=function(B,g){function h(a,c){var e=a.getAttribute(c);e&&(c=a.style,l.push(a,c.viewTransitionName,c.viewTransitionClass),"auto"!==e&&(c.viewTransitionClass=e),(a=a.getAttribute("vt-name"))||(a="_T_"+N++ +"_"),a=CSS.escape(a)!==a?"r-"+btoa(a).replace(/=/g,""):a,c.viewTransitionName=a,C=!0)}var C=!1,N=0,l=[];try{var f=document.__reactViewTransition;if(f){f.finished.finally($RV.bind(null,g));return}var m=new Map;for(f=1;f<g.length;f+=2)for(var k=g[f].querySelectorAll("[vt-share]"),d=0;d<k.length;d++){var b=k[d];m.set(b.getAttribute("vt-name"),b)}var u=[];for(k=0;k<g.length;k+=2){var D=g[k],x=D.parentNode;if(x){var v=x.getBoundingClientRect();if(v.left||v.top||v.width||v.height){b=D;for(f=0;b;){if(8===b.nodeType){var t=b.data;if("/$"===t)if(0===f)break;else f--;else"$"!==t&&"$?"!==t&&"$~"!==t&&"$!"!==t||f++}else if(1===b.nodeType){d=b;var E=d.getAttribute("vt-name"),y=m.get(E);h(d,y?"vt-share":"vt-exit");y&&(h(y,"vt-share"),m.set(E,null));for(var F=d.querySelectorAll("[vt-share]"),\nz=0;z<F.length;z++){var G=F[z],H=G.getAttribute("vt-name"),I=m.get(H);I&&(h(G,"vt-share"),h(I,"vt-share"),m.set(H,null))}var J=d.querySelectorAll("[vt-parent-exit]");for(d=0;d<J.length;d++)h(J[d],"vt-parent-exit")}b=b.nextSibling}for(var K=g[k+1],n=K.firstElementChild;n;){null!==m.get(n.getAttribute("vt-name"))&&h(n,"vt-enter");var L=n.querySelectorAll("[vt-parent-enter]");for(b=0;b<L.length;b++)h(L[b],"vt-parent-enter");n=n.nextElementSibling}b=x;do for(var p=b.firstElementChild;p;){var M=p.getAttribute("vt-update");\nM&&"none"!==M&&!l.includes(p)&&h(p,"vt-update");p=p.nextElementSibling}while((b=b.parentNode)&&1===b.nodeType&&"none"!==b.getAttribute("vt-update"));u.push.apply(u,K.querySelectorAll(\'img[src]:not([loading="lazy"])\'))}}}if(C){var A=document.__reactViewTransition=document.startViewTransition({update:function(){B(g);for(var a=[document.documentElement.clientHeight,document.fonts.ready],c={},e=0;e<u.length;c={g:c.g},e++)if(c.g=u[e],!c.g.complete){var q=c.g.getBoundingClientRect();0<q.bottom&&0<q.right&&\nq.top<window.innerHeight&&q.left<window.innerWidth&&(q=new Promise(function(w){return function(r){w.g.addEventListener("load",r);w.g.addEventListener("error",r)}}(c)),a.push(q))}return Promise.race([Promise.all(a),new Promise(function(w){var r=performance.now();setTimeout(w,2300>r&&2E3<r?2300-r:500)})])},types:[]});A.ready.finally(function(){for(var a=l.length-3;0<=a;a-=3){var c=l[a],e=c.style;e.viewTransitionName=l[a+1];e.viewTransitionClass=l[a+1];""===c.getAttribute("style")&&c.removeAttribute("style")}});\nA.finished.finally(function(){document.__reactViewTransition===A&&(document.__reactViewTransition=null)});$RB=[];return}}catch(a){}B(g)}.bind(null,$RV);'
             )),
           0 === (completedSegments.instructions & 8)
             ? ((completedSegments.instructions |= 8),
@@ -6237,7 +6294,7 @@ function flushCompletedBoundary(request, destination, boundary) {
             ((completedSegments.instructions |= 256),
             writeChunk(
               destination,
-              '$RV=function(A,g){function k(a,b){var e=a.getAttribute(b);e&&(b=a.style,l.push(a,b.viewTransitionName,b.viewTransitionClass),"auto"!==e&&(b.viewTransitionClass=e),(a=a.getAttribute("vt-name"))||(a="_T_"+K++ +"_"),a=CSS.escape(a)!==a?"r-"+btoa(a).replace(/=/g,""):a,b.viewTransitionName=a,B=!0)}var B=!1,K=0,l=[];try{var f=document.__reactViewTransition;if(f){f.finished.finally($RV.bind(null,g));return}var m=new Map;for(f=1;f<g.length;f+=2)for(var h=g[f].querySelectorAll("[vt-share]"),d=0;d<h.length;d++){var c=h[d];m.set(c.getAttribute("vt-name"),c)}var u=[];for(h=0;h<g.length;h+=2){var C=g[h],x=C.parentNode;if(x){var v=x.getBoundingClientRect();if(v.left||v.top||v.width||v.height){c=C;for(f=0;c;){if(8===c.nodeType){var r=c.data;if("/$"===r)if(0===f)break;else f--;else"$"!==r&&"$?"!==r&&"$~"!==r&&"$!"!==r||f++}else if(1===c.nodeType){d=c;var D=d.getAttribute("vt-name"),y=m.get(D);k(d,y?"vt-share":"vt-exit");y&&(k(y,"vt-share"),m.set(D,null));var E=d.querySelectorAll("[vt-share]");\nfor(d=0;d<E.length;d++){var F=E[d],G=F.getAttribute("vt-name"),H=m.get(G);H&&(k(F,"vt-share"),k(H,"vt-share"),m.set(G,null))}}c=c.nextSibling}for(var I=g[h+1],t=I.firstElementChild;t;)null!==m.get(t.getAttribute("vt-name"))&&k(t,"vt-enter"),t=t.nextElementSibling;c=x;do for(var n=c.firstElementChild;n;){var J=n.getAttribute("vt-update");J&&"none"!==J&&!l.includes(n)&&k(n,"vt-update");n=n.nextElementSibling}while((c=c.parentNode)&&1===c.nodeType&&"none"!==c.getAttribute("vt-update"));u.push.apply(u,\nI.querySelectorAll(\'img[src]:not([loading="lazy"])\'))}}}if(B){var z=document.__reactViewTransition=document.startViewTransition({update:function(){A(g);for(var a=[document.documentElement.clientHeight,document.fonts.ready],b={},e=0;e<u.length;b={g:b.g},e++)if(b.g=u[e],!b.g.complete){var p=b.g.getBoundingClientRect();0<p.bottom&&0<p.right&&p.top<window.innerHeight&&p.left<window.innerWidth&&(p=new Promise(function(w){return function(q){w.g.addEventListener("load",q);w.g.addEventListener("error",q)}}(b)),\na.push(p))}return Promise.race([Promise.all(a),new Promise(function(w){var q=performance.now();setTimeout(w,2300>q&&2E3<q?2300-q:500)})])},types:[]});z.ready.finally(function(){for(var a=l.length-3;0<=a;a-=3){var b=l[a],e=b.style;e.viewTransitionName=l[a+1];e.viewTransitionClass=l[a+1];""===b.getAttribute("style")&&b.removeAttribute("style")}});z.finished.finally(function(){document.__reactViewTransition===z&&(document.__reactViewTransition=null)});$RB=[];return}}catch(a){}A(g)}.bind(null,\n$RV);'
+              '$RV=function(B,g){function h(a,c){var e=a.getAttribute(c);e&&(c=a.style,l.push(a,c.viewTransitionName,c.viewTransitionClass),"auto"!==e&&(c.viewTransitionClass=e),(a=a.getAttribute("vt-name"))||(a="_T_"+N++ +"_"),a=CSS.escape(a)!==a?"r-"+btoa(a).replace(/=/g,""):a,c.viewTransitionName=a,C=!0)}var C=!1,N=0,l=[];try{var f=document.__reactViewTransition;if(f){f.finished.finally($RV.bind(null,g));return}var m=new Map;for(f=1;f<g.length;f+=2)for(var k=g[f].querySelectorAll("[vt-share]"),d=0;d<k.length;d++){var b=k[d];m.set(b.getAttribute("vt-name"),b)}var u=[];for(k=0;k<g.length;k+=2){var D=g[k],x=D.parentNode;if(x){var v=x.getBoundingClientRect();if(v.left||v.top||v.width||v.height){b=D;for(f=0;b;){if(8===b.nodeType){var t=b.data;if("/$"===t)if(0===f)break;else f--;else"$"!==t&&"$?"!==t&&"$~"!==t&&"$!"!==t||f++}else if(1===b.nodeType){d=b;var E=d.getAttribute("vt-name"),y=m.get(E);h(d,y?"vt-share":"vt-exit");y&&(h(y,"vt-share"),m.set(E,null));for(var F=d.querySelectorAll("[vt-share]"),\nz=0;z<F.length;z++){var G=F[z],H=G.getAttribute("vt-name"),I=m.get(H);I&&(h(G,"vt-share"),h(I,"vt-share"),m.set(H,null))}var J=d.querySelectorAll("[vt-parent-exit]");for(d=0;d<J.length;d++)h(J[d],"vt-parent-exit")}b=b.nextSibling}for(var K=g[k+1],n=K.firstElementChild;n;){null!==m.get(n.getAttribute("vt-name"))&&h(n,"vt-enter");var L=n.querySelectorAll("[vt-parent-enter]");for(b=0;b<L.length;b++)h(L[b],"vt-parent-enter");n=n.nextElementSibling}b=x;do for(var p=b.firstElementChild;p;){var M=p.getAttribute("vt-update");\nM&&"none"!==M&&!l.includes(p)&&h(p,"vt-update");p=p.nextElementSibling}while((b=b.parentNode)&&1===b.nodeType&&"none"!==b.getAttribute("vt-update"));u.push.apply(u,K.querySelectorAll(\'img[src]:not([loading="lazy"])\'))}}}if(C){var A=document.__reactViewTransition=document.startViewTransition({update:function(){B(g);for(var a=[document.documentElement.clientHeight,document.fonts.ready],c={},e=0;e<u.length;c={g:c.g},e++)if(c.g=u[e],!c.g.complete){var q=c.g.getBoundingClientRect();0<q.bottom&&0<q.right&&\nq.top<window.innerHeight&&q.left<window.innerWidth&&(q=new Promise(function(w){return function(r){w.g.addEventListener("load",r);w.g.addEventListener("error",r)}}(c)),a.push(q))}return Promise.race([Promise.all(a),new Promise(function(w){var r=performance.now();setTimeout(w,2300>r&&2E3<r?2300-r:500)})])},types:[]});A.ready.finally(function(){for(var a=l.length-3;0<=a;a-=3){var c=l[a],e=c.style;e.viewTransitionName=l[a+1];e.viewTransitionClass=l[a+1];""===c.getAttribute("style")&&c.removeAttribute("style")}});\nA.finished.finally(function(){document.__reactViewTransition===A&&(document.__reactViewTransition=null)});$RB=[];return}}catch(a){}B(g)}.bind(null,$RV);'
             )),
           writeChunk(destination, '$RC("')))
     : requiresStyleInsertion
@@ -6716,190 +6773,227 @@ exports.renderNextChunk = function (stream) {
       for (i = 0; i < pingedTasks.length; i++) {
         var task = pingedTasks[i],
           segment = task.blockedSegment;
-        if (null === segment) {
-          var task$jscomp$0 = task;
-          if (0 !== task$jscomp$0.replay.pendingTasks) {
-            var prevTask = request.currentTask;
-            request.currentTask = task$jscomp$0;
-            switchContext(task$jscomp$0.context);
-            try {
-              "number" === typeof task$jscomp$0.replay.slots
-                ? resumeNode(
-                    request,
-                    task$jscomp$0,
-                    task$jscomp$0.replay.slots,
-                    task$jscomp$0.node,
-                    task$jscomp$0.childIndex
-                  )
-                : retryNode(request, task$jscomp$0);
-              if (
-                1 === task$jscomp$0.replay.pendingTasks &&
-                0 < task$jscomp$0.replay.nodes.length
-              )
-                throw Error(
-                  "Couldn't find all resumable slots by key/index during replaying. The tree doesn't match so React will fallback to client rendering."
-                );
-              task$jscomp$0.replay.pendingTasks--;
-              task$jscomp$0.abortSet.delete(task$jscomp$0);
-              finishedTask(
-                request,
-                task$jscomp$0.blockedBoundary,
-                task$jscomp$0.row,
-                null
-              );
-            } catch (thrownValue) {
-              resetHooksState();
-              var x =
-                thrownValue === SuspenseException
-                  ? getSuspendedThenable()
-                  : thrownValue;
-              if (request.aborted)
-                thrownValue === SuspenseException &&
-                  (task$jscomp$0.thenableState =
-                    getThenableStateAfterSuspending()),
-                  (request.currentTask = prevTask),
-                  abortTask(task$jscomp$0, request),
-                  task$jscomp$0.abortSet.delete(task$jscomp$0),
-                  finishAbortedTask(task$jscomp$0, request, request.fatalError);
-              else if (
-                "object" === typeof x &&
-                null !== x &&
-                "function" === typeof x.then
-              ) {
-                var ping = task$jscomp$0.ping;
-                x.then(ping.resolve, ping.reject);
-                task$jscomp$0.thenableState =
-                  thrownValue === SuspenseException
-                    ? getThenableStateAfterSuspending()
-                    : null;
-              } else {
+        if (null === segment)
+          b: {
+            var task$jscomp$0 = task;
+            if (0 !== task$jscomp$0.replay.pendingTasks) {
+              var prevTask = request.currentTask;
+              request.currentTask = task$jscomp$0;
+              switchContext(task$jscomp$0.context);
+              var startNode = task$jscomp$0.node;
+              try {
+                "number" === typeof task$jscomp$0.replay.slots
+                  ? resumeNode(
+                      request,
+                      task$jscomp$0,
+                      task$jscomp$0.replay.slots,
+                      task$jscomp$0.node,
+                      task$jscomp$0.childIndex
+                    )
+                  : retryNode(request, task$jscomp$0);
+                if (
+                  1 === task$jscomp$0.replay.pendingTasks &&
+                  0 < task$jscomp$0.replay.nodes.length
+                )
+                  throw Error(
+                    "Couldn't find all resumable slots by key/index during replaying. The tree doesn't match so React will fallback to client rendering."
+                  );
                 task$jscomp$0.replay.pendingTasks--;
                 task$jscomp$0.abortSet.delete(task$jscomp$0);
-                var errorInfo = getThrownInfo(task$jscomp$0.componentStack),
-                  boundary = task$jscomp$0.blockedBoundary,
-                  error$jscomp$0 = request.aborted ? request.fatalError : x,
-                  replayNodes = task$jscomp$0.replay.nodes,
-                  resumeSlots = task$jscomp$0.replay.slots,
-                  errorDigest = logRecoverableError(
-                    request,
-                    error$jscomp$0,
-                    errorInfo
-                  );
-                abortRemainingReplayNodes(
-                  request,
-                  boundary,
-                  replayNodes,
-                  resumeSlots,
-                  error$jscomp$0,
-                  errorDigest
-                );
-                request.pendingRootTasks--;
-                0 === request.pendingRootTasks && completeShell(request);
-                request.allPendingTasks--;
-                0 === request.allPendingTasks && completeAll(request);
-              }
-            } finally {
-              request.currentTask = prevTask;
-            }
-          }
-        } else {
-          task$jscomp$0 = task;
-          var segment$jscomp$0 = segment;
-          if (0 === segment$jscomp$0.status) {
-            var prevTask$jscomp$0 = request.currentTask;
-            request.currentTask = task$jscomp$0;
-            switchContext(task$jscomp$0.context);
-            var childrenLength = segment$jscomp$0.children.length,
-              chunkLength = segment$jscomp$0.chunks.length;
-            try {
-              retryNode(request, task$jscomp$0),
-                pushSegmentFinale(
-                  segment$jscomp$0.chunks,
-                  request.renderState,
-                  segment$jscomp$0.lastPushedText,
-                  segment$jscomp$0.textEmbedded
-                ),
-                task$jscomp$0.abortSet.delete(task$jscomp$0),
-                (segment$jscomp$0.status = 1),
                 finishedTask(
                   request,
                   task$jscomp$0.blockedBoundary,
                   task$jscomp$0.row,
-                  segment$jscomp$0
+                  null
                 );
-            } catch (thrownValue) {
-              resetHooksState();
-              segment$jscomp$0.children.length = childrenLength;
-              segment$jscomp$0.chunks.length = chunkLength;
-              var x$jscomp$0 =
-                thrownValue === SuspenseException
-                  ? getSuspendedThenable()
-                  : thrownValue;
-              if (request.aborted)
-                thrownValue === SuspenseException &&
-                  (task$jscomp$0.thenableState =
-                    getThenableStateAfterSuspending()),
-                  (request.currentTask = prevTask$jscomp$0),
-                  abortTask(task$jscomp$0, request),
-                  task$jscomp$0.abortSet.delete(task$jscomp$0),
-                  finishAbortedTask(task$jscomp$0, request, request.fatalError);
-              else if (
-                "object" === typeof x$jscomp$0 &&
-                null !== x$jscomp$0 &&
-                "function" === typeof x$jscomp$0.then
-              ) {
-                segment$jscomp$0.status = 0;
-                task$jscomp$0.thenableState =
+              } catch (thrownValue) {
+                resetHooksState();
+                var x =
                   thrownValue === SuspenseException
-                    ? getThenableStateAfterSuspending()
-                    : null;
-                var ping$jscomp$0 = task$jscomp$0.ping;
-                x$jscomp$0.then(ping$jscomp$0.resolve, ping$jscomp$0.reject);
-              } else {
-                var errorInfo$jscomp$0 = getThrownInfo(
-                  task$jscomp$0.componentStack
-                );
-                task$jscomp$0.abortSet.delete(task$jscomp$0);
-                segment$jscomp$0.status = 4;
-                var boundary$jscomp$0 = task$jscomp$0.blockedBoundary,
-                  row = task$jscomp$0.row;
-                null !== row &&
-                  0 === --row.pendingTasks &&
-                  finishSuspenseListRow(request, row);
-                request.allPendingTasks--;
-                var errorDigest$jscomp$0 = logRecoverableError(
-                  request,
-                  x$jscomp$0,
-                  errorInfo$jscomp$0
-                );
-                if (null === boundary$jscomp$0) fatalError(request, x$jscomp$0);
+                    ? getSuspendedThenable()
+                    : thrownValue;
+                if (request.aborted)
+                  thrownValue === SuspenseException &&
+                    (task$jscomp$0.thenableState =
+                      getThenableStateAfterSuspending()),
+                    (request.currentTask = prevTask),
+                    abortTask(task$jscomp$0, request),
+                    task$jscomp$0.abortSet.delete(task$jscomp$0),
+                    finishAbortedTask(
+                      task$jscomp$0,
+                      request,
+                      request.fatalError
+                    );
                 else {
-                  boundary$jscomp$0.pendingTasks--;
-                  if (4 !== boundary$jscomp$0.status) {
-                    boundary$jscomp$0.status = 4;
-                    boundary$jscomp$0.errorDigest = errorDigest$jscomp$0;
-                    untrackBoundary(request, boundary$jscomp$0);
-                    var boundaryRow = boundary$jscomp$0.row;
-                    null !== boundaryRow &&
-                      (request.allPendingTasks++,
-                      0 === --boundaryRow.pendingTasks &&
-                        finishSuspenseListRow(request, boundaryRow),
-                      request.allPendingTasks--);
-                    boundary$jscomp$0.parentFlushed &&
-                      request.clientRenderedBoundaries.push(boundary$jscomp$0);
-                    0 === request.pendingRootTasks &&
-                      null === request.trackedPostpones &&
-                      null !== boundary$jscomp$0.preamble &&
-                      preparePreamble(request);
+                  if ("object" === typeof x && null !== x) {
+                    if ("function" === typeof x.then) {
+                      var ping = task$jscomp$0.ping;
+                      x.then(ping.resolve, ping.reject);
+                      task$jscomp$0.thenableState =
+                        thrownValue === SuspenseException
+                          ? getThenableStateAfterSuspending()
+                          : null;
+                      break b;
+                    }
+                    if (
+                      "Maximum call stack size exceeded" === x.message &&
+                      task$jscomp$0.node !== startNode
+                    ) {
+                      task$jscomp$0.thenableState = null;
+                      request.pingedTasks.push(task$jscomp$0);
+                      break b;
+                    }
                   }
+                  task$jscomp$0.replay.pendingTasks--;
+                  task$jscomp$0.abortSet.delete(task$jscomp$0);
+                  var errorInfo = getThrownInfo(task$jscomp$0.componentStack),
+                    boundary = task$jscomp$0.blockedBoundary,
+                    error$jscomp$0 = request.aborted ? request.fatalError : x,
+                    replayNodes = task$jscomp$0.replay.nodes,
+                    resumeSlots = task$jscomp$0.replay.slots,
+                    errorDigest = logRecoverableError(
+                      request,
+                      error$jscomp$0,
+                      errorInfo
+                    );
+                  abortRemainingReplayNodes(
+                    request,
+                    boundary,
+                    replayNodes,
+                    resumeSlots,
+                    error$jscomp$0,
+                    errorDigest
+                  );
+                  request.pendingRootTasks--;
+                  0 === request.pendingRootTasks && completeShell(request);
+                  request.allPendingTasks--;
                   0 === request.allPendingTasks && completeAll(request);
                 }
+              } finally {
+                request.currentTask = prevTask;
               }
-            } finally {
-              request.currentTask = prevTask$jscomp$0;
             }
           }
-        }
+        else
+          b: {
+            task$jscomp$0 = task;
+            var segment$jscomp$0 = segment;
+            if (0 === segment$jscomp$0.status) {
+              var prevTask$jscomp$0 = request.currentTask;
+              request.currentTask = task$jscomp$0;
+              switchContext(task$jscomp$0.context);
+              var childrenLength = segment$jscomp$0.children.length,
+                chunkLength = segment$jscomp$0.chunks.length,
+                startNode$jscomp$0 = task$jscomp$0.node;
+              try {
+                retryNode(request, task$jscomp$0),
+                  pushSegmentFinale(
+                    segment$jscomp$0.chunks,
+                    request.renderState,
+                    segment$jscomp$0.lastPushedText,
+                    segment$jscomp$0.textEmbedded
+                  ),
+                  task$jscomp$0.abortSet.delete(task$jscomp$0),
+                  (segment$jscomp$0.status = 1),
+                  finishedTask(
+                    request,
+                    task$jscomp$0.blockedBoundary,
+                    task$jscomp$0.row,
+                    segment$jscomp$0
+                  );
+              } catch (thrownValue) {
+                resetHooksState();
+                segment$jscomp$0.children.length = childrenLength;
+                segment$jscomp$0.chunks.length = chunkLength;
+                var x$jscomp$0 =
+                  thrownValue === SuspenseException
+                    ? getSuspendedThenable()
+                    : thrownValue;
+                if (request.aborted)
+                  thrownValue === SuspenseException &&
+                    (task$jscomp$0.thenableState =
+                      getThenableStateAfterSuspending()),
+                    (request.currentTask = prevTask$jscomp$0),
+                    abortTask(task$jscomp$0, request),
+                    task$jscomp$0.abortSet.delete(task$jscomp$0),
+                    finishAbortedTask(
+                      task$jscomp$0,
+                      request,
+                      request.fatalError
+                    );
+                else {
+                  if ("object" === typeof x$jscomp$0 && null !== x$jscomp$0) {
+                    if ("function" === typeof x$jscomp$0.then) {
+                      segment$jscomp$0.status = 0;
+                      task$jscomp$0.thenableState =
+                        thrownValue === SuspenseException
+                          ? getThenableStateAfterSuspending()
+                          : null;
+                      var ping$jscomp$0 = task$jscomp$0.ping;
+                      x$jscomp$0.then(
+                        ping$jscomp$0.resolve,
+                        ping$jscomp$0.reject
+                      );
+                      break b;
+                    }
+                    if (
+                      "Maximum call stack size exceeded" ===
+                        x$jscomp$0.message &&
+                      task$jscomp$0.node !== startNode$jscomp$0
+                    ) {
+                      segment$jscomp$0.status = 0;
+                      task$jscomp$0.thenableState = null;
+                      request.pingedTasks.push(task$jscomp$0);
+                      break b;
+                    }
+                  }
+                  var errorInfo$jscomp$0 = getThrownInfo(
+                    task$jscomp$0.componentStack
+                  );
+                  task$jscomp$0.abortSet.delete(task$jscomp$0);
+                  segment$jscomp$0.status = 4;
+                  var boundary$jscomp$0 = task$jscomp$0.blockedBoundary,
+                    row = task$jscomp$0.row;
+                  null !== row &&
+                    0 === --row.pendingTasks &&
+                    finishSuspenseListRow(request, row);
+                  request.allPendingTasks--;
+                  var errorDigest$jscomp$0 = logRecoverableError(
+                    request,
+                    x$jscomp$0,
+                    errorInfo$jscomp$0
+                  );
+                  if (null === boundary$jscomp$0)
+                    fatalError(request, x$jscomp$0);
+                  else {
+                    boundary$jscomp$0.pendingTasks--;
+                    if (4 !== boundary$jscomp$0.status) {
+                      boundary$jscomp$0.status = 4;
+                      boundary$jscomp$0.errorDigest = errorDigest$jscomp$0;
+                      untrackBoundary(request, boundary$jscomp$0);
+                      var boundaryRow = boundary$jscomp$0.row;
+                      null !== boundaryRow &&
+                        (request.allPendingTasks++,
+                        0 === --boundaryRow.pendingTasks &&
+                          finishSuspenseListRow(request, boundaryRow),
+                        request.allPendingTasks--);
+                      boundary$jscomp$0.parentFlushed &&
+                        request.clientRenderedBoundaries.push(
+                          boundary$jscomp$0
+                        );
+                      0 === request.pendingRootTasks &&
+                        null === request.trackedPostpones &&
+                        null !== boundary$jscomp$0.preamble &&
+                        preparePreamble(request);
+                    }
+                    0 === request.allPendingTasks && completeAll(request);
+                  }
+                }
+              } finally {
+                request.currentTask = prevTask$jscomp$0;
+              }
+            }
+          }
       }
       pingedTasks.splice(0, i);
       null !== request.destination &&
