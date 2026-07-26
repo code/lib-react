@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<1bf1a2253536c7723e679f6001c7738b>>
+ * @generated SignedSource<<9287bab35bec3c03fb7684feb0a5461c>>
  */
 
 /*
@@ -1063,7 +1063,6 @@ var randomKey = Math.random().toString(36).slice(2),
 function detachDeletedInstance(node) {
   delete node[internalInstanceKey];
   delete node[internalPropsKey];
-  delete node[internalEventHandlersKey];
   delete node[internalEventHandlerListenersKey];
   delete node[internalEventHandlesSetKey];
 }
@@ -10866,7 +10865,11 @@ function commitDeletionEffectsOnFiber(
         nearestMountedAncestor,
         deletedFiber
       );
-      releaseSingletonInstance(deletedFiber.stateNode);
+      releaseSingletonInstance(
+        deletedFiber.stateNode,
+        deletedFiber.type,
+        deletedFiber.memoizedProps
+      );
       hostParent = prevHostParent;
       hostParentIsContainer = prevHostParentIsContainer;
       break;
@@ -11804,7 +11807,11 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
         break;
       case 27:
-        releaseSingletonInstance(finishedWork.stateNode);
+        releaseSingletonInstance(
+          finishedWork.stateNode,
+          finishedWork.type,
+          finishedWork.memoizedProps
+        );
       case 26:
       case 5:
         safelyDetachRef(finishedWork, finishedWork.return);
@@ -15925,6 +15932,7 @@ function setInitialProperties(domElement, tag, props) {
       ((hasSrc = props[checked]),
       null != hasSrc && setProp(domElement, tag, checked, hasSrc, props, null));
 }
+var emptyProps = {};
 function updateProperties(domElement, tag, lastProps, nextProps) {
   switch (tag) {
     case "div":
@@ -16428,10 +16436,12 @@ function clearHydrationBoundary(parentInstance, hydrationInstance) {
       )
         depth++;
       else if ("html" === node)
-        releaseSingletonInstance(parentInstance.ownerDocument.documentElement);
+        clearSingletonPreambleContribution(
+          parentInstance.ownerDocument.documentElement
+        );
       else if ("head" === node) {
         node = parentInstance.ownerDocument.head;
-        releaseSingletonInstance(node);
+        clearSingletonPreambleContribution(node);
         for (var node$jscomp$0 = node.firstChild; node$jscomp$0; ) {
           var nextNode$jscomp$0 = node$jscomp$0.nextSibling,
             nodeName = node$jscomp$0.nodeName;
@@ -16445,7 +16455,7 @@ function clearHydrationBoundary(parentInstance, hydrationInstance) {
         }
       } else
         "body" === node &&
-          releaseSingletonInstance(parentInstance.ownerDocument.body);
+          clearSingletonPreambleContribution(parentInstance.ownerDocument.body);
     node = nextNode;
   } while (node);
   retryIfBlockedOn(hydrationInstance);
@@ -17606,7 +17616,18 @@ function resolveSingletonInstance(type, props, rootContainerInstance) {
       throw Error(formatProdErrorMessage(451));
   }
 }
-function releaseSingletonInstance(instance) {
+function releaseSingletonInstance(instance, type, props) {
+  for (var propKey in props) {
+    var propValue = props[propKey];
+    props.hasOwnProperty(propKey) &&
+      null != propValue &&
+      setProp(instance, type, propKey, null, emptyProps, propValue);
+  }
+  null != props.dangerouslySetInnerHTML && (instance.textContent = "");
+  instance.onclick === noop$1 && (instance.onclick = null);
+  detachDeletedInstance(instance);
+}
+function clearSingletonPreambleContribution(instance) {
   for (var attributes = instance.attributes; attributes.length; )
     instance.removeAttributeNode(attributes[0]);
   detachDeletedInstance(instance);
@@ -19275,16 +19296,16 @@ ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function (target) {
     0 === i && attemptExplicitHydrationTarget(target);
   }
 };
-var isomorphicReactPackageVersion$jscomp$inline_2131 = React.version;
+var isomorphicReactPackageVersion$jscomp$inline_2139 = React.version;
 if (
-  "19.3.0-native-fb-862e275a-20260721" !==
-  isomorphicReactPackageVersion$jscomp$inline_2131
+  "19.3.0-native-fb-b685b40d-20260724" !==
+  isomorphicReactPackageVersion$jscomp$inline_2139
 )
   throw Error(
     formatProdErrorMessage(
       527,
-      isomorphicReactPackageVersion$jscomp$inline_2131,
-      "19.3.0-native-fb-862e275a-20260721"
+      isomorphicReactPackageVersion$jscomp$inline_2139,
+      "19.3.0-native-fb-b685b40d-20260724"
     )
   );
 ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
@@ -19304,24 +19325,24 @@ ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
     null === componentOrElement ? null : componentOrElement.stateNode;
   return componentOrElement;
 };
-var internals$jscomp$inline_2729 = {
+var internals$jscomp$inline_2737 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-862e275a-20260721",
+  version: "19.3.0-native-fb-b685b40d-20260724",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-862e275a-20260721"
+  reconcilerVersion: "19.3.0-native-fb-b685b40d-20260724"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2730 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2738 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2730.isDisabled &&
-    hook$jscomp$inline_2730.supportsFiber
+    !hook$jscomp$inline_2738.isDisabled &&
+    hook$jscomp$inline_2738.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2730.inject(
-        internals$jscomp$inline_2729
+      (rendererID = hook$jscomp$inline_2738.inject(
+        internals$jscomp$inline_2737
       )),
-        (injectedHook = hook$jscomp$inline_2730);
+        (injectedHook = hook$jscomp$inline_2738);
     } catch (err) {}
 }
 function getCrossOriginStringAs(as, input) {
@@ -19578,4 +19599,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-native-fb-862e275a-20260721";
+exports.version = "19.3.0-native-fb-b685b40d-20260724";
