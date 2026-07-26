@@ -14131,7 +14131,9 @@ __DEV__ &&
             runWithFiberInDEV(
               deletedFiber,
               releaseSingletonInstance,
-              deletedFiber.stateNode
+              deletedFiber.stateNode,
+              deletedFiber.type,
+              deletedFiber.memoizedProps
             );
             hostParent = prevHostParent;
             hostParentIsContainer = prevHostParentIsContainer;
@@ -15145,7 +15147,9 @@ __DEV__ &&
             runWithFiberInDEV(
               finishedWork,
               releaseSingletonInstance,
-              finishedWork.stateNode
+              finishedWork.stateNode,
+              finishedWork.type,
+              finishedWork.memoizedProps
             );
         case 26:
         case 5:
@@ -23040,7 +23044,7 @@ __DEV__ &&
         version: rendererVersion,
         rendererPackageName: rendererPackageName,
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-modern-711c445b-20260722"
+        reconcilerVersion: "19.3.0-www-modern-b685b40d-20260724"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);

@@ -10458,7 +10458,11 @@ function commitDeletionEffectsOnFiber(
         nearestMountedAncestor,
         deletedFiber
       );
-      releaseSingletonInstance(deletedFiber.stateNode);
+      releaseSingletonInstance(
+        deletedFiber.stateNode,
+        deletedFiber.type,
+        deletedFiber.memoizedProps
+      );
       hostParent = prevHostParent;
       hostParentIsContainer = prevHostParentIsContainer;
       break;
@@ -11401,7 +11405,11 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
         break;
       case 27:
-        releaseSingletonInstance(finishedWork.stateNode);
+        releaseSingletonInstance(
+          finishedWork.stateNode,
+          finishedWork.type,
+          finishedWork.memoizedProps
+        );
       case 26:
       case 5:
         safelyDetachRef(finishedWork, finishedWork.return);
@@ -17126,6 +17134,7 @@ function setInitialProperties(domElement, tag, props) {
       null != hasSrc &&
         setProp(domElement, tag, defaultValue, hasSrc, props, null));
 }
+var emptyProps = {};
 function updateProperties(domElement, tag, lastProps, nextProps) {
   switch (tag) {
     case "div":
@@ -17648,10 +17657,12 @@ function clearHydrationBoundary(parentInstance, hydrationInstance) {
       )
         depth++;
       else if ("html" === node)
-        releaseSingletonInstance(parentInstance.ownerDocument.documentElement);
+        clearSingletonPreambleContribution(
+          parentInstance.ownerDocument.documentElement
+        );
       else if ("head" === node) {
         node = parentInstance.ownerDocument.head;
-        releaseSingletonInstance(node);
+        clearSingletonPreambleContribution(node);
         for (var node$jscomp$0 = node.firstChild; node$jscomp$0; ) {
           var nextNode$jscomp$0 = node$jscomp$0.nextSibling,
             nodeName = node$jscomp$0.nodeName;
@@ -17665,7 +17676,7 @@ function clearHydrationBoundary(parentInstance, hydrationInstance) {
         }
       } else
         "body" === node &&
-          releaseSingletonInstance(parentInstance.ownerDocument.body);
+          clearSingletonPreambleContribution(parentInstance.ownerDocument.body);
     node = nextNode;
   } while (node);
   retryIfBlockedOn(hydrationInstance);
@@ -18889,7 +18900,18 @@ function resolveSingletonInstance(type, props, rootContainerInstance) {
       throw Error(formatProdErrorMessage(451));
   }
 }
-function releaseSingletonInstance(instance) {
+function releaseSingletonInstance(instance, type, props) {
+  for (var propKey in props) {
+    var propValue = props[propKey];
+    props.hasOwnProperty(propKey) &&
+      null != propValue &&
+      setProp(instance, type, propKey, null, emptyProps, propValue);
+  }
+  null != props.dangerouslySetInnerHTML && (instance.textContent = "");
+  instance.onclick === noop$1 && (instance.onclick = null);
+  detachDeletedInstance(instance);
+}
+function clearSingletonPreambleContribution(instance) {
   for (var attributes = instance.attributes; attributes.length; )
     instance.removeAttributeNode(attributes[0]);
   detachDeletedInstance(instance);
@@ -19750,13 +19772,11 @@ function detachDeletedInstance(node) {
   enableInternalInstanceMap
     ? (internalInstanceMap.delete(node),
       internalPropsMap.delete(node),
-      delete node[internalEventHandlersKey],
       delete node[internalEventHandlerListenersKey],
       delete node[internalEventHandlesSetKey],
       delete node[internalRootNodeResourcesKey])
     : (delete node[internalInstanceKey],
       delete node[internalPropsKey],
-      delete node[internalEventHandlersKey],
       delete node[internalEventHandlerListenersKey],
       delete node[internalEventHandlesSetKey]);
 }
@@ -20501,16 +20521,16 @@ function getCrossOriginStringAs(as, input) {
   if ("string" === typeof input)
     return "use-credentials" === input ? input : "";
 }
-var isomorphicReactPackageVersion$jscomp$inline_2075 = React.version;
+var isomorphicReactPackageVersion$jscomp$inline_2083 = React.version;
 if (
-  "19.3.0-www-modern-711c445b-20260722" !==
-  isomorphicReactPackageVersion$jscomp$inline_2075
+  "19.3.0-www-modern-b685b40d-20260724" !==
+  isomorphicReactPackageVersion$jscomp$inline_2083
 )
   throw Error(
     formatProdErrorMessage(
       527,
-      isomorphicReactPackageVersion$jscomp$inline_2075,
-      "19.3.0-www-modern-711c445b-20260722"
+      isomorphicReactPackageVersion$jscomp$inline_2083,
+      "19.3.0-www-modern-b685b40d-20260724"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -20526,24 +20546,24 @@ Internals.Events = [
     return fn(a);
   }
 ];
-var internals$jscomp$inline_2638 = {
+var internals$jscomp$inline_2646 = {
   bundleType: 0,
-  version: "19.3.0-www-modern-711c445b-20260722",
+  version: "19.3.0-www-modern-b685b40d-20260724",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-modern-711c445b-20260722"
+  reconcilerVersion: "19.3.0-www-modern-b685b40d-20260724"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2639 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2647 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2639.isDisabled &&
-    hook$jscomp$inline_2639.supportsFiber
+    !hook$jscomp$inline_2647.isDisabled &&
+    hook$jscomp$inline_2647.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2639.inject(
-        internals$jscomp$inline_2638
+      (rendererID = hook$jscomp$inline_2647.inject(
+        internals$jscomp$inline_2646
       )),
-        (injectedHook = hook$jscomp$inline_2639);
+        (injectedHook = hook$jscomp$inline_2647);
     } catch (err) {}
 }
 function defaultOnDefaultTransitionIndicator() {
@@ -21120,4 +21140,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-modern-711c445b-20260722";
+exports.version = "19.3.0-www-modern-b685b40d-20260724";

@@ -9349,7 +9349,11 @@ module.exports = function ($$$config) {
             nearestMountedAncestor,
             deletedFiber
           );
-          releaseSingletonInstance(deletedFiber.stateNode);
+          releaseSingletonInstance(
+            deletedFiber.stateNode,
+            deletedFiber.type,
+            deletedFiber.memoizedProps
+          );
           hostParent = prevHostParent;
           hostParentIsContainer = prevHostParentIsContainer;
           break;
@@ -10238,7 +10242,11 @@ module.exports = function ($$$config) {
           break;
         case 27:
           supportsSingletons &&
-            releaseSingletonInstance(finishedWork.stateNode);
+            releaseSingletonInstance(
+              finishedWork.stateNode,
+              finishedWork.type,
+              finishedWork.memoizedProps
+            );
         case 26:
         case 5:
           safelyDetachRef(finishedWork, finishedWork.return);
@@ -14610,7 +14618,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-classic-711c445b-20260722"
+      reconcilerVersion: "19.3.0-www-classic-b685b40d-20260724"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);
