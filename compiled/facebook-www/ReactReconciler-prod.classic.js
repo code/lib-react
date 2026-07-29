@@ -8992,22 +8992,24 @@ module.exports = function ($$$config) {
       case 22:
         flags = null !== finishedWork.memoizedState || offscreenSubtreeIsHidden;
         if (!flags) {
-          current =
+          var newOffscreenSubtreeWasHidden =
             (null !== current && null !== current.memoizedState) ||
             offscreenSubtreeWasHidden;
-          prevProps = offscreenSubtreeIsHidden;
-          var prevOffscreenSubtreeWasHidden = offscreenSubtreeWasHidden;
+          current = offscreenSubtreeIsHidden;
+          prevProps = offscreenSubtreeWasHidden;
           offscreenSubtreeIsHidden = flags;
-          (offscreenSubtreeWasHidden = current) &&
-          !prevOffscreenSubtreeWasHidden
-            ? recursivelyTraverseReappearLayoutEffects(
+          (offscreenSubtreeWasHidden = newOffscreenSubtreeWasHidden) &&
+          !prevProps
+            ? ((flags = supportsSingletons ? 2 : 0),
+              0 !== (finishedWork.subtreeFlags & 8772) && (flags |= 1),
+              recursivelyTraverseReappearLayoutEffects(
                 finishedRoot,
                 finishedWork,
-                0 !== (finishedWork.subtreeFlags & 8772)
-              )
+                flags
+              ))
             : recursivelyTraverseLayoutEffects(finishedRoot, finishedWork);
-          offscreenSubtreeIsHidden = prevProps;
-          offscreenSubtreeWasHidden = prevOffscreenSubtreeWasHidden;
+          offscreenSubtreeIsHidden = current;
+          offscreenSubtreeWasHidden = prevProps;
         }
         break;
       case 30:
@@ -9953,12 +9955,15 @@ module.exports = function ($$$config) {
           (root._visibility = ii
             ? root._visibility & -2
             : root._visibility | 1),
-          ii &&
-            (null === current ||
-              _eventPayloads$ii2 ||
-              offscreenSubtreeIsHidden ||
-              offscreenSubtreeWasHidden ||
-              recursivelyTraverseDisappearLayoutEffects(finishedWork)),
+          !ii ||
+            null === current ||
+            _eventPayloads$ii2 ||
+            offscreenSubtreeIsHidden ||
+            offscreenSubtreeWasHidden ||
+            recursivelyTraverseDisappearLayoutEffects(
+              finishedWork,
+              supportsSingletons ? 2 : 0
+            ),
           supportsMutation &&
             (ii || !offscreenDirectParentIsHidden) &&
             hideOrUnhideAllChildren(finishedWork, ii));
@@ -10218,16 +10223,23 @@ module.exports = function ($$$config) {
         commitLayoutEffectOnFiber(root, parentFiber.alternate, parentFiber),
           (parentFiber = parentFiber.sibling);
   }
-  function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
+  function recursivelyTraverseDisappearLayoutEffects(
+    parentFiber,
+    layoutEffectTraversalFlags$jscomp$0
+  ) {
     for (parentFiber = parentFiber.child; null !== parentFiber; ) {
-      var finishedWork = parentFiber;
+      var finishedWork = parentFiber,
+        layoutEffectTraversalFlags = layoutEffectTraversalFlags$jscomp$0;
       switch (finishedWork.tag) {
         case 0:
         case 11:
         case 14:
         case 15:
           commitHookEffectListUnmount(4, finishedWork, finishedWork.return);
-          recursivelyTraverseDisappearLayoutEffects(finishedWork);
+          recursivelyTraverseDisappearLayoutEffects(
+            finishedWork,
+            layoutEffectTraversalFlags
+          );
           break;
         case 1:
           safelyDetachRef(finishedWork, finishedWork.return);
@@ -10238,10 +10250,14 @@ module.exports = function ($$$config) {
               finishedWork.return,
               instance
             );
-          recursivelyTraverseDisappearLayoutEffects(finishedWork);
+          recursivelyTraverseDisappearLayoutEffects(
+            finishedWork,
+            layoutEffectTraversalFlags
+          );
           break;
         case 27:
           supportsSingletons &&
+            0 !== (layoutEffectTraversalFlags & 2) &&
             releaseSingletonInstance(
               finishedWork.stateNode,
               finishedWork.type,
@@ -10254,22 +10270,34 @@ module.exports = function ($$$config) {
             (5 === finishedWork.tag ||
               (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
             commitFragmentInstanceDeletionEffects(finishedWork);
-          recursivelyTraverseDisappearLayoutEffects(finishedWork);
+          recursivelyTraverseDisappearLayoutEffects(
+            finishedWork,
+            layoutEffectTraversalFlags
+          );
           break;
         case 22:
           null === finishedWork.memoizedState &&
-            recursivelyTraverseDisappearLayoutEffects(finishedWork);
+            recursivelyTraverseDisappearLayoutEffects(
+              finishedWork,
+              layoutEffectTraversalFlags
+            );
           break;
         case 30:
           enableViewTransition &&
             safelyDetachRef(finishedWork, finishedWork.return);
-          recursivelyTraverseDisappearLayoutEffects(finishedWork);
+          recursivelyTraverseDisappearLayoutEffects(
+            finishedWork,
+            layoutEffectTraversalFlags
+          );
           break;
         case 7:
           enableFragmentRefs &&
             safelyDetachRef(finishedWork, finishedWork.return);
         default:
-          recursivelyTraverseDisappearLayoutEffects(finishedWork);
+          recursivelyTraverseDisappearLayoutEffects(
+            finishedWork,
+            layoutEffectTraversalFlags
+          );
       }
       parentFiber = parentFiber.sibling;
     }
@@ -10277,15 +10305,18 @@ module.exports = function ($$$config) {
   function recursivelyTraverseReappearLayoutEffects(
     finishedRoot$jscomp$0,
     parentFiber,
-    includeWorkInProgressEffects
+    layoutEffectTraversalFlags
   ) {
-    includeWorkInProgressEffects =
-      includeWorkInProgressEffects && 0 !== (parentFiber.subtreeFlags & 8772);
+    layoutEffectTraversalFlags =
+      0 !== (parentFiber.subtreeFlags & 8772)
+        ? layoutEffectTraversalFlags
+        : layoutEffectTraversalFlags & -2;
     for (parentFiber = parentFiber.child; null !== parentFiber; ) {
       var current = parentFiber.alternate,
         finishedRoot = finishedRoot$jscomp$0,
         finishedWork = parentFiber,
-        flags = finishedWork.flags;
+        flags = finishedWork.flags,
+        includeWorkInProgressEffects = 0 !== (layoutEffectTraversalFlags & 1);
       switch (finishedWork.tag) {
         case 0:
         case 11:
@@ -10293,7 +10324,7 @@ module.exports = function ($$$config) {
           recursivelyTraverseReappearLayoutEffects(
             finishedRoot,
             finishedWork,
-            includeWorkInProgressEffects
+            layoutEffectTraversalFlags
           );
           commitHookEffectListMount(4, finishedWork);
           break;
@@ -10301,7 +10332,7 @@ module.exports = function ($$$config) {
           recursivelyTraverseReappearLayoutEffects(
             finishedRoot,
             finishedWork,
-            includeWorkInProgressEffects
+            layoutEffectTraversalFlags
           );
           current = finishedWork;
           finishedRoot = current.stateNode;
@@ -10334,7 +10365,9 @@ module.exports = function ($$$config) {
           safelyAttachRef(finishedWork, finishedWork.return);
           break;
         case 27:
-          supportsSingletons && commitHostSingletonAcquisition(finishedWork);
+          supportsSingletons &&
+            0 !== (layoutEffectTraversalFlags & 2) &&
+            commitHostSingletonAcquisition(finishedWork);
         case 26:
         case 5:
           if (enableFragmentRefs && 5 === finishedWork.tag) {
@@ -10352,7 +10385,7 @@ module.exports = function ($$$config) {
           recursivelyTraverseReappearLayoutEffects(
             finishedRoot,
             finishedWork,
-            includeWorkInProgressEffects
+            layoutEffectTraversalFlags
           );
           includeWorkInProgressEffects &&
             null === current &&
@@ -10364,14 +10397,14 @@ module.exports = function ($$$config) {
           recursivelyTraverseReappearLayoutEffects(
             finishedRoot,
             finishedWork,
-            includeWorkInProgressEffects
+            layoutEffectTraversalFlags
           );
           break;
         case 31:
           recursivelyTraverseReappearLayoutEffects(
             finishedRoot,
             finishedWork,
-            includeWorkInProgressEffects
+            layoutEffectTraversalFlags
           );
           includeWorkInProgressEffects &&
             flags & 4 &&
@@ -10381,7 +10414,7 @@ module.exports = function ($$$config) {
           recursivelyTraverseReappearLayoutEffects(
             finishedRoot,
             finishedWork,
-            includeWorkInProgressEffects
+            layoutEffectTraversalFlags
           );
           includeWorkInProgressEffects &&
             flags & 4 &&
@@ -10392,7 +10425,7 @@ module.exports = function ($$$config) {
             recursivelyTraverseReappearLayoutEffects(
               finishedRoot,
               finishedWork,
-              includeWorkInProgressEffects
+              layoutEffectTraversalFlags
             );
           safelyAttachRef(finishedWork, finishedWork.return);
           break;
@@ -10401,7 +10434,7 @@ module.exports = function ($$$config) {
             (recursivelyTraverseReappearLayoutEffects(
               finishedRoot,
               finishedWork,
-              includeWorkInProgressEffects
+              layoutEffectTraversalFlags
             ),
             safelyAttachRef(finishedWork, finishedWork.return));
           break;
@@ -10412,7 +10445,7 @@ module.exports = function ($$$config) {
           recursivelyTraverseReappearLayoutEffects(
             finishedRoot,
             finishedWork,
-            includeWorkInProgressEffects
+            layoutEffectTraversalFlags
           );
       }
       parentFiber = parentFiber.sibling;
@@ -14618,7 +14651,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-classic-b685b40d-20260724"
+      reconcilerVersion: "19.3.0-www-classic-9ceb1e7d-20260727"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);
