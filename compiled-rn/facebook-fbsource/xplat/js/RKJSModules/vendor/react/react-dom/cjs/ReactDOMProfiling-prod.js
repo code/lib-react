@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<9287bab35bec3c03fb7684feb0a5461c>>
+ * @generated SignedSource<<44e586bedd8b8a41abb0b3fda3712516>>
  */
 
 /*
@@ -10688,21 +10688,23 @@ function commitLayoutEffectOnFiber(finishedRoot, current, finishedWork) {
         ? ((flags =
             null !== finishedWork.memoizedState || offscreenSubtreeIsHidden),
           flags ||
-            ((instance =
+            ((propValue =
               (null !== current && null !== current.memoizedState) ||
               offscreenSubtreeWasHidden),
-            (prevState = offscreenSubtreeIsHidden),
-            (propValue = offscreenSubtreeWasHidden),
+            (instance = offscreenSubtreeIsHidden),
+            (prevState = offscreenSubtreeWasHidden),
             (offscreenSubtreeIsHidden = flags),
-            (offscreenSubtreeWasHidden = instance) && !propValue
-              ? recursivelyTraverseReappearLayoutEffects(
+            (offscreenSubtreeWasHidden = propValue) && !prevState
+              ? ((flags = 2),
+                0 !== (finishedWork.subtreeFlags & 8772) && (flags |= 1),
+                recursivelyTraverseReappearLayoutEffects(
                   finishedRoot,
                   finishedWork,
-                  0 !== (finishedWork.subtreeFlags & 8772)
-                )
+                  flags
+                ))
               : recursivelyTraverseLayoutEffects(finishedRoot, finishedWork),
-            (offscreenSubtreeIsHidden = prevState),
-            (offscreenSubtreeWasHidden = propValue)))
+            (offscreenSubtreeIsHidden = instance),
+            (offscreenSubtreeWasHidden = prevState)))
         : recursivelyTraverseLayoutEffects(finishedRoot, finishedWork);
       break;
     case 30:
@@ -11514,7 +11516,7 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
             offscreenSubtreeIsHidden ||
             offscreenSubtreeWasHidden ||
             (0 !== (finishedWork.mode & 1) &&
-              recursivelyTraverseDisappearLayoutEffects(finishedWork))),
+              recursivelyTraverseDisappearLayoutEffects(finishedWork, 2))),
         (!ii && offscreenDirectParentIsHidden) ||
           hideOrUnhideAllChildren(finishedWork, ii));
       flags & 4 &&
@@ -11784,16 +11786,23 @@ function recursivelyTraverseLayoutEffects(root, parentFiber) {
       commitLayoutEffectOnFiber(root, parentFiber.alternate, parentFiber),
         (parentFiber = parentFiber.sibling);
 }
-function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
+function recursivelyTraverseDisappearLayoutEffects(
+  parentFiber,
+  layoutEffectTraversalFlags$jscomp$0
+) {
   for (parentFiber = parentFiber.child; null !== parentFiber; ) {
-    var finishedWork = parentFiber;
+    var finishedWork = parentFiber,
+      layoutEffectTraversalFlags = layoutEffectTraversalFlags$jscomp$0;
     switch (finishedWork.tag) {
       case 0:
       case 11:
       case 14:
       case 15:
         commitHookEffectListUnmount(4, finishedWork, finishedWork.return);
-        recursivelyTraverseDisappearLayoutEffects(finishedWork);
+        recursivelyTraverseDisappearLayoutEffects(
+          finishedWork,
+          layoutEffectTraversalFlags
+        );
         break;
       case 1:
         safelyDetachRef(finishedWork, finishedWork.return);
@@ -11804,14 +11813,18 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
             finishedWork.return,
             instance
           );
-        recursivelyTraverseDisappearLayoutEffects(finishedWork);
+        recursivelyTraverseDisappearLayoutEffects(
+          finishedWork,
+          layoutEffectTraversalFlags
+        );
         break;
       case 27:
-        releaseSingletonInstance(
-          finishedWork.stateNode,
-          finishedWork.type,
-          finishedWork.memoizedProps
-        );
+        0 !== (layoutEffectTraversalFlags & 2) &&
+          releaseSingletonInstance(
+            finishedWork.stateNode,
+            finishedWork.type,
+            finishedWork.memoizedProps
+          );
       case 26:
       case 5:
         safelyDetachRef(finishedWork, finishedWork.return);
@@ -11819,21 +11832,33 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
           (5 === finishedWork.tag ||
             (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
           commitFragmentInstanceDeletionEffects(finishedWork);
-        recursivelyTraverseDisappearLayoutEffects(finishedWork);
+        recursivelyTraverseDisappearLayoutEffects(
+          finishedWork,
+          layoutEffectTraversalFlags
+        );
         break;
       case 22:
         null === finishedWork.memoizedState &&
-          recursivelyTraverseDisappearLayoutEffects(finishedWork);
+          recursivelyTraverseDisappearLayoutEffects(
+            finishedWork,
+            layoutEffectTraversalFlags
+          );
         break;
       case 30:
         safelyDetachRef(finishedWork, finishedWork.return);
-        recursivelyTraverseDisappearLayoutEffects(finishedWork);
+        recursivelyTraverseDisappearLayoutEffects(
+          finishedWork,
+          layoutEffectTraversalFlags
+        );
         break;
       case 7:
         enableFragmentRefs &&
           safelyDetachRef(finishedWork, finishedWork.return);
       default:
-        recursivelyTraverseDisappearLayoutEffects(finishedWork);
+        recursivelyTraverseDisappearLayoutEffects(
+          finishedWork,
+          layoutEffectTraversalFlags
+        );
     }
     parentFiber = parentFiber.sibling;
   }
@@ -11841,15 +11866,18 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
 function recursivelyTraverseReappearLayoutEffects(
   finishedRoot$jscomp$0,
   parentFiber,
-  includeWorkInProgressEffects
+  layoutEffectTraversalFlags
 ) {
-  includeWorkInProgressEffects =
-    includeWorkInProgressEffects && 0 !== (parentFiber.subtreeFlags & 8772);
+  layoutEffectTraversalFlags =
+    0 !== (parentFiber.subtreeFlags & 8772)
+      ? layoutEffectTraversalFlags
+      : layoutEffectTraversalFlags & -2;
   for (parentFiber = parentFiber.child; null !== parentFiber; ) {
     var current = parentFiber.alternate,
       finishedRoot = finishedRoot$jscomp$0,
       finishedWork = parentFiber,
-      flags = finishedWork.flags;
+      flags = finishedWork.flags,
+      includeWorkInProgressEffects = 0 !== (layoutEffectTraversalFlags & 1);
     switch (finishedWork.tag) {
       case 0:
       case 11:
@@ -11857,7 +11885,7 @@ function recursivelyTraverseReappearLayoutEffects(
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
-          includeWorkInProgressEffects
+          layoutEffectTraversalFlags
         );
         commitHookEffectListMount(4, finishedWork);
         break;
@@ -11865,7 +11893,7 @@ function recursivelyTraverseReappearLayoutEffects(
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
-          includeWorkInProgressEffects
+          layoutEffectTraversalFlags
         );
         current = finishedWork;
         finishedRoot = current.stateNode;
@@ -11898,7 +11926,8 @@ function recursivelyTraverseReappearLayoutEffects(
         safelyAttachRef(finishedWork, finishedWork.return);
         break;
       case 27:
-        commitHostSingletonAcquisition(finishedWork);
+        0 !== (layoutEffectTraversalFlags & 2) &&
+          commitHostSingletonAcquisition(finishedWork);
       case 26:
       case 5:
         if (enableFragmentRefs && 5 === finishedWork.tag) {
@@ -11916,7 +11945,7 @@ function recursivelyTraverseReappearLayoutEffects(
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
-          includeWorkInProgressEffects
+          layoutEffectTraversalFlags
         );
         includeWorkInProgressEffects &&
           null === current &&
@@ -11928,14 +11957,14 @@ function recursivelyTraverseReappearLayoutEffects(
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
-          includeWorkInProgressEffects
+          layoutEffectTraversalFlags
         );
         break;
       case 31:
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
-          includeWorkInProgressEffects
+          layoutEffectTraversalFlags
         );
         includeWorkInProgressEffects &&
           flags & 4 &&
@@ -11945,7 +11974,7 @@ function recursivelyTraverseReappearLayoutEffects(
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
-          includeWorkInProgressEffects
+          layoutEffectTraversalFlags
         );
         includeWorkInProgressEffects &&
           flags & 4 &&
@@ -11956,7 +11985,7 @@ function recursivelyTraverseReappearLayoutEffects(
           recursivelyTraverseReappearLayoutEffects(
             finishedRoot,
             finishedWork,
-            includeWorkInProgressEffects
+            layoutEffectTraversalFlags
           );
         safelyAttachRef(finishedWork, finishedWork.return);
         break;
@@ -11964,7 +11993,7 @@ function recursivelyTraverseReappearLayoutEffects(
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
-          includeWorkInProgressEffects
+          layoutEffectTraversalFlags
         );
         safelyAttachRef(finishedWork, finishedWork.return);
         break;
@@ -11975,7 +12004,7 @@ function recursivelyTraverseReappearLayoutEffects(
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
-          includeWorkInProgressEffects
+          layoutEffectTraversalFlags
         );
     }
     parentFiber = parentFiber.sibling;
@@ -14463,20 +14492,20 @@ function debounceScrollEnd(targetInst, nativeEvent, nativeEventTarget) {
     (nativeEventTarget[internalScrollTimer] = targetInst));
 }
 for (
-  var i$jscomp$inline_1712 = 0;
-  i$jscomp$inline_1712 < simpleEventPluginEvents.length;
-  i$jscomp$inline_1712++
+  var i$jscomp$inline_1716 = 0;
+  i$jscomp$inline_1716 < simpleEventPluginEvents.length;
+  i$jscomp$inline_1716++
 ) {
-  var eventName$jscomp$inline_1713 =
-      simpleEventPluginEvents[i$jscomp$inline_1712],
-    domEventName$jscomp$inline_1714 =
-      eventName$jscomp$inline_1713.toLowerCase(),
-    capitalizedEvent$jscomp$inline_1715 =
-      eventName$jscomp$inline_1713[0].toUpperCase() +
-      eventName$jscomp$inline_1713.slice(1);
+  var eventName$jscomp$inline_1717 =
+      simpleEventPluginEvents[i$jscomp$inline_1716],
+    domEventName$jscomp$inline_1718 =
+      eventName$jscomp$inline_1717.toLowerCase(),
+    capitalizedEvent$jscomp$inline_1719 =
+      eventName$jscomp$inline_1717[0].toUpperCase() +
+      eventName$jscomp$inline_1717.slice(1);
   registerSimpleEvent(
-    domEventName$jscomp$inline_1714,
-    "on" + capitalizedEvent$jscomp$inline_1715
+    domEventName$jscomp$inline_1718,
+    "on" + capitalizedEvent$jscomp$inline_1719
   );
 }
 registerSimpleEvent(ANIMATION_END, "onAnimationEnd");
@@ -19296,16 +19325,16 @@ ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function (target) {
     0 === i && attemptExplicitHydrationTarget(target);
   }
 };
-var isomorphicReactPackageVersion$jscomp$inline_2139 = React.version;
+var isomorphicReactPackageVersion$jscomp$inline_2143 = React.version;
 if (
-  "19.3.0-native-fb-b685b40d-20260724" !==
-  isomorphicReactPackageVersion$jscomp$inline_2139
+  "19.3.0-native-fb-9ceb1e7d-20260727" !==
+  isomorphicReactPackageVersion$jscomp$inline_2143
 )
   throw Error(
     formatProdErrorMessage(
       527,
-      isomorphicReactPackageVersion$jscomp$inline_2139,
-      "19.3.0-native-fb-b685b40d-20260724"
+      isomorphicReactPackageVersion$jscomp$inline_2143,
+      "19.3.0-native-fb-9ceb1e7d-20260727"
     )
   );
 ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
@@ -19325,24 +19354,24 @@ ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
     null === componentOrElement ? null : componentOrElement.stateNode;
   return componentOrElement;
 };
-var internals$jscomp$inline_2737 = {
+var internals$jscomp$inline_2742 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-b685b40d-20260724",
+  version: "19.3.0-native-fb-9ceb1e7d-20260727",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-b685b40d-20260724"
+  reconcilerVersion: "19.3.0-native-fb-9ceb1e7d-20260727"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2738 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2743 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2738.isDisabled &&
-    hook$jscomp$inline_2738.supportsFiber
+    !hook$jscomp$inline_2743.isDisabled &&
+    hook$jscomp$inline_2743.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2738.inject(
-        internals$jscomp$inline_2737
+      (rendererID = hook$jscomp$inline_2743.inject(
+        internals$jscomp$inline_2742
       )),
-        (injectedHook = hook$jscomp$inline_2738);
+        (injectedHook = hook$jscomp$inline_2743);
     } catch (err) {}
 }
 function getCrossOriginStringAs(as, input) {
@@ -19599,4 +19628,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-native-fb-b685b40d-20260724";
+exports.version = "19.3.0-native-fb-9ceb1e7d-20260727";
