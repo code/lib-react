@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<af280f7f5475d830f4be05f97d4ddc56>>
+ * @generated SignedSource<<5ac1c446f83f74964bacb80ca7535379>>
  */
 
 "use strict";
@@ -15,8 +15,8 @@
   "function" ===
     typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart &&
   __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-require("react-native/Libraries/ReactPrivate/ReactNativePrivateInitializeCore");
-var ReactNativePrivateInterface = require("react-native/Libraries/ReactPrivate/ReactNativePrivateInterface"),
+require("react-native/setup-env");
+var reactPrivateInterface = require("react-native/react-private-interface"),
   dynamicFlagsUntyped = require("ReactNativeInternalFeatureFlags"),
   Scheduler = require("scheduler"),
   React = require("react"),
@@ -1216,11 +1216,10 @@ function getListener(inst, registrationName) {
   return inst;
 }
 var customBubblingEventTypes =
-    ReactNativePrivateInterface.ReactNativeViewConfigRegistry
+    reactPrivateInterface.ReactNativeViewConfigRegistry
       .customBubblingEventTypes,
   customDirectEventTypes =
-    ReactNativePrivateInterface.ReactNativeViewConfigRegistry
-      .customDirectEventTypes;
+    reactPrivateInterface.ReactNativeViewConfigRegistry.customDirectEventTypes;
 function accumulateDirectionalDispatches(inst, phase, event) {
   if (
     (phase = getListener(
@@ -1403,15 +1402,15 @@ function dispatchEvent(target, topLevelType, nativeEventParam) {
       (eventTarget = getPublicInstance(nativeEventParam)));
   batchedUpdates$1(function () {
     var event = { eventName: topLevelType, nativeEvent: nativeEvent };
-    ReactNativePrivateInterface.RawEventEmitter.emit(topLevelType, event);
-    ReactNativePrivateInterface.RawEventEmitter.emit("*", event);
+    reactPrivateInterface.RawEventEmitter.emit(topLevelType, event);
+    reactPrivateInterface.RawEventEmitter.emit("*", event);
     null == _enableNativeEventTargetEventDispatching &&
       (_enableNativeEventTargetEventDispatching =
         "function" === typeof RN$isNativeEventTargetEventDispatchingEnabled &&
         RN$isNativeEventTargetEventDispatchingEnabled());
     if (_enableNativeEventTargetEventDispatching)
       null != eventTarget &&
-        ReactNativePrivateInterface.dispatchNativeEvent(
+        reactPrivateInterface.dispatchNativeEvent(
           eventTarget,
           topLevelType,
           nativeEvent
@@ -8218,7 +8217,7 @@ function completeWork(current, workInProgress, renderLanes) {
             )));
           b: {
             newChildSet = type ? void 0 : newChildSet;
-            oldProps = ReactNativePrivateInterface.diffAttributePayloads(
+            oldProps = reactPrivateInterface.diffAttributePayloads(
               oldProps,
               newProps,
               renderLanes.canonical.viewConfig.validAttributes
@@ -8267,7 +8266,7 @@ function completeWork(current, workInProgress, renderLanes) {
         current = rootInstanceStackCursor.current;
         renderLanes = allocateTag();
         type = getViewConfigForType(type);
-        oldProps = ReactNativePrivateInterface.createAttributePayload(
+        oldProps = reactPrivateInterface.createAttributePayload(
           newProps,
           type.validAttributes
         );
@@ -14051,7 +14050,7 @@ var _nativeFabricUIManage = nativeFabricUIManager,
     }
   },
   getViewConfigForType =
-    ReactNativePrivateInterface.ReactNativeViewConfigRegistry.get,
+    reactPrivateInterface.ReactNativeViewConfigRegistry.get,
   nextReactTag = 2;
 function allocateTag() {
   var tag = nextReactTag;
@@ -14082,7 +14081,7 @@ function getPublicInstance(instance) {
     if (null == instance.canonical.publicInstance) {
       var $jscomp$nullish$tmp0;
       instance.canonical.publicInstance =
-        ReactNativePrivateInterface.createPublicInstance(
+        reactPrivateInterface.createPublicInstance(
           instance.canonical.nativeTag,
           instance.canonical.viewConfig,
           instance.canonical.internalInstanceHandle,
@@ -14149,7 +14148,7 @@ var scheduleTimeout = setTimeout,
   cancelTimeout = clearTimeout;
 function cloneHiddenInstance(instance) {
   var node = instance.node,
-    updatePayload = ReactNativePrivateInterface.createAttributePayload(
+    updatePayload = reactPrivateInterface.createAttributePayload(
       { style: { display: "none" } },
       instance.canonical.viewConfig.validAttributes
     );
@@ -14354,14 +14353,14 @@ ResponderEventPlugin.injection.injectGlobalResponderHandler({
 });
 if (
   "function" !==
-  typeof ReactNativePrivateInterface.ReactFiberErrorDialog.showErrorDialog
+  typeof reactPrivateInterface.ReactFiberErrorDialog.showErrorDialog
 )
   throw Error(
     "Expected ReactFiberErrorDialog.showErrorDialog to be a function."
   );
 function nativeOnUncaughtError(error, errorInfo) {
   !1 !==
-    ReactNativePrivateInterface.ReactFiberErrorDialog.showErrorDialog({
+    reactPrivateInterface.ReactFiberErrorDialog.showErrorDialog({
       errorBoundary: null,
       error: error,
       componentStack:
@@ -14370,7 +14369,7 @@ function nativeOnUncaughtError(error, errorInfo) {
 }
 function nativeOnCaughtError(error, errorInfo) {
   !1 !==
-    ReactNativePrivateInterface.ReactFiberErrorDialog.showErrorDialog({
+    reactPrivateInterface.ReactFiberErrorDialog.showErrorDialog({
       errorBoundary: errorInfo.errorBoundary,
       error: error,
       componentStack:
@@ -14393,10 +14392,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1682 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-9ceb1e7d-20260727",
+    version: "19.3.0-native-fb-96fcba90-20260728",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-9ceb1e7d-20260727"
+    reconcilerVersion: "19.3.0-native-fb-96fcba90-20260728"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1682.rendererConfig = extraDevToolsConfig);
@@ -14437,7 +14436,7 @@ exports.createPortal = function (children, containerTag) {
   );
 };
 exports.dispatchCommand = function (handle, command, args) {
-  handle = ReactNativePrivateInterface.getNodeFromPublicInstance(handle);
+  handle = reactPrivateInterface.getNodeFromPublicInstance(handle);
   null != handle &&
     nativeFabricUIManager.dispatchCommand(handle, command, args);
 };
@@ -14457,16 +14456,12 @@ exports.findNodeHandle = function (componentOrHandle) {
   )
     return componentOrHandle.canonical.nativeTag;
   var nativeTag =
-    ReactNativePrivateInterface.getNativeTagFromPublicInstance(
-      componentOrHandle
-    );
+    reactPrivateInterface.getNativeTagFromPublicInstance(componentOrHandle);
   if (nativeTag) return nativeTag;
   componentOrHandle = findHostInstance(componentOrHandle);
   return null == componentOrHandle
     ? componentOrHandle
-    : ReactNativePrivateInterface.getNativeTagFromPublicInstance(
-        componentOrHandle
-      );
+    : reactPrivateInterface.getNativeTagFromPublicInstance(componentOrHandle);
 };
 exports.getNodeFromInternalInstanceHandle = function (internalInstanceHandle) {
   return (
@@ -14484,7 +14479,7 @@ exports.getPublicInstanceFromInternalInstanceHandle = function (
     : 6 === internalInstanceHandle.tag
       ? (null == instance.publicInstance &&
           (instance.publicInstance =
-            ReactNativePrivateInterface.createPublicTextInstance(
+            reactPrivateInterface.createPublicTextInstance(
               internalInstanceHandle
             )),
         instance.publicInstance)
@@ -14525,7 +14520,7 @@ exports.render = function (
       (onDefaultTransitionIndicator = options.onDefaultTransitionIndicator);
     var rootInstance = {
       publicInstance:
-        ReactNativePrivateInterface.createPublicRootInstance(containerTag),
+        reactPrivateInterface.createPublicRootInstance(containerTag),
       containerTag: containerTag
     };
     options = onDefaultTransitionIndicator;
@@ -14578,7 +14573,7 @@ exports.render = function (
   return element;
 };
 exports.sendAccessibilityEvent = function (handle, eventType) {
-  handle = ReactNativePrivateInterface.getNodeFromPublicInstance(handle);
+  handle = reactPrivateInterface.getNodeFromPublicInstance(handle);
   null != handle &&
     nativeFabricUIManager.sendAccessibilityEvent(handle, eventType);
 };

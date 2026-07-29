@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<300ad396a4da405f8f25ec4d126bd5e1>>
+ * @generated SignedSource<<f78c124ed12519dadc28096ad204c200>>
  */
 
 "use strict";
@@ -1288,8 +1288,8 @@ __DEV__ &&
           (eventTarget = getPublicInstance(nativeEventParam)));
       batchedUpdates$1(function () {
         var event = { eventName: topLevelType, nativeEvent: nativeEvent };
-        ReactNativePrivateInterface.RawEventEmitter.emit(topLevelType, event);
-        ReactNativePrivateInterface.RawEventEmitter.emit("*", event);
+        reactPrivateInterface.RawEventEmitter.emit(topLevelType, event);
+        reactPrivateInterface.RawEventEmitter.emit("*", event);
         null == _enableNativeEventTargetEventDispatching &&
           (_enableNativeEventTargetEventDispatching =
             "function" ===
@@ -1297,7 +1297,7 @@ __DEV__ &&
             RN$isNativeEventTargetEventDispatchingEnabled());
         if (_enableNativeEventTargetEventDispatching)
           null != eventTarget &&
-            ReactNativePrivateInterface.dispatchNativeEvent(
+            reactPrivateInterface.dispatchNativeEvent(
               eventTarget,
               topLevelType,
               nativeEvent
@@ -10673,7 +10673,7 @@ __DEV__ &&
               b: {
                 _type2 = !current;
                 newChildSet = hasOffscreenComponentChild ? void 0 : newChildSet;
-                _oldProps = ReactNativePrivateInterface.diffAttributePayloads(
+                _oldProps = reactPrivateInterface.diffAttributePayloads(
                   _oldProps,
                   newProps,
                   renderLanes.canonical.viewConfig.validAttributes
@@ -10727,11 +10727,11 @@ __DEV__ &&
             _type2 = getViewConfigForType(_type2);
             for (hasOffscreenComponentChild in _type2.validAttributes)
               newProps.hasOwnProperty(hasOffscreenComponentChild) &&
-                ReactNativePrivateInterface.deepFreezeAndThrowOnMutationInDev(
+                reactPrivateInterface.deepFreezeAndThrowOnMutationInDev(
                   newProps[hasOffscreenComponentChild]
                 );
             hasOffscreenComponentChild =
-              ReactNativePrivateInterface.createAttributePayload(
+              reactPrivateInterface.createAttributePayload(
                 newProps,
                 _type2.validAttributes
               );
@@ -18015,7 +18015,7 @@ __DEV__ &&
         if (null == instance.canonical.publicInstance) {
           var $jscomp$nullish$tmp0;
           instance.canonical.publicInstance =
-            ReactNativePrivateInterface.createPublicInstance(
+            reactPrivateInterface.createPublicInstance(
               instance.canonical.nativeTag,
               instance.canonical.viewConfig,
               instance.canonical.internalInstanceHandle,
@@ -18079,7 +18079,7 @@ __DEV__ &&
     }
     function cloneHiddenInstance(instance) {
       var node = instance.node,
-        updatePayload = ReactNativePrivateInterface.createAttributePayload(
+        updatePayload = reactPrivateInterface.createAttributePayload(
           { style: { display: "none" } },
           instance.canonical.viewConfig.validAttributes
         );
@@ -18144,7 +18144,7 @@ __DEV__ &&
     }
     function nativeOnUncaughtError(error, errorInfo) {
       !1 !==
-        ReactNativePrivateInterface.ReactFiberErrorDialog.showErrorDialog({
+        reactPrivateInterface.ReactFiberErrorDialog.showErrorDialog({
           errorBoundary: null,
           error: error,
           componentStack:
@@ -18162,7 +18162,7 @@ __DEV__ &&
     function nativeOnCaughtError(error, errorInfo) {
       if (
         !1 !==
-        ReactNativePrivateInterface.ReactFiberErrorDialog.showErrorDialog({
+        reactPrivateInterface.ReactFiberErrorDialog.showErrorDialog({
           errorBoundary: errorInfo.errorBoundary,
           error: error,
           componentStack:
@@ -18206,10 +18206,10 @@ __DEV__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart &&
       __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-    require("react-native/Libraries/ReactPrivate/ReactNativePrivateInitializeCore");
+    require("react-native/setup-env");
     var React = require("react"),
       dynamicFlagsUntyped = require("ReactNativeInternalFeatureFlags"),
-      ReactNativePrivateInterface = require("react-native/Libraries/ReactPrivate/ReactNativePrivateInterface"),
+      reactPrivateInterface = require("react-native/react-private-interface"),
       Scheduler = require("scheduler"),
       isArrayImpl = Array.isArray,
       ReactSharedInternals =
@@ -18813,10 +18813,10 @@ __DEV__ &&
       eventNameDispatchConfigs = {},
       registrationNameModules = {},
       customBubblingEventTypes =
-        ReactNativePrivateInterface.ReactNativeViewConfigRegistry
+        reactPrivateInterface.ReactNativeViewConfigRegistry
           .customBubblingEventTypes,
       customDirectEventTypes =
-        ReactNativePrivateInterface.ReactNativeViewConfigRegistry
+        reactPrivateInterface.ReactNativeViewConfigRegistry
           .customDirectEventTypes;
     if (eventPluginOrder)
       throw Error(
@@ -20994,9 +20994,7 @@ __DEV__ &&
         ) {
           var closestInstance = null;
           (inspectedView =
-            ReactNativePrivateInterface.getNodeFromPublicInstance(
-              inspectedView
-            ))
+            reactPrivateInterface.getNodeFromPublicInstance(inspectedView))
             ? nativeFabricUIManager.findNodeAtPoint(
                 inspectedView,
                 locationX,
@@ -21055,7 +21053,7 @@ __DEV__ &&
         }
       },
       getViewConfigForType =
-        ReactNativePrivateInterface.ReactNativeViewConfigRegistry.get,
+        reactPrivateInterface.ReactNativeViewConfigRegistry.get,
       nextReactTag = 2;
     registerEventHandler && registerEventHandler(dispatchEvent);
     var currentUpdatePriority = 0,
@@ -21232,7 +21230,7 @@ __DEV__ &&
     });
     if (
       "function" !==
-      typeof ReactNativePrivateInterface.ReactFiberErrorDialog.showErrorDialog
+      typeof reactPrivateInterface.ReactFiberErrorDialog.showErrorDialog
     )
       throw Error(
         "Expected ReactFiberErrorDialog.showErrorDialog to be a function."
@@ -21254,10 +21252,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-9ceb1e7d-20260727",
+        version: "19.3.0-native-fb-96fcba90-20260728",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-9ceb1e7d-20260727"
+        reconcilerVersion: "19.3.0-native-fb-96fcba90-20260728"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
@@ -21288,7 +21286,7 @@ __DEV__ &&
       );
     };
     exports.dispatchCommand = function (handle, command, args) {
-      handle = ReactNativePrivateInterface.getNodeFromPublicInstance(handle);
+      handle = reactPrivateInterface.getNodeFromPublicInstance(handle);
       null != handle
         ? nativeFabricUIManager.dispatchCommand(handle, command, args)
         : console.error(
@@ -21336,7 +21334,7 @@ __DEV__ &&
         return componentOrHandle.canonical.nativeTag;
       if (
         (owner =
-          ReactNativePrivateInterface.getNativeTagFromPublicInstance(
+          reactPrivateInterface.getNativeTagFromPublicInstance(
             componentOrHandle
           ))
       )
@@ -21347,7 +21345,7 @@ __DEV__ &&
       );
       return null == componentOrHandle
         ? componentOrHandle
-        : ReactNativePrivateInterface.getNativeTagFromPublicInstance(
+        : reactPrivateInterface.getNativeTagFromPublicInstance(
             componentOrHandle
           );
     };
@@ -21362,7 +21360,7 @@ __DEV__ &&
         : 6 === internalInstanceHandle.tag
           ? (null == instance.publicInstance &&
               (instance.publicInstance =
-                ReactNativePrivateInterface.createPublicTextInstance(
+                reactPrivateInterface.createPublicTextInstance(
                   internalInstanceHandle
                 )),
             instance.publicInstance)
@@ -21375,11 +21373,11 @@ __DEV__ &&
     };
     exports.isChildPublicInstance = function (parentInstance, childInstance) {
       parentInstance =
-        ReactNativePrivateInterface.getInternalInstanceHandleFromPublicInstance(
+        reactPrivateInterface.getInternalInstanceHandleFromPublicInstance(
           parentInstance
         );
       childInstance =
-        ReactNativePrivateInterface.getInternalInstanceHandleFromPublicInstance(
+        reactPrivateInterface.getInternalInstanceHandleFromPublicInstance(
           childInstance
         );
       if (null != parentInstance && null != childInstance) {
@@ -21431,7 +21429,7 @@ __DEV__ &&
           (onDefaultTransitionIndicator = options.onDefaultTransitionIndicator);
         var rootInstance = {
           publicInstance:
-            ReactNativePrivateInterface.createPublicRootInstance(containerTag),
+            reactPrivateInterface.createPublicRootInstance(containerTag),
           containerTag: containerTag
         };
         options = onDefaultTransitionIndicator;
@@ -21483,7 +21481,7 @@ __DEV__ &&
       return element;
     };
     exports.sendAccessibilityEvent = function (handle, eventType) {
-      handle = ReactNativePrivateInterface.getNodeFromPublicInstance(handle);
+      handle = reactPrivateInterface.getNodeFromPublicInstance(handle);
       null != handle
         ? nativeFabricUIManager.sendAccessibilityEvent(handle, eventType)
         : console.error(
