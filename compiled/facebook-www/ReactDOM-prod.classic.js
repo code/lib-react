@@ -18303,7 +18303,9 @@ FragmentInstance.prototype.blur = function () {
 function blurActiveElementWithinFragment(child, activeElement) {
   if (enableFragmentRefsTextNodes && 6 === child.tag) return !1;
   child = getInstanceFromHostFiber(child);
-  return child === activeElement ? (child.blur(), !0) : !1;
+  return child === activeElement || child.contains(activeElement)
+    ? (activeElement.blur(), !0)
+    : !1;
 }
 FragmentInstance.prototype.observeUsing = function (observer) {
   null === this._observers && (this._observers = new Set());
@@ -20530,14 +20532,14 @@ function getCrossOriginStringAs(as, input) {
 }
 var isomorphicReactPackageVersion$jscomp$inline_2068 = React.version;
 if (
-  "19.3.0-www-classic-9a81195b-20260728" !==
+  "19.3.0-www-classic-1724e9ce-20260729" !==
   isomorphicReactPackageVersion$jscomp$inline_2068
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2068,
-      "19.3.0-www-classic-9a81195b-20260728"
+      "19.3.0-www-classic-1724e9ce-20260729"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -20555,10 +20557,10 @@ Internals.Events = [
 ];
 var internals$jscomp$inline_2610 = {
   bundleType: 0,
-  version: "19.3.0-www-classic-9a81195b-20260728",
+  version: "19.3.0-www-classic-1724e9ce-20260729",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-classic-9a81195b-20260728"
+  reconcilerVersion: "19.3.0-www-classic-1724e9ce-20260729"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_2611 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -20996,4 +20998,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-classic-9a81195b-20260728";
+exports.version = "19.3.0-www-classic-1724e9ce-20260729";

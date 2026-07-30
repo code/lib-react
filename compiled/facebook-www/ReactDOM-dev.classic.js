@@ -27000,7 +27000,9 @@ __DEV__ &&
     function blurActiveElementWithinFragment(child, activeElement) {
       if (enableFragmentRefsTextNodes && 6 === child.tag) return !1;
       child = getInstanceFromHostFiber(child);
-      return child === activeElement ? (child.blur(), !0) : !1;
+      return child === activeElement || child.contains(activeElement)
+        ? (activeElement.blur(), !0)
+        : !1;
     }
     function observeChild(child, observer) {
       if (enableFragmentRefsTextNodes && 6 === child.tag) return !1;
@@ -33468,11 +33470,11 @@ __DEV__ &&
       return_targetInst = null;
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-www-classic-9a81195b-20260728" !== isomorphicReactPackageVersion)
+      if ("19.3.0-www-classic-1724e9ce-20260729" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-www-classic-9a81195b-20260728\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-www-classic-1724e9ce-20260729\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -33515,10 +33517,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-www-classic-9a81195b-20260728",
+          version: "19.3.0-www-classic-1724e9ce-20260729",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-www-classic-9a81195b-20260728"
+          reconcilerVersion: "19.3.0-www-classic-1724e9ce-20260729"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -34140,7 +34142,7 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-www-classic-9a81195b-20260728";
+    exports.version = "19.3.0-www-classic-1724e9ce-20260729";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&
