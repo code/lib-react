@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<d8dd28a73b3cb6fb94ae8722db564d30>>
+ * @generated SignedSource<<895f477eaff45c28a5ae7928e5a06b6e>>
  */
 
 /*
@@ -8392,6 +8392,7 @@ __DEV__ &&
     function use(usable) {
       if (null !== usable && "object" === typeof usable) {
         if ("function" === typeof usable.then) return useThenable(usable);
+        if (usable.$$typeof === REACT_RECOVERABLE_TYPE) return;
         if (usable.$$typeof === REACT_CONTEXT_TYPE) return readContext(usable);
       }
       throw Error("An unsupported type was passed to use(): " + String(usable));
@@ -11848,28 +11849,31 @@ __DEV__ &&
           fiberMode = didPrimaryChildrenDefer.stck;
           primaryChildFragment = didPrimaryChildrenDefer.cstck;
         }
-        suspenseState = message;
-        didPrimaryChildrenDefer = fallbackChildren;
+        suspenseInstance = message;
+        suspenseState = fallbackChildren;
         nextProps = fiberMode;
-        suspenseInstance = primaryChildFragment;
+        didPrimaryChildrenDefer = primaryChildFragment;
         fallbackChildren = suspenseState;
         fiberMode = suspenseInstance;
-        fallbackChildren = fallbackChildren
-          ? Error(fallbackChildren)
-          : Error(
-              "The server could not finish this Suspense boundary, likely due to an error during server rendering. Switched to client rendering."
-            );
-        fallbackChildren.stack = nextProps || "";
-        fallbackChildren.digest = didPrimaryChildrenDefer;
-        didPrimaryChildrenDefer = void 0 === fiberMode ? null : fiberMode;
-        fiberMode = {
-          value: fallbackChildren,
-          source: null,
-          stack: didPrimaryChildrenDefer
-        };
-        "string" === typeof didPrimaryChildrenDefer &&
-          CapturedStacks.set(fallbackChildren, fiberMode);
-        queueHydrationError(fiberMode);
+        primaryChildFragment = nextProps;
+        nextProps = didPrimaryChildrenDefer;
+        fallbackChildren !== REACT_RECOVERABLE_DIGEST &&
+          ((didPrimaryChildrenDefer = fiberMode
+            ? Error(fiberMode)
+            : Error(
+                "The server could not finish this Suspense boundary, likely due to an error during server rendering. Switched to client rendering."
+              )),
+          (didPrimaryChildrenDefer.stack = primaryChildFragment || ""),
+          (didPrimaryChildrenDefer.digest = fallbackChildren),
+          (fallbackChildren = void 0 === nextProps ? null : nextProps),
+          (fiberMode = {
+            value: didPrimaryChildrenDefer,
+            source: null,
+            stack: fallbackChildren
+          }),
+          "string" === typeof fallbackChildren &&
+            CapturedStacks.set(didPrimaryChildrenDefer, fiberMode),
+          queueHydrationError(fiberMode));
         return retrySuspenseComponentWithoutHydrating(
           current,
           workInProgress,
@@ -27956,6 +27960,7 @@ __DEV__ &&
     Symbol.for("react.tracing_marker");
     var REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel"),
       REACT_VIEW_TRANSITION_TYPE = Symbol.for("react.view_transition"),
+      REACT_RECOVERABLE_TYPE = Symbol.for("react.recoverable"),
       MAYBE_ITERATOR_SYMBOL = Symbol.iterator,
       REACT_OPTIMISTIC_KEY = Symbol.for("react.optimistic_key"),
       REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"),
@@ -29768,7 +29773,8 @@ __DEV__ &&
       pendingUNSAFE_ComponentWillUpdateWarnings = [];
       pendingLegacyContextWarning = new Map();
     };
-    var callComponent = {
+    var REACT_RECOVERABLE_DIGEST = "",
+      callComponent = {
         react_stack_bottom_frame: function (Component, props, secondArg) {
           var wasRendering = isRendering;
           isRendering = !0;
@@ -32229,11 +32235,11 @@ __DEV__ &&
     };
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-native-fb-1724e9ce-20260729" !== isomorphicReactPackageVersion)
+      if ("19.3.0-native-fb-0f42eac2-20260730" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-native-fb-1724e9ce-20260729\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-native-fb-0f42eac2-20260730\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -32270,10 +32276,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-native-fb-1724e9ce-20260729",
+          version: "19.3.0-native-fb-0f42eac2-20260730",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-native-fb-1724e9ce-20260729"
+          reconcilerVersion: "19.3.0-native-fb-0f42eac2-20260730"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -32340,6 +32346,15 @@ __DEV__ &&
       );
     exports.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE =
       Internals;
+    exports.browser = function () {
+      var recoverable = Error(
+        "Recoverable Exception: This is not a real error! It's an implementation detail of `use(browser())` to defer rendering to the browser. `use(browser())` can only be used inside a `<Suspense>` boundary. If a server render errors with this as its cause, the component that called `use(browser())` does not have a `<Suspense>` boundary above it."
+      );
+      Object.defineProperty(recoverable, "$$typeof", {
+        value: REACT_RECOVERABLE_TYPE
+      });
+      return recoverable;
+    };
     exports.createPortal = function (children, container) {
       var key =
         2 < arguments.length && void 0 !== arguments[2] ? arguments[2] : null;
@@ -32748,7 +32763,7 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-native-fb-1724e9ce-20260729";
+    exports.version = "19.3.0-native-fb-0f42eac2-20260730";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&

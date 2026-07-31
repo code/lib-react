@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<5b831dfcfc9cc13763d756edd544c123>>
+ * @generated SignedSource<<cfd937d8d2f66e167813e9341edeb90a>>
  */
 
 "use strict";
@@ -105,6 +105,7 @@ __DEV__ &&
         findDOMNode: null
       },
       REACT_PORTAL_TYPE = Symbol.for("react.portal"),
+      REACT_RECOVERABLE_TYPE = Symbol.for("react.recoverable"),
       REACT_OPTIMISTIC_KEY = Symbol.for("react.optimistic_key"),
       ReactSharedInternals =
         React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
@@ -120,6 +121,15 @@ __DEV__ &&
       );
     exports.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE =
       Internals;
+    exports.browser = function () {
+      var recoverable = Error(
+        "Recoverable Exception: This is not a real error! It's an implementation detail of `use(browser())` to defer rendering to the browser. `use(browser())` can only be used inside a `<Suspense>` boundary. If a server render errors with this as its cause, the component that called `use(browser())` does not have a `<Suspense>` boundary above it."
+      );
+      Object.defineProperty(recoverable, "$$typeof", {
+        value: REACT_RECOVERABLE_TYPE
+      });
+      return recoverable;
+    };
     exports.createPortal = function (children, container) {
       var key =
         2 < arguments.length && void 0 !== arguments[2] ? arguments[2] : null;
@@ -419,5 +429,5 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-native-fb-1724e9ce-20260729";
+    exports.version = "19.3.0-native-fb-0f42eac2-20260730";
   })();

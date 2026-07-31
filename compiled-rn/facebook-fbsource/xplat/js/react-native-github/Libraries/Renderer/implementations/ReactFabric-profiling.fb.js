@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<c84cdc70f78ec32926cc62b2b0a3dd5e>>
+ * @generated SignedSource<<2c8c63691e2ee74d2923203d315c9c95>>
  */
 
 "use strict";
@@ -267,6 +267,7 @@ var REACT_ACTIVITY_TYPE = Symbol.for("react.activity"),
 Symbol.for("react.tracing_marker");
 var REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel"),
   REACT_VIEW_TRANSITION_TYPE = Symbol.for("react.view_transition"),
+  REACT_RECOVERABLE_TYPE = Symbol.for("react.recoverable"),
   MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
 function getIteratorFn(maybeIterable) {
   if (null === maybeIterable || "object" !== typeof maybeIterable) return null;
@@ -4658,6 +4659,7 @@ function useThenable(thenable) {
 function use(usable) {
   if (null !== usable && "object" === typeof usable) {
     if ("function" === typeof usable.then) return useThenable(usable);
+    if (usable.$$typeof === REACT_RECOVERABLE_TYPE) return;
     if (usable.$$typeof === REACT_CONTEXT_TYPE) return readContext(usable);
   }
   throw Error("An unsupported type was passed to use(): " + String(usable));
@@ -7116,19 +7118,20 @@ function updateDehydratedSuspenseComponent(
   if (shim$1())
     return (
       (didPrimaryChildrenDefer = shim$1().digest),
-      (nextProps = Error(
-        "The server could not finish this Suspense boundary, likely due to an error during server rendering. Switched to client rendering."
-      )),
-      (nextProps.stack = ""),
-      (nextProps.digest = didPrimaryChildrenDefer),
-      (didPrimaryChildrenDefer = {
-        value: nextProps,
-        source: null,
-        stack: null
-      }),
-      null === hydrationErrors
-        ? (hydrationErrors = [didPrimaryChildrenDefer])
-        : hydrationErrors.push(didPrimaryChildrenDefer),
+      "" !== didPrimaryChildrenDefer &&
+        ((nextProps = Error(
+          "The server could not finish this Suspense boundary, likely due to an error during server rendering. Switched to client rendering."
+        )),
+        (nextProps.stack = ""),
+        (nextProps.digest = didPrimaryChildrenDefer),
+        (didPrimaryChildrenDefer = {
+          value: nextProps,
+          source: null,
+          stack: null
+        }),
+        null === hydrationErrors
+          ? (hydrationErrors = [didPrimaryChildrenDefer])
+          : hydrationErrors.push(didPrimaryChildrenDefer)),
       retrySuspenseComponentWithoutHydrating(
         current,
         workInProgress,
@@ -14430,10 +14433,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1676 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-1724e9ce-20260729",
+    version: "19.3.0-native-fb-0f42eac2-20260730",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-1724e9ce-20260729"
+    reconcilerVersion: "19.3.0-native-fb-0f42eac2-20260730"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1676.rendererConfig = extraDevToolsConfig);

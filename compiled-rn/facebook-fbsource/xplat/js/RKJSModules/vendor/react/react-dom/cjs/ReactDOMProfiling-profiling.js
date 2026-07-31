@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<271b240449055d66a2149333ede042c0>>
+ * @generated SignedSource<<d68f60158703e43febda6678e09b96fd>>
  */
 
 /*
@@ -294,6 +294,7 @@ var REACT_ACTIVITY_TYPE = Symbol.for("react.activity"),
 Symbol.for("react.tracing_marker");
 var REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel"),
   REACT_VIEW_TRANSITION_TYPE = Symbol.for("react.view_transition"),
+  REACT_RECOVERABLE_TYPE = Symbol.for("react.recoverable"),
   MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
 function getIteratorFn(maybeIterable) {
   if (null === maybeIterable || "object" !== typeof maybeIterable) return null;
@@ -5423,6 +5424,7 @@ function useThenable(thenable) {
 function use(usable) {
   if (null !== usable && "object" === typeof usable) {
     if ("function" === typeof usable.then) return useThenable(usable);
+    if (usable.$$typeof === REACT_RECOVERABLE_TYPE) return;
     if (usable.$$typeof === REACT_CONTEXT_TYPE) return readContext(usable);
   }
   throw Error(formatProdErrorMessage(438, String(usable)));
@@ -8228,10 +8230,11 @@ function updateDehydratedSuspenseComponent(
       suspenseInstance.nextSibling && suspenseInstance.nextSibling.dataset;
     if (didPrimaryChildrenDefer) var digest = didPrimaryChildrenDefer.dgst;
     didPrimaryChildrenDefer = digest;
-    nextProps = Error(formatProdErrorMessage(419));
-    nextProps.stack = "";
-    nextProps.digest = didPrimaryChildrenDefer;
-    queueHydrationError({ value: nextProps, source: null, stack: null });
+    "" !== didPrimaryChildrenDefer &&
+      ((nextProps = Error(formatProdErrorMessage(419))),
+      (nextProps.stack = ""),
+      (nextProps.digest = didPrimaryChildrenDefer),
+      queueHydrationError({ value: nextProps, source: null, stack: null }));
     return retrySuspenseComponentWithoutHydrating(
       current,
       workInProgress,
@@ -21414,14 +21417,14 @@ ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function (target) {
 };
 var isomorphicReactPackageVersion$jscomp$inline_2490 = React.version;
 if (
-  "19.3.0-native-fb-1724e9ce-20260729" !==
+  "19.3.0-native-fb-0f42eac2-20260730" !==
   isomorphicReactPackageVersion$jscomp$inline_2490
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2490,
-      "19.3.0-native-fb-1724e9ce-20260729"
+      "19.3.0-native-fb-0f42eac2-20260730"
     )
   );
 ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
@@ -21443,10 +21446,10 @@ ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
 };
 var internals$jscomp$inline_2497 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-1724e9ce-20260729",
+  version: "19.3.0-native-fb-0f42eac2-20260730",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-1724e9ce-20260729",
+  reconcilerVersion: "19.3.0-native-fb-0f42eac2-20260730",
   getLaneLabelMap: function () {
     for (
       var map = new Map(), lane = 1, index$348 = 0;
@@ -21497,6 +21500,13 @@ exports.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = {
   },
   p: 0,
   findDOMNode: null
+};
+exports.browser = function () {
+  var recoverable = Error(formatProdErrorMessage(603));
+  Object.defineProperty(recoverable, "$$typeof", {
+    value: REACT_RECOVERABLE_TYPE
+  });
+  return recoverable;
 };
 exports.createPortal = function (children, container) {
   var key =
@@ -21731,7 +21741,7 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-native-fb-1724e9ce-20260729";
+exports.version = "19.3.0-native-fb-0f42eac2-20260730";
 "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
   "function" ===
     typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&
