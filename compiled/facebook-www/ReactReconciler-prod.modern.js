@@ -3074,6 +3074,7 @@ module.exports = function ($$$config) {
   function use(usable) {
     if (null !== usable && "object" === typeof usable) {
       if ("function" === typeof usable.then) return useThenable(usable);
+      if (usable.$$typeof === REACT_RECOVERABLE_TYPE) return;
       if (usable.$$typeof === REACT_CONTEXT_TYPE) return readContext(usable);
     }
     throw Error(formatProdErrorMessage(438, String(usable)));
@@ -5532,10 +5533,11 @@ module.exports = function ($$$config) {
       return (
         (didPrimaryChildrenDefer =
           getSuspenseInstanceFallbackErrorDetails(suspenseInstance).digest),
-        (nextProps = Error(formatProdErrorMessage(419))),
-        (nextProps.stack = ""),
-        (nextProps.digest = didPrimaryChildrenDefer),
-        queueHydrationError({ value: nextProps, source: null, stack: null }),
+        "" !== didPrimaryChildrenDefer &&
+          ((nextProps = Error(formatProdErrorMessage(419))),
+          (nextProps.stack = ""),
+          (nextProps.digest = didPrimaryChildrenDefer),
+          queueHydrationError({ value: nextProps, source: null, stack: null })),
         retrySuspenseComponentWithoutHydrating(
           current,
           workInProgress,
@@ -13168,6 +13170,7 @@ module.exports = function ($$$config) {
     REACT_TRACING_MARKER_TYPE = Symbol.for("react.tracing_marker"),
     REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel"),
     REACT_VIEW_TRANSITION_TYPE = Symbol.for("react.view_transition"),
+    REACT_RECOVERABLE_TYPE = Symbol.for("react.recoverable"),
     MAYBE_ITERATOR_SYMBOL = Symbol.iterator,
     REACT_OPTIMISTIC_KEY = Symbol.for("react.optimistic_key"),
     REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"),
@@ -14381,7 +14384,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-modern-1724e9ce-20260729"
+      reconcilerVersion: "19.3.0-www-modern-0f42eac2-20260730"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);

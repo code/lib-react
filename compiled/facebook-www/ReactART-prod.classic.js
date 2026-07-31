@@ -123,6 +123,7 @@ var REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"),
   REACT_TRACING_MARKER_TYPE = Symbol.for("react.tracing_marker"),
   REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel"),
   REACT_VIEW_TRANSITION_TYPE = Symbol.for("react.view_transition"),
+  REACT_RECOVERABLE_TYPE = Symbol.for("react.recoverable"),
   MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
 function getIteratorFn(maybeIterable) {
   if (null === maybeIterable || "object" !== typeof maybeIterable) return null;
@@ -3296,6 +3297,7 @@ function useThenable(thenable) {
 function use(usable) {
   if (null !== usable && "object" === typeof usable) {
     if ("function" === typeof usable.then) return useThenable(usable);
+    if (usable.$$typeof === REACT_RECOVERABLE_TYPE) return;
     if (usable.$$typeof === REACT_CONTEXT_TYPE) return readContext(usable);
   }
   throw Error(formatProdErrorMessage(438, String(usable)));
@@ -5867,17 +5869,18 @@ function updateDehydratedSuspenseComponent(
   if (shim$2())
     return (
       (didPrimaryChildrenDefer = shim$2().digest),
-      (nextProps = Error(formatProdErrorMessage(419))),
-      (nextProps.stack = ""),
-      (nextProps.digest = didPrimaryChildrenDefer),
-      (didPrimaryChildrenDefer = {
-        value: nextProps,
-        source: null,
-        stack: null
-      }),
-      null === hydrationErrors
-        ? (hydrationErrors = [didPrimaryChildrenDefer])
-        : hydrationErrors.push(didPrimaryChildrenDefer),
+      "" !== didPrimaryChildrenDefer &&
+        ((nextProps = Error(formatProdErrorMessage(419))),
+        (nextProps.stack = ""),
+        (nextProps.digest = didPrimaryChildrenDefer),
+        (didPrimaryChildrenDefer = {
+          value: nextProps,
+          source: null,
+          stack: null
+        }),
+        null === hydrationErrors
+          ? (hydrationErrors = [didPrimaryChildrenDefer])
+          : hydrationErrors.push(didPrimaryChildrenDefer)),
       retrySuspenseComponentWithoutHydrating(
         current,
         workInProgress,
@@ -11731,10 +11734,10 @@ var slice = Array.prototype.slice,
   })(React.Component);
 var internals$jscomp$inline_1601 = {
   bundleType: 0,
-  version: "19.3.0-www-classic-1724e9ce-20260729",
+  version: "19.3.0-www-classic-0f42eac2-20260730",
   rendererPackageName: "react-art",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-classic-1724e9ce-20260729"
+  reconcilerVersion: "19.3.0-www-classic-0f42eac2-20260730"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_1602 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -11760,4 +11763,4 @@ exports.RadialGradient = RadialGradient;
 exports.Shape = TYPES.SHAPE;
 exports.Surface = Surface;
 exports.Text = Text;
-exports.version = "19.3.0-www-classic-1724e9ce-20260729";
+exports.version = "19.3.0-www-classic-0f42eac2-20260730";

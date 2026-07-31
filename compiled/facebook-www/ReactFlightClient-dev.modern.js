@@ -593,7 +593,7 @@ __DEV__ &&
             return serializeAsyncIterable(value, parentReference.call(value));
           parentReference = getPrototypeOf(value);
           if (
-            parentReference !== ObjectPrototype &&
+            parentReference !== ObjectPrototype$1 &&
             (null === parentReference ||
               null !== getPrototypeOf(parentReference))
           ) {
@@ -2430,7 +2430,16 @@ __DEV__ &&
                   );
               }
             }
-            value = value[path[i]];
+            var name = path[i];
+            if (
+              "object" !== typeof value ||
+              null === value ||
+              (getPrototypeOf(value) !== ObjectPrototype &&
+                getPrototypeOf(value) !== ArrayPrototype) ||
+              !hasOwnProperty.call(value, name)
+            )
+              throw Error("Invalid reference.");
+            value = value[name];
           }
           for (
             ;
@@ -4661,12 +4670,13 @@ __DEV__ &&
         return value;
       }
       for (i in value)
-        "__proto__" === i
-          ? delete value[i]
-          : ((parentObject = reviveModel(response, value[i], value, i)),
-            void 0 !== parentObject
-              ? (value[i] = parentObject)
-              : delete value[i]);
+        hasOwnProperty.call(value, i) &&
+          ("__proto__" === i
+            ? delete value[i]
+            : ((parentObject = reviveModel(response, value[i], value, i)),
+              void 0 !== parentObject
+                ? (value[i] = parentObject)
+                : delete value[i]));
       return value;
     }
     function close(weakResponse) {
@@ -4920,7 +4930,7 @@ __DEV__ &&
       jsxPropsParents = new WeakMap(),
       jsxChildrenParents = new WeakMap(),
       CLIENT_REFERENCE_TAG = Symbol.for("react.client.reference"),
-      ObjectPrototype = Object.prototype,
+      ObjectPrototype$1 = Object.prototype,
       knownServerReferences = new WeakMap(),
       fakeServerFunctionIdx = 0,
       v8FrameRegExp =
@@ -4944,7 +4954,9 @@ __DEV__ &&
         React.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE,
       ReactSharedInternals =
         React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE ||
-        ReactSharedInteralsServer;
+        ReactSharedInteralsServer,
+      ObjectPrototype = Object.prototype,
+      ArrayPrototype = Array.prototype;
     ReactPromise.prototype = Object.create(Promise.prototype);
     Object.defineProperty(ReactPromise.prototype, "then", {
       writable: !0,
@@ -5110,10 +5122,10 @@ __DEV__ &&
       return hook.checkDCE ? !0 : !1;
     })({
       bundleType: 1,
-      version: "19.3.0-www-modern-1724e9ce-20260729",
+      version: "19.3.0-www-modern-0f42eac2-20260730",
       rendererPackageName: "react-flight-server-fb",
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-modern-1724e9ce-20260729",
+      reconcilerVersion: "19.3.0-www-modern-0f42eac2-20260730",
       getCurrentComponentInfo: function () {
         return currentOwnerInDEV;
       }

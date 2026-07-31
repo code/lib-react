@@ -3910,6 +3910,12 @@ __DEV__ &&
     function is(x, y) {
       return (x === y && (0 !== x || 1 / x === 1 / y)) || (x !== x && y !== y);
     }
+    function createFatalRecoverableError(recoverable) {
+      return Error(
+        "The server render could not complete because client rendering was requested outside a Suspense boundary. See this error's cause for additional details.",
+        { cause: recoverable }
+      );
+    }
     function resolveCurrentlyRenderingComponent() {
       if (null === currentlyRenderingComponent)
         throw Error(
@@ -4957,21 +4963,27 @@ __DEV__ &&
       wasAborted
     ) {
       boundary.errorDigest = digest;
-      error instanceof Error
-        ? ((digest = String(error.message)), (error = String(error.stack)))
-        : ((digest =
-            "object" === typeof error && null !== error
-              ? describeObjectForErrorMessage(error)
-              : String(error)),
-          (error = null));
-      wasAborted = wasAborted
-        ? "Switched to client rendering because the server rendering aborted due to:\n\n"
-        : "Switched to client rendering because the server rendering errored:\n\n";
-      boundary.errorMessage = wasAborted + digest;
-      boundary.errorStack = null !== error ? wasAborted + error : null;
+      error === RecoverableException
+        ? (boundary.errorMessage = wasAborted
+            ? "Switched to client rendering because the server render was aborted with a request to render on the client."
+            : "Switched to client rendering because a component requested it.")
+        : (error instanceof Error
+            ? ((digest = String(error.message)), (error = String(error.stack)))
+            : ((digest =
+                "object" === typeof error && null !== error
+                  ? describeObjectForErrorMessage(error)
+                  : String(error)),
+              (error = null)),
+          (wasAborted = wasAborted
+            ? "Switched to client rendering because the server rendering aborted due to:\n\n"
+            : "Switched to client rendering because the server rendering errored:\n\n"),
+          (boundary.errorMessage = wasAborted + digest),
+          (boundary.errorStack = null !== error ? wasAborted + error : null));
       boundary.errorComponentStack = thrownInfo.componentStack;
     }
     function logRecoverableError(request, error, errorInfo, debugTask) {
+      if (error === RecoverableException)
+        return (suspendedRecoverableError = null), REACT_RECOVERABLE_DIGEST;
       request = request.onError;
       error = debugTask
         ? debugTask.run(request.bind(null, error, errorInfo))
@@ -4981,7 +4993,7 @@ __DEV__ &&
           'onError returned something with a type other than "string". onError should return a string and may return null or undefined but must not return anything else. It received something of type "%s" instead',
           typeof error
         );
-      else return error;
+      else return "" === error ? void 0 : error;
     }
     function fatalError(request, error, errorInfo, debugTask) {
       errorInfo = request.onShellError;
@@ -7407,12 +7419,38 @@ __DEV__ &&
         var boundary = task.blockedBoundary,
           segment = task.blockedSegment;
         if (null === segment || segment.status === ABORTED) {
-          var errorInfo = getThrownInfo(task.componentStack);
+          var errorInfo = getThrownInfo(task.componentStack),
+            isRecoverableAbort =
+              "object" === typeof error &&
+              null !== error &&
+              error.$$typeof === REACT_RECOVERABLE_TYPE;
           if (null === boundary) {
             boundary = task.replay;
             if (null === boundary) {
-              null !== request.trackedPostpones && null !== segment
-                ? ((boundary = request.trackedPostpones),
+              isRecoverableAbort ||
+              null === request.trackedPostpones ||
+              null === segment
+                ? isRecoverableAbort
+                  ? ((boundary = createFatalRecoverableError(error)),
+                    logRecoverableError(
+                      request,
+                      boundary,
+                      errorInfo,
+                      task.debugTask
+                    ),
+                    12 !== request.status &&
+                      request.status !== CLOSED &&
+                      fatalError(request, boundary, errorInfo, task.debugTask))
+                  : (logRecoverableError(
+                      request,
+                      error,
+                      errorInfo,
+                      task.debugTask
+                    ),
+                    12 !== request.status &&
+                      request.status !== CLOSED &&
+                      fatalError(request, error, errorInfo, task.debugTask))
+                : ((boundary = request.trackedPostpones),
                   logRecoverableError(
                     request,
                     error,
@@ -7420,16 +7458,7 @@ __DEV__ &&
                     task.debugTask
                   ),
                   trackPostpone(request, boundary, task, segment),
-                  finishedTask(request, null, task.row, segment))
-                : (logRecoverableError(
-                    request,
-                    error,
-                    errorInfo,
-                    task.debugTask
-                  ),
-                  12 !== request.status &&
-                    request.status !== CLOSED &&
-                    fatalError(request, error, errorInfo, task.debugTask));
+                  finishedTask(request, null, task.row, segment));
               return;
             }
             12 !== request.status &&
@@ -7437,18 +7466,22 @@ __DEV__ &&
               (boundary.pendingTasks--,
               0 === boundary.pendingTasks &&
                 0 < boundary.nodes.length &&
-                ((segment = logRecoverableError(
-                  request,
-                  error,
-                  errorInfo,
-                  null
-                )),
+                (isRecoverableAbort
+                  ? ((segment = REACT_RECOVERABLE_DIGEST),
+                    (isRecoverableAbort = RecoverableException))
+                  : ((segment = logRecoverableError(
+                      request,
+                      error,
+                      errorInfo,
+                      null
+                    )),
+                    (isRecoverableAbort = error)),
                 abortRemainingReplayNodes(
                   request,
                   null,
                   boundary.nodes,
                   boundary.slots,
-                  error,
+                  isRecoverableAbort,
                   segment,
                   errorInfo,
                   !0
@@ -7458,7 +7491,11 @@ __DEV__ &&
           } else {
             var _trackedPostpones = request.trackedPostpones;
             if (boundary.status !== CLIENT_RENDERED) {
-              if (null !== _trackedPostpones && null !== segment)
+              if (
+                !isRecoverableAbort &&
+                null !== _trackedPostpones &&
+                null !== segment
+              )
                 return (
                   logRecoverableError(
                     request,
@@ -7476,14 +7513,21 @@ __DEV__ &&
                   finishedTask(request, boundary, task.row, segment)
                 );
               boundary.status = CLIENT_RENDERED;
-              segment = logRecoverableError(
-                request,
-                error,
+              segment = isRecoverableAbort
+                ? REACT_RECOVERABLE_DIGEST
+                : logRecoverableError(
+                    request,
+                    error,
+                    errorInfo,
+                    task.debugTask
+                  );
+              encodeErrorForBoundary(
+                boundary,
+                segment,
+                isRecoverableAbort ? RecoverableException : error,
                 errorInfo,
-                task.debugTask
+                !0
               );
-              boundary.status = CLIENT_RENDERED;
-              encodeErrorForBoundary(boundary, segment, error, errorInfo, !0);
               untrackBoundary(request, boundary);
               boundary.parentFlushed &&
                 request.clientRenderedBoundaries.push(boundary);
@@ -7852,7 +7896,7 @@ __DEV__ &&
         boundary = boundary.errorComponentStack;
         writeChunkAndReturn(destination, startClientRenderedSuspenseBoundary);
         writeChunk(destination, clientRenderedSuspenseBoundaryError1);
-        row &&
+        null != row &&
           (writeChunk(destination, clientRenderedSuspenseBoundaryError1A),
           writeChunk(destination, escapeTextForBrowser(row)),
           writeChunk(
@@ -8353,21 +8397,26 @@ __DEV__ &&
             scriptFormat &&
               (renderState$jscomp$1.buffer += clientRenderScript1A);
             if (
-              errorDigest ||
+              null != errorDigest ||
               errorMessage ||
               errorStack ||
               errorComponentStack
             )
-              if (scriptFormat) {
-                renderState$jscomp$1.buffer +=
-                  clientRenderErrorScriptArgInterstitial;
-                var chunk$jscomp$3 = escapeJSStringsForInstructionScripts(
-                  errorDigest || ""
-                );
-                renderState$jscomp$1.buffer += chunk$jscomp$3;
-              } else {
+              if (scriptFormat)
+                if (
+                  ((renderState$jscomp$1.buffer +=
+                    clientRenderErrorScriptArgInterstitial),
+                  null == errorDigest)
+                )
+                  renderState$jscomp$1.buffer += clientRenderErrorScriptNull;
+                else {
+                  var chunk$jscomp$3 =
+                    escapeJSStringsForInstructionScripts(errorDigest);
+                  renderState$jscomp$1.buffer += chunk$jscomp$3;
+                }
+              else if (null != errorDigest) {
                 renderState$jscomp$1.buffer += clientRenderData2;
-                var chunk$jscomp$4 = escapeTextForBrowser(errorDigest || "");
+                var chunk$jscomp$4 = escapeTextForBrowser(errorDigest);
                 renderState$jscomp$1.buffer += chunk$jscomp$4;
               }
             if (errorMessage || errorStack || errorComponentStack)
@@ -8600,6 +8649,7 @@ __DEV__ &&
       REACT_TRACING_MARKER_TYPE = Symbol.for("react.tracing_marker"),
       REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel"),
       REACT_VIEW_TRANSITION_TYPE = Symbol.for("react.view_transition"),
+      REACT_RECOVERABLE_TYPE = Symbol.for("react.recoverable"),
       MAYBE_ITERATOR_SYMBOL = Symbol.iterator,
       ASYNC_ITERATOR = Symbol.asyncIterator,
       REACT_OPTIMISTIC_KEY = Symbol.for("react.optimistic_key"),
@@ -9779,12 +9829,13 @@ __DEV__ &&
       completeBoundaryData3a = '" data-sty="',
       completeBoundaryDataEnd = '"></template>',
       clientRenderScriptFunctionOnly =
-        '$RX=function(b,c,d,e,f){var a=document.getElementById(b);a&&(b=a.previousSibling,b.data="$!",a=a.dataset,c&&(a.dgst=c),d&&(a.msg=d),e&&(a.stck=e),f&&(a.cstck=f),b._reactRetry&&b._reactRetry())};',
+        '$RX=function(b,c,d,e,f){var a=document.getElementById(b);a&&(b=a.previousSibling,b.data="$!",a=a.dataset,null!=c&&(a.dgst=c),d&&(a.msg=d),e&&(a.stck=e),f&&(a.cstck=f),b._reactRetry&&b._reactRetry())};',
       clientRenderScript1Full =
-        '$RX=function(b,c,d,e,f){var a=document.getElementById(b);a&&(b=a.previousSibling,b.data="$!",a=a.dataset,c&&(a.dgst=c),d&&(a.msg=d),e&&(a.stck=e),f&&(a.cstck=f),b._reactRetry&&b._reactRetry())};;$RX("',
+        '$RX=function(b,c,d,e,f){var a=document.getElementById(b);a&&(b=a.previousSibling,b.data="$!",a=a.dataset,null!=c&&(a.dgst=c),d&&(a.msg=d),e&&(a.stck=e),f&&(a.cstck=f),b._reactRetry&&b._reactRetry())};;$RX("',
       clientRenderScript1Partial = '$RX("',
       clientRenderScript1A = '"',
       clientRenderErrorScriptArgInterstitial = ",",
+      clientRenderErrorScriptNull = "null",
       clientRenderScriptEnd = ")\x3c/script>",
       clientRenderData1 = '<template data-rxi="" data-bid="',
       clientRenderData2 = '" data-dgst="',
@@ -9888,6 +9939,10 @@ __DEV__ &&
       actionStateMatchingIndex = -1,
       thenableIndexCounter = 0,
       thenableState = null,
+      RecoverableException = Error(
+        "Recoverable Exception: This is not a real error! It's an implementation detail of `use` to interrupt the current render so a downstream renderer can recover it. You must either rethrow it immediately, or move the `use` call outside of the `try/catch` block. Capturing without rethrowing will lead to unexpected behavior."
+      ),
+      suspendedRecoverableError = null,
       renderPhaseUpdates = null,
       numberOfReRenders = 0,
       isInHookUserCodeInDev = !1,
@@ -9898,6 +9953,12 @@ __DEV__ &&
           if (null !== usable && "object" === typeof usable) {
             if ("function" === typeof usable.then)
               return unwrapThenable(usable);
+            if (usable.$$typeof === REACT_RECOVERABLE_TYPE)
+              throw (
+                ((suspendedRecoverableError =
+                  createFatalRecoverableError(usable)),
+                RecoverableException)
+              );
             if (usable.$$typeof === REACT_CONTEXT_TYPE)
               return readContext(usable);
           }
@@ -10052,7 +10113,8 @@ __DEV__ &&
         return localDate.now();
       };
     }
-    var CLIENT_RENDERED = 4,
+    var REACT_RECOVERABLE_DIGEST = "",
+      CLIENT_RENDERED = 4,
       PENDING = 0,
       COMPLETED = 1,
       FLUSHED = 2,
@@ -10315,20 +10377,46 @@ __DEV__ &&
                         0 === --row.pendingTasks &&
                         finishSuspenseListRow(request$jscomp$0, row);
                       request$jscomp$0.allPendingTasks--;
-                      var errorDigest$jscomp$0 = logRecoverableError(
-                        request$jscomp$0,
-                        x$jscomp$0,
-                        errorInfo$jscomp$0,
-                        debugTask
-                      );
                       if (null === boundary$jscomp$0)
-                        fatalError(
+                        if (x$jscomp$0 === RecoverableException) {
+                          if (null === suspendedRecoverableError)
+                            throw Error(
+                              "Expected a suspended recoverable. This is a bug in React. Please file an issue."
+                            );
+                          task$jscomp$0 = suspendedRecoverableError;
+                          suspendedRecoverableError = null;
+                          logRecoverableError(
+                            request$jscomp$0,
+                            task$jscomp$0,
+                            errorInfo$jscomp$0,
+                            debugTask
+                          );
+                          fatalError(
+                            request$jscomp$0,
+                            task$jscomp$0,
+                            errorInfo$jscomp$0,
+                            debugTask
+                          );
+                        } else
+                          logRecoverableError(
+                            request$jscomp$0,
+                            x$jscomp$0,
+                            errorInfo$jscomp$0,
+                            debugTask
+                          ),
+                            fatalError(
+                              request$jscomp$0,
+                              x$jscomp$0,
+                              errorInfo$jscomp$0,
+                              debugTask
+                            );
+                      else {
+                        var errorDigest$jscomp$0 = logRecoverableError(
                           request$jscomp$0,
                           x$jscomp$0,
                           errorInfo$jscomp$0,
                           debugTask
                         );
-                      else {
                         boundary$jscomp$0.pendingTasks--;
                         if (boundary$jscomp$0.status !== CLIENT_RENDERED) {
                           boundary$jscomp$0.status = CLIENT_RENDERED;

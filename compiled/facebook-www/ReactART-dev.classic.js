@@ -5852,6 +5852,7 @@ __DEV__ &&
     function use(usable) {
       if (null !== usable && "object" === typeof usable) {
         if ("function" === typeof usable.then) return useThenable(usable);
+        if (usable.$$typeof === REACT_RECOVERABLE_TYPE) return;
         if (usable.$$typeof === REACT_CONTEXT_TYPE) return readContext(usable);
       }
       throw Error("An unsupported type was passed to use(): " + String(usable));
@@ -9000,24 +9001,26 @@ __DEV__ &&
           (suspenseState = didSuspend.message),
           (nextProps = didSuspend.stack),
           (didSuspend = didSuspend.componentStack),
-          (suspenseState = suspenseState
-            ? Error(suspenseState)
-            : Error(
-                "The server could not finish this Suspense boundary, likely due to an error during server rendering. Switched to client rendering."
-              )),
-          (suspenseState.stack = nextProps || ""),
-          (suspenseState.digest = didPrimaryChildrenDefer),
-          (didPrimaryChildrenDefer = void 0 === didSuspend ? null : didSuspend),
-          (nextProps = {
-            value: suspenseState,
-            source: null,
-            stack: didPrimaryChildrenDefer
-          }),
-          "string" === typeof didPrimaryChildrenDefer &&
-            CapturedStacks.set(suspenseState, nextProps),
-          null === hydrationErrors
-            ? (hydrationErrors = [nextProps])
-            : hydrationErrors.push(nextProps),
+          didPrimaryChildrenDefer !== REACT_RECOVERABLE_DIGEST &&
+            ((suspenseState = suspenseState
+              ? Error(suspenseState)
+              : Error(
+                  "The server could not finish this Suspense boundary, likely due to an error during server rendering. Switched to client rendering."
+                )),
+            (suspenseState.stack = nextProps || ""),
+            (suspenseState.digest = didPrimaryChildrenDefer),
+            (didPrimaryChildrenDefer =
+              void 0 === didSuspend ? null : didSuspend),
+            (nextProps = {
+              value: suspenseState,
+              source: null,
+              stack: didPrimaryChildrenDefer
+            }),
+            "string" === typeof didPrimaryChildrenDefer &&
+              CapturedStacks.set(suspenseState, nextProps),
+            null === hydrationErrors
+              ? (hydrationErrors = [nextProps])
+              : hydrationErrors.push(nextProps)),
           retrySuspenseComponentWithoutHydrating(
             current,
             workInProgress,
@@ -18377,6 +18380,7 @@ __DEV__ &&
       REACT_TRACING_MARKER_TYPE = Symbol.for("react.tracing_marker"),
       REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel"),
       REACT_VIEW_TRANSITION_TYPE = Symbol.for("react.view_transition"),
+      REACT_RECOVERABLE_TYPE = Symbol.for("react.recoverable"),
       MAYBE_ITERATOR_SYMBOL = Symbol.iterator,
       REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"),
       isArrayImpl = Array.isArray,
@@ -18891,7 +18895,8 @@ __DEV__ &&
       pendingUNSAFE_ComponentWillUpdateWarnings = [];
       pendingLegacyContextWarning = new Map();
     };
-    var callComponent = {
+    var REACT_RECOVERABLE_DIGEST = "",
+      callComponent = {
         react_stack_bottom_frame: function (Component, props, secondArg) {
           var wasRendering = isRendering;
           isRendering = !0;
@@ -20594,10 +20599,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-www-classic-1724e9ce-20260729",
+        version: "19.3.0-www-classic-0f42eac2-20260730",
         rendererPackageName: "react-art",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-1724e9ce-20260729"
+        reconcilerVersion: "19.3.0-www-classic-0f42eac2-20260730"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -20632,7 +20637,7 @@ __DEV__ &&
     exports.Shape = Shape;
     exports.Surface = Surface;
     exports.Text = Text;
-    exports.version = "19.3.0-www-classic-1724e9ce-20260729";
+    exports.version = "19.3.0-www-classic-0f42eac2-20260730";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&

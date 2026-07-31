@@ -1114,6 +1114,7 @@ var REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"),
   REACT_TRACING_MARKER_TYPE = Symbol.for("react.tracing_marker"),
   REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel"),
   REACT_VIEW_TRANSITION_TYPE = Symbol.for("react.view_transition"),
+  REACT_RECOVERABLE_TYPE = Symbol.for("react.recoverable"),
   MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
 function getIteratorFn(maybeIterable) {
   if (null === maybeIterable || "object" !== typeof maybeIterable) return null;
@@ -4696,6 +4697,7 @@ function useThenable(thenable) {
 function use(usable) {
   if (null !== usable && "object" === typeof usable) {
     if ("function" === typeof usable.then) return useThenable(usable);
+    if (usable.$$typeof === REACT_RECOVERABLE_TYPE) return;
     if (usable.$$typeof === REACT_CONTEXT_TYPE) return readContext(usable);
   }
   throw Error(formatProdErrorMessage(438, String(usable)));
@@ -7553,10 +7555,11 @@ function updateDehydratedSuspenseComponent(
       suspenseInstance.nextSibling && suspenseInstance.nextSibling.dataset;
     if (didPrimaryChildrenDefer) var digest = didPrimaryChildrenDefer.dgst;
     didPrimaryChildrenDefer = digest;
-    nextProps = Error(formatProdErrorMessage(419));
-    nextProps.stack = "";
-    nextProps.digest = didPrimaryChildrenDefer;
-    queueHydrationError({ value: nextProps, source: null, stack: null });
+    "" !== didPrimaryChildrenDefer &&
+      ((nextProps = Error(formatProdErrorMessage(419))),
+      (nextProps.stack = ""),
+      (nextProps.digest = didPrimaryChildrenDefer),
+      queueHydrationError({ value: nextProps, source: null, stack: null }));
     return retrySuspenseComponentWithoutHydrating(
       current,
       workInProgress,
@@ -22441,14 +22444,14 @@ function getCrossOriginStringAs(as, input) {
 }
 var isomorphicReactPackageVersion$jscomp$inline_2405 = React.version;
 if (
-  "19.3.0-www-modern-1724e9ce-20260729" !==
+  "19.3.0-www-modern-0f42eac2-20260730" !==
   isomorphicReactPackageVersion$jscomp$inline_2405
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2405,
-      "19.3.0-www-modern-1724e9ce-20260729"
+      "19.3.0-www-modern-0f42eac2-20260730"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -22466,10 +22469,10 @@ Internals.Events = [
 ];
 var internals$jscomp$inline_2407 = {
   bundleType: 0,
-  version: "19.3.0-www-modern-1724e9ce-20260729",
+  version: "19.3.0-www-modern-0f42eac2-20260730",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-modern-1724e9ce-20260729"
+  reconcilerVersion: "19.3.0-www-modern-0f42eac2-20260730"
 };
 enableSchedulingProfiler &&
   ((internals$jscomp$inline_2407.getLaneLabelMap = getLaneLabelMap),
@@ -22603,6 +22606,13 @@ assign(Internals, {
 });
 exports.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE =
   Internals;
+exports.browser = function () {
+  var recoverable = Error(formatProdErrorMessage(603));
+  Object.defineProperty(recoverable, "$$typeof", {
+    value: REACT_RECOVERABLE_TYPE
+  });
+  return recoverable;
+};
 exports.createPortal = function (children, container) {
   var key =
     2 < arguments.length && void 0 !== arguments[2] ? arguments[2] : null;
@@ -22911,7 +22921,7 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-modern-1724e9ce-20260729";
+exports.version = "19.3.0-www-modern-0f42eac2-20260730";
 "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
   "function" ===
     typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&

@@ -56,7 +56,7 @@
       ((suspenseBoundaryID = suspenseIdNode.previousSibling),
       (suspenseBoundaryID.data = "$!"),
       (suspenseIdNode = suspenseIdNode.dataset),
-      errorDigest && (suspenseIdNode.dgst = errorDigest),
+      null != errorDigest && (suspenseIdNode.dgst = errorDigest),
       errorMsg && (suspenseIdNode.msg = errorMsg),
       errorStack && (suspenseIdNode.stck = errorStack),
       errorComponentStack && (suspenseIdNode.cstck = errorComponentStack),
