@@ -5134,10 +5134,10 @@ __DEV__ &&
       return hook.checkDCE ? !0 : !1;
     })({
       bundleType: 1,
-      version: "19.3.0-www-classic-9b5b4d51-20260731",
+      version: "19.3.0-www-classic-3a717e42-20260731",
       rendererPackageName: "react-flight-server-fb",
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-classic-9b5b4d51-20260731",
+      reconcilerVersion: "19.3.0-www-classic-3a717e42-20260731",
       getCurrentComponentInfo: function () {
         return currentOwnerInDEV;
       }

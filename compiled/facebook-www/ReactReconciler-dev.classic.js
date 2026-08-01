@@ -12756,7 +12756,9 @@ __DEV__ &&
     }
     function commitNewChildToFragmentInstances(fiber, parentFragmentInstances) {
       if (
-        (5 === fiber.tag || (enableFragmentRefsTextNodes && 6 === fiber.tag)) &&
+        (5 === fiber.tag ||
+          27 === fiber.tag ||
+          (enableFragmentRefsTextNodes && 6 === fiber.tag)) &&
         null === fiber.alternate &&
         null !== parentFragmentInstances
       )
@@ -12770,7 +12772,7 @@ __DEV__ &&
       for (var parent = fiber.return; null !== parent; ) {
         isFragmentInstanceParent(parent) &&
           deleteChildFromFragmentInstance(fiber.stateNode, parent.stateNode);
-        if (isHostParent(parent)) break;
+        if (isFragmentInstanceHostParent(parent)) break;
         parent = parent.return;
       }
     }
@@ -12787,6 +12789,14 @@ __DEV__ &&
     }
     function isFragmentInstanceParent(fiber) {
       return fiber && 7 === fiber.tag && null !== fiber.stateNode;
+    }
+    function isFragmentInstanceHostParent(fiber) {
+      return (
+        5 === fiber.tag ||
+        (supportsSingletons ? 27 === fiber.tag : !1) ||
+        3 === fiber.tag ||
+        4 === fiber.tag
+      );
     }
     function getHostSibling(fiber) {
       a: for (;;) {
@@ -12832,8 +12842,11 @@ __DEV__ &&
         4 !== tag &&
         (supportsSingletons &&
           27 === tag &&
+          (enableFragmentRefs &&
+            (commitNewChildToFragmentInstances(node, parentFragmentInstances),
+            (parentFragmentInstances = null)),
           isSingletonScope(node.type) &&
-          ((parent = node.stateNode), (before = null)),
+            ((parent = node.stateNode), (before = null))),
         (node = node.child),
         null !== node)
       )
@@ -12873,8 +12886,10 @@ __DEV__ &&
         4 !== tag &&
         (supportsSingletons &&
           27 === tag &&
-          isSingletonScope(node.type) &&
-          (parent = node.stateNode),
+          (enableFragmentRefs &&
+            (commitNewChildToFragmentInstances(node, parentFragmentInstances),
+            (parentFragmentInstances = null)),
+          isSingletonScope(node.type) && (parent = node.stateNode)),
         (node = node.child),
         null !== node)
       )
@@ -12901,16 +12916,20 @@ __DEV__ &&
       for (
         var hostParentFiber,
           parentFragmentInstances = null,
+          collectFragmentInstances = enableFragmentRefs,
           parentFiber = finishedWork.return;
         null !== parentFiber;
 
       ) {
-        if (enableFragmentRefs && isFragmentInstanceParent(parentFiber)) {
+        if (collectFragmentInstances && isFragmentInstanceParent(parentFiber)) {
           var fragmentInstance = parentFiber.stateNode;
           null === parentFragmentInstances
             ? (parentFragmentInstances = [fragmentInstance])
             : parentFragmentInstances.push(fragmentInstance);
         }
+        collectFragmentInstances &&
+          isFragmentInstanceHostParent(parentFiber) &&
+          (collectFragmentInstances = !1);
         if (isHostParent(parentFiber)) {
           hostParentFiber = parentFiber;
           break;
@@ -12926,34 +12945,35 @@ __DEV__ &&
           case 27:
             if (supportsSingletons) {
               hostParentFiber = hostParentFiber.stateNode;
-              parentFiber = getHostSibling(finishedWork);
+              collectFragmentInstances = getHostSibling(finishedWork);
               insertOrAppendPlacementNode(
                 finishedWork,
-                parentFiber,
+                collectFragmentInstances,
                 hostParentFiber,
                 parentFragmentInstances
               );
               break;
             }
           case 5:
-            parentFiber = hostParentFiber.stateNode;
+            collectFragmentInstances = hostParentFiber.stateNode;
             hostParentFiber.flags & 32 &&
-              (resetTextContent(parentFiber), (hostParentFiber.flags &= -33));
+              (resetTextContent(collectFragmentInstances),
+              (hostParentFiber.flags &= -33));
             hostParentFiber = getHostSibling(finishedWork);
             insertOrAppendPlacementNode(
               finishedWork,
               hostParentFiber,
-              parentFiber,
+              collectFragmentInstances,
               parentFragmentInstances
             );
             break;
           case 3:
           case 4:
             hostParentFiber = hostParentFiber.stateNode.containerInfo;
-            parentFiber = getHostSibling(finishedWork);
+            collectFragmentInstances = getHostSibling(finishedWork);
             insertOrAppendPlacementNodeIntoContainer(
               finishedWork,
-              parentFiber,
+              collectFragmentInstances,
               hostParentFiber,
               parentFragmentInstances
             );
@@ -12975,7 +12995,10 @@ __DEV__ &&
       parentFragmentInstances
     ) {
       if (enableFragmentRefs)
-        if (5 === finishedWork.tag)
+        if (
+          5 === finishedWork.tag ||
+          (supportsSingletons && 27 === finishedWork.tag)
+        )
           commitNewChildToFragmentInstances(
             finishedWork,
             parentFragmentInstances
@@ -14356,6 +14379,8 @@ __DEV__ &&
           if (supportsSingletons) {
             offscreenSubtreeWasHidden ||
               safelyDetachRef(deletedFiber, nearestMountedAncestor);
+            enableFragmentRefs &&
+              commitFragmentInstanceDeletionEffects(deletedFiber);
             var prevHostParent = hostParent,
               prevHostParentIsContainer = hostParentIsContainer;
             isSingletonScope(deletedFiber.type) &&
@@ -15407,6 +15432,7 @@ __DEV__ &&
           safelyDetachRef(finishedWork, finishedWork.return);
           enableFragmentRefs &&
             (5 === finishedWork.tag ||
+              27 === finishedWork.tag ||
               (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
             commitFragmentInstanceDeletionEffects(finishedWork);
           recursivelyTraverseDisappearLayoutEffects(
@@ -15529,14 +15555,17 @@ __DEV__ &&
             commitHostSingletonAcquisition(finishedWork);
         case 26:
         case 5:
-          if (enableFragmentRefs && 5 === finishedWork.tag)
+          if (
+            enableFragmentRefs &&
+            (5 === finishedWork.tag || 27 === finishedWork.tag)
+          )
             a: for (var parent = finishedWork.return; null !== parent; ) {
               isFragmentInstanceParent(parent) &&
                 commitNewChildToFragmentInstance(
                   finishedWork.stateNode,
                   parent.stateNode
                 );
-              if (isHostParent(parent)) break a;
+              if (isFragmentInstanceHostParent(parent)) break a;
               parent = parent.return;
             }
           recursivelyTraverseReappearLayoutEffects(
@@ -23379,7 +23408,7 @@ __DEV__ &&
         version: rendererVersion,
         rendererPackageName: rendererPackageName,
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-9b5b4d51-20260731"
+        reconcilerVersion: "19.3.0-www-classic-3a717e42-20260731"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);

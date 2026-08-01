@@ -9913,11 +9913,13 @@ __DEV__ &&
       for (
         var hostParentFiber,
           parentFragmentInstances = null,
+          collectFragmentInstances = !0,
           parentFiber = finishedWork.return;
         null !== parentFiber;
 
       ) {
         if (
+          collectFragmentInstances &&
           parentFiber &&
           7 === parentFiber.tag &&
           null !== parentFiber.stateNode
@@ -9927,6 +9929,11 @@ __DEV__ &&
             ? (parentFragmentInstances = [fragmentInstance])
             : parentFragmentInstances.push(fragmentInstance);
         }
+        !collectFragmentInstances ||
+          (5 !== parentFiber.tag &&
+            3 !== parentFiber.tag &&
+            4 !== parentFiber.tag) ||
+          (collectFragmentInstances = !1);
         if (isHostParent(parentFiber)) {
           hostParentFiber = parentFiber;
           break;
@@ -16776,10 +16783,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-www-classic-9b5b4d51-20260731",
+        version: "19.3.0-www-classic-3a717e42-20260731",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-9b5b4d51-20260731"
+        reconcilerVersion: "19.3.0-www-classic-3a717e42-20260731"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -16915,5 +16922,5 @@ __DEV__ &&
     exports.unstable_batchedUpdates = function (fn, a) {
       return fn(a);
     };
-    exports.version = "19.3.0-www-classic-9b5b4d51-20260731";
+    exports.version = "19.3.0-www-classic-3a717e42-20260731";
   })();
