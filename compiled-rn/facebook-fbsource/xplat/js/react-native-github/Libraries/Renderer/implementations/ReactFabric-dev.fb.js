@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<5dcb0cb546cf3ecbd9d0c74baaadf820>>
+ * @generated SignedSource<<2eea9ebec902dda4f8fb1078baf36b5f>>
  */
 
 "use strict";
@@ -4237,7 +4237,7 @@ __DEV__ &&
       thenable = thenable.status;
       return "fulfilled" === thenable || "rejected" === thenable;
     }
-    function trackUsedThenable(thenableState, thenable, index) {
+    function trackUsedThenable(thenableState, thenable, index, fiber) {
       null !== ReactSharedInternals.actQueue &&
         (ReactSharedInternals.didUsePromise = !0);
       var trackedThenables = thenableState.thenables;
@@ -4274,13 +4274,13 @@ __DEV__ &&
         case "fulfilled":
           return thenable.value;
         case "rejected":
-          thenableState = thenable.reason;
-          checkIfUseWrappedInAsyncCatch(thenableState);
-          if (void 0 === thenableState && !("reason" in thenable))
+          fiber = thenable.reason;
+          checkIfUseWrappedInAsyncCatch(fiber);
+          if (void 0 === fiber && !("reason" in thenable))
             throw Error(
               "A rejected Promise was passed to React without a `reason` property. React threw a generic error from where the Promise was used to assist in identifying the problematic Promise. Make sure that instrumented Promises correctly set the `reason` property when setting `status` to `'rejected'`."
             );
-          throw thenableState;
+          throw fiber;
         default:
           if ("string" === typeof thenable.status) thenable.then(noop, noop);
           else {
@@ -4316,13 +4316,21 @@ __DEV__ &&
               return thenable.value;
             case "rejected":
               throw (
-                ((thenableState = thenable.reason),
-                checkIfUseWrappedInAsyncCatch(thenableState),
-                thenableState)
+                ((fiber = thenable.reason),
+                checkIfUseWrappedInAsyncCatch(fiber),
+                fiber)
               );
           }
           suspendedThenable = thenable;
           needsToResetSuspendedThenableDEV = !0;
+          enableConditionalUseWarning &&
+            !didIssueUseWarning &&
+            null !== fiber &&
+            null === fiber.alternate &&
+            ((lastSuspendedFiber = fiber),
+            (lastSuspendedStack = Error(
+              "This library called use() to suspend in a previous render but did not call use() when it finished. This indicates an incorrect use of use(). Learn more: https://react.dev/warnings/conditional-use-of-use"
+            )));
           throw SuspenseException;
       }
     }
@@ -4357,6 +4365,19 @@ __DEV__ &&
         throw Error(
           "Hooks are not supported inside an async component. This error is often caused by accidentally adding `'use client'` to a module that was originally written for the server."
         );
+    }
+    function areSameKeyPath(a, b) {
+      return a === b
+        ? !0
+        : a.tag !== b.tag ||
+            a.type !== b.type ||
+            a.key !== b.key ||
+            a.index !== b.index ||
+            (3 === a.tag && a.stateNode !== b.stateNode) ||
+            null === a.return ||
+            null === b.return
+          ? !1
+          : areSameKeyPath(a.return, b.return);
     }
     function pushDebugInfo(debugInfo) {
       var previousDebugInfo = currentDebugInfo;
@@ -4412,7 +4433,7 @@ __DEV__ &&
       var index = thenableIndexCounter$1;
       thenableIndexCounter$1 += 1;
       null === thenableState$1 && (thenableState$1 = createThenableState());
-      return trackUsedThenable(thenableState$1, thenable, index);
+      return trackUsedThenable(thenableState$1, thenable, index, null);
     }
     function coerceRef(workInProgress, element) {
       element = element.props.ref;
@@ -6125,8 +6146,17 @@ __DEV__ &&
             _debugThenableState: thenableState
           })
         : (workInProgress.dependencies._debugThenableState = thenableState);
+      var thenableState$jscomp$0 = thenableState;
+      enableConditionalUseWarning &&
+        null !== lastSuspendedFiber &&
+        areSameKeyPath(lastSuspendedFiber, workInProgress) &&
+        (null !== thenableState$jscomp$0 ||
+          null === lastSuspendedStack ||
+          didIssueUseWarning ||
+          ((didIssueUseWarning = !0), console.error(lastSuspendedStack)),
+        (lastSuspendedStack = lastSuspendedFiber = null));
       ReactSharedInternals.H = ContextOnlyDispatcher;
-      var didRenderTooFewHooks =
+      thenableState$jscomp$0 =
         null !== currentHook && null !== currentHook.next;
       renderLanes = 0;
       hookTypesDev =
@@ -6145,7 +6175,7 @@ __DEV__ &&
       didScheduleRenderPhaseUpdate = !1;
       thenableIndexCounter = 0;
       thenableState = null;
-      if (didRenderTooFewHooks)
+      if (thenableState$jscomp$0)
         throw Error(
           "Rendered fewer hooks than expected. This may be caused by an accidental early return statement."
         );
@@ -6296,7 +6326,12 @@ __DEV__ &&
       var index = thenableIndexCounter;
       thenableIndexCounter += 1;
       null === thenableState && (thenableState = createThenableState());
-      thenable = trackUsedThenable(thenableState, thenable, index);
+      thenable = trackUsedThenable(
+        thenableState,
+        thenable,
+        index,
+        currentlyRenderingFiber
+      );
       index = currentlyRenderingFiber;
       null ===
         (null === workInProgressHook
@@ -14633,11 +14668,19 @@ __DEV__ &&
       )
         return workInProgressRootRenderLanes & -workInProgressRootRenderLanes;
       var transition = ReactSharedInternals.T;
-      return null !== transition
-        ? (transition._updatedFibers || (transition._updatedFibers = new Set()),
+      if (null !== transition)
+        return (
+          transition._updatedFibers || (transition._updatedFibers = new Set()),
           transition._updatedFibers.add(fiber),
-          requestTransitionLane())
-        : resolveUpdatePriority();
+          enableConditionalUseWarning &&
+            null !== lastSuspendedFiber &&
+            resolveUpdatePriority() === DiscreteEventPriority &&
+            (lastSuspendedFiber = null),
+          requestTransitionLane()
+        );
+      fiber = resolveUpdatePriority();
+      fiber === DiscreteEventPriority && (lastSuspendedFiber = null);
+      return fiber;
     }
     function requestDeferredLane() {
       if (0 === workInProgressDeferredLane)
@@ -18259,6 +18302,8 @@ __DEV__ &&
         dynamicFlagsUntyped.enableFragmentRefsTextNodes,
       enableViewTransitionForPersistenceMode =
         dynamicFlagsUntyped.enableViewTransitionForPersistenceMode,
+      enableConditionalUseWarning =
+        dynamicFlagsUntyped.enableConditionalUseWarning,
       assign = Object.assign,
       disabledDepth = 0,
       prevLog,
@@ -19528,6 +19573,9 @@ __DEV__ &&
           );
         }
       },
+      lastSuspendedFiber = null,
+      lastSuspendedStack = null,
+      didIssueUseWarning = !1,
       suspendedThenable = null,
       needsToResetSuspendedThenableDEV = !1,
       thenableState$1 = null,
@@ -21288,10 +21336,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-0f42eac2-20260730",
+        version: "19.3.0-native-fb-9b5b4d51-20260731",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-0f42eac2-20260730"
+        reconcilerVersion: "19.3.0-native-fb-9b5b4d51-20260731"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);

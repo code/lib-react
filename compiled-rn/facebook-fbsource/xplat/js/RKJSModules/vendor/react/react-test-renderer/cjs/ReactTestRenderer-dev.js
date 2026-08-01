@@ -7,13 +7,13 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<26bfa2e4c36a00cd78880de5d9bdabff>>
+ * @generated SignedSource<<b6b0127f782d0ea5ed1a79e5531f1f77>>
  */
 
 "use strict";
 __DEV__ &&
   (function () {
-    function JSCompiler_object_inline_createNodeMock_1204() {
+    function JSCompiler_object_inline_createNodeMock_1203() {
       return null;
     }
     function findHook(fiber, id) {
@@ -17076,10 +17076,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-0f42eac2-20260730",
+        version: "19.3.0-native-fb-9b5b4d51-20260731",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-0f42eac2-20260730"
+        reconcilerVersion: "19.3.0-native-fb-9b5b4d51-20260731"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -17102,7 +17102,7 @@ __DEV__ &&
     exports._Scheduler = Scheduler;
     exports.act = act;
     exports.create = function (element, options) {
-      var createNodeMock = JSCompiler_object_inline_createNodeMock_1204,
+      var createNodeMock = JSCompiler_object_inline_createNodeMock_1203,
         isConcurrent = !1,
         isStrictMode = !1;
       "object" === typeof options &&
@@ -17225,5 +17225,5 @@ __DEV__ &&
             flushSyncWorkAcrossRoots_impl(0, !0));
       }
     };
-    exports.version = "19.3.0-native-fb-0f42eac2-20260730";
+    exports.version = "19.3.0-native-fb-9b5b4d51-20260731";
   })();
