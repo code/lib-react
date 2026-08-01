@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<7067e599109d54215bec75a32c713928>>
+ * @generated SignedSource<<5cadb5ec867a57c5158adfafa04bed83>>
  */
 
 "use strict";
@@ -1952,10 +1952,12 @@ function traverseVisibleInstancesAndTextInstances(
 ) {
   for (; null !== child; ) {
     if (
-      ((5 === child.tag || (enableFragmentRefsTextNodes && 6 === child.tag)) &&
+      ((5 === child.tag ||
+        27 === child.tag ||
+        (enableFragmentRefsTextNodes && 6 === child.tag)) &&
         fn(child, a, b, c)) ||
       ((22 !== child.tag || null === child.memoizedState) &&
-        (searchWithinHosts || 5 !== child.tag) &&
+        (searchWithinHosts || (5 !== child.tag && 27 !== child.tag)) &&
         traverseVisibleInstancesAndTextInstances(
           child.child,
           searchWithinHosts,
@@ -1972,7 +1974,7 @@ function traverseVisibleInstancesAndTextInstances(
 }
 function getFragmentParentInstanceOrContainerFiber(fiber) {
   for (fiber = fiber.return; null !== fiber; ) {
-    if (3 === fiber.tag || 5 === fiber.tag) return fiber;
+    if (3 === fiber.tag || 5 === fiber.tag || 27 === fiber.tag) return fiber;
     fiber = fiber.return;
   }
   return null;
@@ -9155,15 +9157,15 @@ function commitFragmentInstanceDeletionEffects(fiber) {
           null != childInstance.reactFragments &&
           childInstance.reactFragments.delete(fragmentInstance));
     }
-    if (isHostParent(parent)) break;
+    if (isFragmentInstanceHostParent(parent)) break;
     parent = parent.return;
   }
 }
-function isHostParent(fiber) {
-  return 5 === fiber.tag || 3 === fiber.tag || 4 === fiber.tag;
-}
 function isFragmentInstanceParent(fiber) {
   return fiber && 7 === fiber.tag && null !== fiber.stateNode;
+}
+function isFragmentInstanceHostParent(fiber) {
+  return 5 === fiber.tag || 3 === fiber.tag || 4 === fiber.tag;
 }
 function commitImmutablePlacementNodeToFragmentInstances(
   finishedWork,
@@ -9173,6 +9175,7 @@ function commitImmutablePlacementNodeToFragmentInstances(
     if (5 === finishedWork.tag) {
       if (
         (5 === finishedWork.tag ||
+          27 === finishedWork.tag ||
           (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
         null === finishedWork.alternate &&
         null !== parentFragmentInstances
@@ -10472,17 +10475,27 @@ function commitReconciliationEffects(finishedWork) {
   if (flags & 2) {
     try {
       for (
-        var parentFragmentInstances = null, parentFiber = finishedWork.return;
+        var parentFragmentInstances = null,
+          collectFragmentInstances = enableFragmentRefs,
+          parentFiber = finishedWork.return;
         null !== parentFiber;
 
       ) {
-        if (enableFragmentRefs && isFragmentInstanceParent(parentFiber)) {
+        if (collectFragmentInstances && isFragmentInstanceParent(parentFiber)) {
           var fragmentInstance = parentFiber.stateNode;
           null === parentFragmentInstances
             ? (parentFragmentInstances = [fragmentInstance])
             : parentFragmentInstances.push(fragmentInstance);
         }
-        if (isHostParent(parentFiber)) break;
+        collectFragmentInstances &&
+          isFragmentInstanceHostParent(parentFiber) &&
+          (collectFragmentInstances = !1);
+        if (
+          5 === parentFiber.tag ||
+          3 === parentFiber.tag ||
+          4 === parentFiber.tag
+        )
+          break;
         parentFiber = parentFiber.return;
       }
       enableFragmentRefs &&
@@ -10618,6 +10631,7 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
         safelyDetachRef(finishedWork, finishedWork.return);
         enableFragmentRefs &&
           (5 === finishedWork.tag ||
+            27 === finishedWork.tag ||
             (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
           commitFragmentInstanceDeletionEffects(finishedWork);
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
@@ -10723,7 +10737,10 @@ function recursivelyTraverseReappearLayoutEffects(
       case 27:
       case 26:
       case 5:
-        if (enableFragmentRefs && 5 === finishedWork.tag) {
+        if (
+          enableFragmentRefs &&
+          (5 === finishedWork.tag || 27 === finishedWork.tag)
+        ) {
           instance = finishedWork;
           for (var parent = instance.return; null !== parent; ) {
             isFragmentInstanceParent(parent) &&
@@ -10731,7 +10748,7 @@ function recursivelyTraverseReappearLayoutEffects(
                 instance.stateNode,
                 parent.stateNode
               );
-            if (isHostParent(parent)) break;
+            if (isFragmentInstanceHostParent(parent)) break;
             parent = parent.return;
           }
         }
@@ -14433,10 +14450,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1676 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-9b5b4d51-20260731",
+    version: "19.3.0-native-fb-3a717e42-20260731",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-9b5b4d51-20260731"
+    reconcilerVersion: "19.3.0-native-fb-3a717e42-20260731"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1676.rendererConfig = extraDevToolsConfig);
@@ -14456,16 +14473,16 @@ internals$jscomp$inline_1676.injectProfilingHooks = function (profilingHooks) {
   injectedProfilingHooks = profilingHooks;
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2052 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2053 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2052.isDisabled &&
-    hook$jscomp$inline_2052.supportsFiber
+    !hook$jscomp$inline_2053.isDisabled &&
+    hook$jscomp$inline_2053.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2052.inject(
+      (rendererID = hook$jscomp$inline_2053.inject(
         internals$jscomp$inline_1676
       )),
-        (injectedHook = hook$jscomp$inline_2052);
+        (injectedHook = hook$jscomp$inline_2053);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {
