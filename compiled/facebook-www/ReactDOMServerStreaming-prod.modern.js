@@ -3244,6 +3244,15 @@ function getThenableStateAfterSuspending() {
   thenableState = null;
   return state;
 }
+function getSuspendedRecoverableError() {
+  if (null === suspendedRecoverableError)
+    throw Error(
+      "Expected a suspended recoverable. This is a bug in React. Please file an issue."
+    );
+  var error = suspendedRecoverableError;
+  suspendedRecoverableError = null;
+  return error;
+}
 function resetHooksState() {
   currentlyRenderingKeyPath =
     currentlyRenderingRequest =
@@ -3818,6 +3827,7 @@ function RequestInstance(
   rootFormatContext,
   progressiveChunkSize,
   onError,
+  onBrowserBailout,
   onAllReady,
   onShellReady,
   onShellError,
@@ -3846,6 +3856,7 @@ function RequestInstance(
   this.partialBoundaries = [];
   this.postponedState = this.trackedPostpones = null;
   this.onError = void 0 === onError ? defaultErrorHandler : onError;
+  this.onBrowserBailout = void 0 === onBrowserBailout ? noop : onBrowserBailout;
   this.onAllReady = void 0 === onAllReady ? noop : onAllReady;
   this.onShellReady = void 0 === onShellReady ? noop : onShellReady;
   this.onShellError = void 0 === onShellError ? noop : onShellError;
@@ -4060,11 +4071,19 @@ function getThrownInfo(node$jscomp$0) {
 }
 function logRecoverableError(request, error, errorInfo) {
   if (error === RecoverableException)
-    return (suspendedRecoverableError = null), "";
+    return (
+      (error = getSuspendedRecoverableError()),
+      logBrowserBailout(request, error.cause, errorInfo),
+      ""
+    );
   request = request.onError;
-  error = request(error, errorInfo);
-  if (null == error || "string" === typeof error)
-    return "" === error ? void 0 : error;
+  errorInfo = request(error, errorInfo);
+  if (null == errorInfo || "string" === typeof errorInfo)
+    return "" === errorInfo ? void 0 : errorInfo;
+}
+function logBrowserBailout(request, error, errorInfo) {
+  request = request.onBrowserBailout;
+  request(error, errorInfo);
 }
 function fatalError(request, error) {
   var onShellError = request.onShellError,
@@ -5828,7 +5847,9 @@ function finishAbortedTask(task, request, error) {
           0 === boundary.pendingTasks &&
             0 < boundary.nodes.length &&
             (isRecoverableAbort
-              ? ((errorInfo = ""), (segment = RecoverableException))
+              ? (logBrowserBailout(request, error, errorInfo),
+                (errorInfo = ""),
+                (segment = RecoverableException))
               : ((errorInfo = logRecoverableError(request, error, errorInfo)),
                 (segment = error)),
             abortRemainingReplayNodes(
@@ -5859,9 +5880,9 @@ function finishAbortedTask(task, request, error) {
               finishedTask(request, boundary, task.row, segment)
             );
           boundary.status = 4;
-          errorInfo = isRecoverableAbort
-            ? ""
-            : logRecoverableError(request, error, errorInfo);
+          isRecoverableAbort
+            ? (logBrowserBailout(request, error, errorInfo), (errorInfo = ""))
+            : (errorInfo = logRecoverableError(request, error, errorInfo));
           boundary.errorDigest = errorInfo;
           untrackBoundary(request, boundary);
           boundary.parentFlushed &&
@@ -7001,18 +7022,13 @@ exports.renderNextChunk = function (stream) {
                   request.allPendingTasks--;
                   if (null === boundary$jscomp$0)
                     if (x$jscomp$0 === RecoverableException) {
-                      if (null === suspendedRecoverableError)
-                        throw Error(
-                          "Expected a suspended recoverable. This is a bug in React. Please file an issue."
-                        );
-                      task$jscomp$0 = suspendedRecoverableError;
-                      suspendedRecoverableError = null;
+                      var useError = getSuspendedRecoverableError();
                       logRecoverableError(
                         request,
-                        task$jscomp$0,
+                        useError,
                         errorInfo$jscomp$0
                       );
-                      fatalError(request, task$jscomp$0);
+                      fatalError(request, useError);
                     } else
                       logRecoverableError(
                         request,
@@ -7298,6 +7314,7 @@ exports.renderToStream = function (children, options) {
     streamingFormat,
     options ? options.progressiveChunkSize : void 0,
     options.onError,
+    options.onBrowserBailout,
     void 0,
     void 0,
     void 0,

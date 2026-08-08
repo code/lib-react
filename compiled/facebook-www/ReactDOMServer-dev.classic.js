@@ -4140,6 +4140,15 @@ __DEV__ &&
       thenableState = null;
       return state;
     }
+    function getSuspendedRecoverableError() {
+      if (null === suspendedRecoverableError)
+        throw Error(
+          "Expected a suspended recoverable. This is a bug in React. Please file an issue."
+        );
+      var error = suspendedRecoverableError;
+      suspendedRecoverableError = null;
+      return error;
+    }
     function resetHooksState() {
       isInHookUserCodeInDev = !1;
       currentlyRenderingKeyPath =
@@ -4709,6 +4718,7 @@ __DEV__ &&
       rootFormatContext,
       progressiveChunkSize,
       onError,
+      onBrowserBailout,
       onAllReady,
       onShellReady,
       onShellError,
@@ -4737,6 +4747,8 @@ __DEV__ &&
       this.partialBoundaries = [];
       this.postponedState = this.trackedPostpones = null;
       this.onError = void 0 === onError ? defaultErrorHandler : onError;
+      this.onBrowserBailout =
+        void 0 === onBrowserBailout ? noop : onBrowserBailout;
       this.onAllReady = void 0 === onAllReady ? noop : onAllReady;
       this.onShellReady = void 0 === onShellReady ? noop : onShellReady;
       this.onShellError = void 0 === onShellError ? noop : onShellError;
@@ -4751,6 +4763,7 @@ __DEV__ &&
       rootFormatContext,
       progressiveChunkSize,
       onError,
+      onBrowserBailout,
       onAllReady,
       onShellReady,
       onShellError,
@@ -4767,6 +4780,7 @@ __DEV__ &&
         rootFormatContext,
         progressiveChunkSize,
         onError,
+        onBrowserBailout,
         onAllReady,
         onShellReady,
         onShellError,
@@ -5215,17 +5229,27 @@ __DEV__ &&
     }
     function logRecoverableError(request, error, errorInfo, debugTask) {
       if (error === RecoverableException)
-        return (suspendedRecoverableError = null), REACT_RECOVERABLE_DIGEST;
+        return (
+          (error = getSuspendedRecoverableError()),
+          logBrowserBailout(request, error.cause, errorInfo, debugTask),
+          REACT_RECOVERABLE_DIGEST
+        );
       request = request.onError;
-      error = debugTask
+      errorInfo = debugTask
         ? debugTask.run(request.bind(null, error, errorInfo))
         : request(error, errorInfo);
-      if (null != error && "string" !== typeof error)
+      if (null != errorInfo && "string" !== typeof errorInfo)
         console.error(
           'onError returned something with a type other than "string". onError should return a string and may return null or undefined but must not return anything else. It received something of type "%s" instead',
-          typeof error
+          typeof errorInfo
         );
-      else return "" === error ? void 0 : error;
+      else return "" === errorInfo ? void 0 : errorInfo;
+    }
+    function logBrowserBailout(request, error, errorInfo, debugTask) {
+      request = request.onBrowserBailout;
+      debugTask
+        ? debugTask.run(request.bind(null, error, errorInfo))
+        : request(error, errorInfo);
     }
     function fatalError(request, error, errorInfo, debugTask) {
       errorInfo = request.onShellError;
@@ -7645,7 +7669,8 @@ __DEV__ &&
               0 === boundary.pendingTasks &&
                 0 < boundary.nodes.length &&
                 (isRecoverableAbort
-                  ? ((segment = REACT_RECOVERABLE_DIGEST),
+                  ? (logBrowserBailout(request, error, errorInfo, null),
+                    (segment = REACT_RECOVERABLE_DIGEST),
                     (isRecoverableAbort = RecoverableException))
                   : ((segment = logRecoverableError(
                       request,
@@ -7691,18 +7716,21 @@ __DEV__ &&
                   finishedTask(request, boundary, task.row, segment)
                 );
               boundary.status = CLIENT_RENDERED;
-              segment = isRecoverableAbort
-                ? REACT_RECOVERABLE_DIGEST
-                : logRecoverableError(
+              isRecoverableAbort
+                ? (logBrowserBailout(request, error, errorInfo, task.debugTask),
+                  (segment = REACT_RECOVERABLE_DIGEST),
+                  (isRecoverableAbort = RecoverableException))
+                : ((segment = logRecoverableError(
                     request,
                     error,
                     errorInfo,
                     task.debugTask
-                  );
+                  )),
+                  (isRecoverableAbort = error));
               encodeErrorForBoundary(
                 boundary,
                 segment,
-                isRecoverableAbort ? RecoverableException : error,
+                isRecoverableAbort,
                 errorInfo,
                 !0
               );
@@ -8164,13 +8192,7 @@ __DEV__ &&
                     request.allPendingTasks--;
                     if (null === boundary$jscomp$0)
                       if (x$jscomp$0 === RecoverableException) {
-                        if (null === suspendedRecoverableError)
-                          throw Error(
-                            "Expected a suspended recoverable. This is a bug in React. Please file an issue."
-                          );
-                        task$jscomp$0 = suspendedRecoverableError;
-                        suspendedRecoverableError = null;
-                        var useError = task$jscomp$0;
+                        var useError = getSuspendedRecoverableError();
                         logRecoverableError(
                           request,
                           useError,
@@ -9175,6 +9197,7 @@ __DEV__ &&
         createFormatContext(ROOT_HTML_MODE, null, 0, null),
         Infinity,
         onError,
+        void 0,
         void 0,
         function () {
           readyToStream = !0;
@@ -10723,5 +10746,5 @@ __DEV__ &&
         'The server used "renderToString" which does not support Suspense. If you intended for this Suspense boundary to render the fallback content on the server consider throwing an Error somewhere within the Suspense boundary. If you intended to have the server wait for the suspended component please switch to "renderToReadableStream" which supports Suspense on the server'
       );
     };
-    exports.version = "19.3.0-www-classic-3a717e42-20260731";
+    exports.version = "19.3.0-www-classic-20425723-20260807";
   })();

@@ -3949,6 +3949,15 @@ __DEV__ &&
       thenableState = null;
       return state;
     }
+    function getSuspendedRecoverableError() {
+      if (null === suspendedRecoverableError)
+        throw Error(
+          "Expected a suspended recoverable. This is a bug in React. Please file an issue."
+        );
+      var error = suspendedRecoverableError;
+      suspendedRecoverableError = null;
+      return error;
+    }
     function resetHooksState() {
       isInHookUserCodeInDev = !1;
       currentlyRenderingKeyPath =
@@ -4546,6 +4555,7 @@ __DEV__ &&
       rootFormatContext,
       progressiveChunkSize,
       onError,
+      onBrowserBailout,
       onAllReady,
       onShellReady,
       onShellError,
@@ -4574,6 +4584,8 @@ __DEV__ &&
       this.partialBoundaries = [];
       this.postponedState = this.trackedPostpones = null;
       this.onError = void 0 === onError ? defaultErrorHandler : onError;
+      this.onBrowserBailout =
+        void 0 === onBrowserBailout ? noop : onBrowserBailout;
       this.onAllReady = void 0 === onAllReady ? noop : onAllReady;
       this.onShellReady = void 0 === onShellReady ? noop : onShellReady;
       this.onShellError = void 0 === onShellError ? noop : onShellError;
@@ -4983,17 +4995,27 @@ __DEV__ &&
     }
     function logRecoverableError(request, error, errorInfo, debugTask) {
       if (error === RecoverableException)
-        return (suspendedRecoverableError = null), REACT_RECOVERABLE_DIGEST;
+        return (
+          (error = getSuspendedRecoverableError()),
+          logBrowserBailout(request, error.cause, errorInfo, debugTask),
+          REACT_RECOVERABLE_DIGEST
+        );
       request = request.onError;
-      error = debugTask
+      errorInfo = debugTask
         ? debugTask.run(request.bind(null, error, errorInfo))
         : request(error, errorInfo);
-      if (null != error && "string" !== typeof error)
+      if (null != errorInfo && "string" !== typeof errorInfo)
         console.error(
           'onError returned something with a type other than "string". onError should return a string and may return null or undefined but must not return anything else. It received something of type "%s" instead',
-          typeof error
+          typeof errorInfo
         );
-      else return "" === error ? void 0 : error;
+      else return "" === errorInfo ? void 0 : errorInfo;
+    }
+    function logBrowserBailout(request, error, errorInfo, debugTask) {
+      request = request.onBrowserBailout;
+      debugTask
+        ? debugTask.run(request.bind(null, error, errorInfo))
+        : request(error, errorInfo);
     }
     function fatalError(request, error, errorInfo, debugTask) {
       errorInfo = request.onShellError;
@@ -7467,7 +7489,8 @@ __DEV__ &&
               0 === boundary.pendingTasks &&
                 0 < boundary.nodes.length &&
                 (isRecoverableAbort
-                  ? ((segment = REACT_RECOVERABLE_DIGEST),
+                  ? (logBrowserBailout(request, error, errorInfo, null),
+                    (segment = REACT_RECOVERABLE_DIGEST),
                     (isRecoverableAbort = RecoverableException))
                   : ((segment = logRecoverableError(
                       request,
@@ -7513,18 +7536,21 @@ __DEV__ &&
                   finishedTask(request, boundary, task.row, segment)
                 );
               boundary.status = CLIENT_RENDERED;
-              segment = isRecoverableAbort
-                ? REACT_RECOVERABLE_DIGEST
-                : logRecoverableError(
+              isRecoverableAbort
+                ? (logBrowserBailout(request, error, errorInfo, task.debugTask),
+                  (segment = REACT_RECOVERABLE_DIGEST),
+                  (isRecoverableAbort = RecoverableException))
+                : ((segment = logRecoverableError(
                     request,
                     error,
                     errorInfo,
                     task.debugTask
-                  );
+                  )),
+                  (isRecoverableAbort = error));
               encodeErrorForBoundary(
                 boundary,
                 segment,
-                isRecoverableAbort ? RecoverableException : error,
+                isRecoverableAbort,
                 errorInfo,
                 !0
               );
@@ -10379,21 +10405,16 @@ __DEV__ &&
                       request$jscomp$0.allPendingTasks--;
                       if (null === boundary$jscomp$0)
                         if (x$jscomp$0 === RecoverableException) {
-                          if (null === suspendedRecoverableError)
-                            throw Error(
-                              "Expected a suspended recoverable. This is a bug in React. Please file an issue."
-                            );
-                          task$jscomp$0 = suspendedRecoverableError;
-                          suspendedRecoverableError = null;
+                          var useError = getSuspendedRecoverableError();
                           logRecoverableError(
                             request$jscomp$0,
-                            task$jscomp$0,
+                            useError,
                             errorInfo$jscomp$0,
                             debugTask
                           );
                           fatalError(
                             request$jscomp$0,
-                            task$jscomp$0,
+                            useError,
                             errorInfo$jscomp$0,
                             debugTask
                           );
@@ -10521,46 +10542,38 @@ __DEV__ &&
         moduleUnknownResources: {},
         moduleScriptResources: {}
       };
-      var externalRuntimeConfig = options
-          ? options.unstable_externalRuntimeSrc
-          : void 0,
-        idPrefix = resumableState.idPrefix;
-      streamingFormat = [];
-      var externalRuntimeScript = null,
+      streamingFormat = options ? options.unstable_externalRuntimeSrc : void 0;
+      var idPrefix = resumableState.idPrefix,
+        bootstrapChunks = [],
+        externalRuntimeScript = null,
         bootstrapScriptContent = resumableState.bootstrapScriptContent,
         bootstrapScripts = resumableState.bootstrapScripts,
         bootstrapModules = resumableState.bootstrapModules;
       void 0 !== bootstrapScriptContent &&
-        (streamingFormat.push("<script"),
-        pushCompletedShellIdAttribute(streamingFormat, resumableState),
-        streamingFormat.push(
+        (bootstrapChunks.push("<script"),
+        pushCompletedShellIdAttribute(bootstrapChunks, resumableState),
+        bootstrapChunks.push(
           endOfStartTag,
           escapeEntireInlineScriptContent(bootstrapScriptContent),
           endInlineScript
         ));
-      void 0 !== externalRuntimeConfig &&
-        ("string" === typeof externalRuntimeConfig
-          ? ((externalRuntimeScript = {
-              src: externalRuntimeConfig,
-              chunks: []
-            }),
+      void 0 !== streamingFormat &&
+        ("string" === typeof streamingFormat
+          ? ((externalRuntimeScript = { src: streamingFormat, chunks: [] }),
             pushScriptImpl(externalRuntimeScript.chunks, {
-              src: externalRuntimeConfig,
+              src: streamingFormat,
               async: !0,
               integrity: void 0,
               nonce: void 0
             }))
-          : ((externalRuntimeScript = {
-              src: externalRuntimeConfig.src,
-              chunks: []
-            }),
+          : ((externalRuntimeScript = { src: streamingFormat.src, chunks: [] }),
             pushScriptImpl(externalRuntimeScript.chunks, {
-              src: externalRuntimeConfig.src,
+              src: streamingFormat.src,
               async: !0,
-              integrity: externalRuntimeConfig.integrity,
+              integrity: streamingFormat.integrity,
               nonce: void 0
             })));
-      externalRuntimeConfig = {
+      streamingFormat = {
         placeholderPrefix: idPrefix + "P:",
         segmentPrefix: idPrefix + "S:",
         boundaryPrefix: idPrefix + "B:",
@@ -10568,7 +10581,7 @@ __DEV__ &&
         startInlineStyle: "<style",
         preamble: createPreambleState(),
         externalRuntimeScript: externalRuntimeScript,
-        bootstrapChunks: streamingFormat,
+        bootstrapChunks: bootstrapChunks,
         importMapChunks: [],
         onHeaders: void 0,
         headers: null,
@@ -10627,29 +10640,29 @@ __DEV__ &&
                     : ""));
           preloadBootstrapScriptOrModule(
             resumableState,
-            externalRuntimeConfig,
+            streamingFormat,
             bootstrapScriptContent,
             props
           );
-          streamingFormat.push(
+          bootstrapChunks.push(
             '<script src="',
             escapeTextForBrowser(bootstrapScriptContent),
             attributeEnd
           );
           "string" === typeof integrity &&
-            streamingFormat.push(
+            bootstrapChunks.push(
               ' integrity="',
               escapeTextForBrowser(integrity),
               attributeEnd
             );
           "string" === typeof crossOrigin &&
-            streamingFormat.push(
+            bootstrapChunks.push(
               ' crossorigin="',
               escapeTextForBrowser(crossOrigin),
               attributeEnd
             );
-          pushCompletedShellIdAttribute(streamingFormat, resumableState);
-          streamingFormat.push(' async="">\x3c/script>');
+          pushCompletedShellIdAttribute(bootstrapChunks, resumableState);
+          bootstrapChunks.push(' async="">\x3c/script>');
         }
       if (void 0 !== bootstrapModules)
         for (
@@ -10679,41 +10692,43 @@ __DEV__ &&
                       : "")),
             preloadBootstrapScriptOrModule(
               resumableState,
-              externalRuntimeConfig,
+              streamingFormat,
               externalRuntimeScript,
               integrity
             ),
-            streamingFormat.push(
+            bootstrapChunks.push(
               '<script type="module" src="',
               escapeTextForBrowser(externalRuntimeScript),
               attributeEnd
             ),
             "string" === typeof crossOrigin &&
-              streamingFormat.push(
+              bootstrapChunks.push(
                 ' integrity="',
                 escapeTextForBrowser(crossOrigin),
                 attributeEnd
               ),
             "string" === typeof bootstrapScriptContent &&
-              streamingFormat.push(
+              bootstrapChunks.push(
                 ' crossorigin="',
                 escapeTextForBrowser(bootstrapScriptContent),
                 attributeEnd
               ),
-            pushCompletedShellIdAttribute(streamingFormat, resumableState),
-            streamingFormat.push(' async="">\x3c/script>');
-      streamingFormat = createFormatContext(ROOT_HTML_MODE, null, 0, null);
+            pushCompletedShellIdAttribute(bootstrapChunks, resumableState),
+            bootstrapChunks.push(' async="">\x3c/script>');
+      bootstrapChunks = createFormatContext(ROOT_HTML_MODE, null, 0, null);
       bootstrapModules = options ? options.progressiveChunkSize : void 0;
-      options = options.onError;
-      bootstrapScripts = getCurrentTime();
-      1e3 < bootstrapScripts - lastResetTime &&
+      bootstrapScripts = options.onError;
+      options = options.onBrowserBailout;
+      idPrefix = getCurrentTime();
+      1e3 < idPrefix - lastResetTime &&
         ((ReactSharedInternals.recentlyCreatedOwnerStacks = 0),
-        (lastResetTime = bootstrapScripts));
+        (lastResetTime = idPrefix));
       options = new RequestInstance(
         resumableState,
-        externalRuntimeConfig,
         streamingFormat,
+        bootstrapChunks,
         bootstrapModules,
+        bootstrapScripts,
         options,
         void 0,
         void 0,
@@ -10725,7 +10740,7 @@ __DEV__ &&
         options,
         0,
         null,
-        streamingFormat,
+        bootstrapChunks,
         !1,
         !1
       );
@@ -10741,7 +10756,7 @@ __DEV__ &&
         null,
         options.abortableTasks,
         null,
-        streamingFormat,
+        bootstrapChunks,
         null,
         emptyTreeContext,
         null,

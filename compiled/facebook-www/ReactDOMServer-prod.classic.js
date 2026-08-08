@@ -2936,16 +2936,16 @@ function createRenderState(resumableState, generateStaticMarkup) {
       "\x3c/script>"
     ));
   bootstrapScriptContent = idPrefix + "P:";
-  var JSCompiler_object_inline_segmentPrefix_1905 = idPrefix + "S:";
+  var JSCompiler_object_inline_segmentPrefix_1902 = idPrefix + "S:";
   idPrefix += "B:";
-  var JSCompiler_object_inline_preconnects_1919 = new Set(),
-    JSCompiler_object_inline_fontPreloads_1920 = new Set(),
-    JSCompiler_object_inline_highImagePreloads_1921 = new Set(),
-    JSCompiler_object_inline_styles_1922 = new Map(),
-    JSCompiler_object_inline_bootstrapScripts_1923 = new Set(),
-    JSCompiler_object_inline_scripts_1924 = new Set(),
-    JSCompiler_object_inline_bulkPreloads_1925 = new Set(),
-    JSCompiler_object_inline_preloads_1926 = {
+  var JSCompiler_object_inline_preconnects_1916 = new Set(),
+    JSCompiler_object_inline_fontPreloads_1917 = new Set(),
+    JSCompiler_object_inline_highImagePreloads_1918 = new Set(),
+    JSCompiler_object_inline_styles_1919 = new Map(),
+    JSCompiler_object_inline_bootstrapScripts_1920 = new Set(),
+    JSCompiler_object_inline_scripts_1921 = new Set(),
+    JSCompiler_object_inline_bulkPreloads_1922 = new Set(),
+    JSCompiler_object_inline_preloads_1923 = {
       images: new Map(),
       stylesheets: new Map(),
       scripts: new Map(),
@@ -2982,7 +2982,7 @@ function createRenderState(resumableState, generateStaticMarkup) {
       scriptConfig.moduleScriptResources[href] = null;
       scriptConfig = [];
       pushLinkImpl(scriptConfig, props);
-      JSCompiler_object_inline_bootstrapScripts_1923.add(scriptConfig);
+      JSCompiler_object_inline_bootstrapScripts_1920.add(scriptConfig);
       bootstrapChunks.push('<script src="', escapeTextForBrowser(src), '"');
       "string" === typeof integrity &&
         bootstrapChunks.push(
@@ -3029,7 +3029,7 @@ function createRenderState(resumableState, generateStaticMarkup) {
         (props.moduleScriptResources[scriptConfig] = null),
         (props = []),
         pushLinkImpl(props, integrity),
-        JSCompiler_object_inline_bootstrapScripts_1923.add(props),
+        JSCompiler_object_inline_bootstrapScripts_1920.add(props),
         bootstrapChunks.push(
           '<script type="module" src="',
           escapeTextForBrowser(i),
@@ -3051,7 +3051,7 @@ function createRenderState(resumableState, generateStaticMarkup) {
         bootstrapChunks.push(' async="">\x3c/script>');
   return {
     placeholderPrefix: bootstrapScriptContent,
-    segmentPrefix: JSCompiler_object_inline_segmentPrefix_1905,
+    segmentPrefix: JSCompiler_object_inline_segmentPrefix_1902,
     boundaryPrefix: idPrefix,
     startInlineScript: "<script",
     startInlineStyle: "<style",
@@ -3071,14 +3071,14 @@ function createRenderState(resumableState, generateStaticMarkup) {
     charsetChunks: [],
     viewportChunks: [],
     hoistableChunks: [],
-    preconnects: JSCompiler_object_inline_preconnects_1919,
-    fontPreloads: JSCompiler_object_inline_fontPreloads_1920,
-    highImagePreloads: JSCompiler_object_inline_highImagePreloads_1921,
-    styles: JSCompiler_object_inline_styles_1922,
-    bootstrapScripts: JSCompiler_object_inline_bootstrapScripts_1923,
-    scripts: JSCompiler_object_inline_scripts_1924,
-    bulkPreloads: JSCompiler_object_inline_bulkPreloads_1925,
-    preloads: JSCompiler_object_inline_preloads_1926,
+    preconnects: JSCompiler_object_inline_preconnects_1916,
+    fontPreloads: JSCompiler_object_inline_fontPreloads_1917,
+    highImagePreloads: JSCompiler_object_inline_highImagePreloads_1918,
+    styles: JSCompiler_object_inline_styles_1919,
+    bootstrapScripts: JSCompiler_object_inline_bootstrapScripts_1920,
+    scripts: JSCompiler_object_inline_scripts_1921,
+    bulkPreloads: JSCompiler_object_inline_bulkPreloads_1922,
+    preloads: JSCompiler_object_inline_preloads_1923,
     nonce: { script: void 0, style: void 0 },
     stylesToHoist: !1,
     generateStaticMarkup: generateStaticMarkup
@@ -3375,6 +3375,13 @@ function getThenableStateAfterSuspending() {
   var state = thenableState;
   thenableState = null;
   return state;
+}
+function getSuspendedRecoverableError() {
+  if (null === suspendedRecoverableError)
+    throw Error(formatProdErrorMessage(606));
+  var error = suspendedRecoverableError;
+  suspendedRecoverableError = null;
+  return error;
 }
 function resetHooksState() {
   currentlyRenderingKeyPath =
@@ -3912,6 +3919,7 @@ function RequestInstance(
   rootFormatContext,
   progressiveChunkSize,
   onError,
+  onBrowserBailout,
   onAllReady,
   onShellReady,
   onShellError,
@@ -3940,6 +3948,7 @@ function RequestInstance(
   this.partialBoundaries = [];
   this.postponedState = this.trackedPostpones = null;
   this.onError = void 0 === onError ? defaultErrorHandler : onError;
+  this.onBrowserBailout = void 0 === onBrowserBailout ? noop : onBrowserBailout;
   this.onAllReady = void 0 === onAllReady ? noop : onAllReady;
   this.onShellReady = void 0 === onShellReady ? noop : onShellReady;
   this.onShellError = void 0 === onShellError ? noop : onShellError;
@@ -3953,6 +3962,7 @@ function createRequest(
   rootFormatContext,
   progressiveChunkSize,
   onError,
+  onBrowserBailout,
   onAllReady,
   onShellReady,
   onShellError,
@@ -3965,6 +3975,7 @@ function createRequest(
     rootFormatContext,
     progressiveChunkSize,
     onError,
+    onBrowserBailout,
     onAllReady,
     onShellReady,
     onShellError,
@@ -4220,11 +4231,19 @@ function getThrownInfo(node$jscomp$0) {
 }
 function logRecoverableError(request, error, errorInfo) {
   if (error === RecoverableException)
-    return (suspendedRecoverableError = null), "";
+    return (
+      (error = getSuspendedRecoverableError()),
+      logBrowserBailout(request, error.cause, errorInfo),
+      ""
+    );
   request = request.onError;
-  error = request(error, errorInfo);
-  if (null == error || "string" === typeof error)
-    return "" === error ? void 0 : error;
+  errorInfo = request(error, errorInfo);
+  if (null == errorInfo || "string" === typeof errorInfo)
+    return "" === errorInfo ? void 0 : errorInfo;
+}
+function logBrowserBailout(request, error, errorInfo) {
+  request = request.onBrowserBailout;
+  request(error, errorInfo);
 }
 function fatalError(request, error) {
   var onShellError = request.onShellError,
@@ -5913,7 +5932,9 @@ function finishAbortedTask(task, request, error) {
           0 === boundary.pendingTasks &&
             0 < boundary.nodes.length &&
             (isRecoverableAbort
-              ? ((errorInfo = ""), (segment = RecoverableException))
+              ? (logBrowserBailout(request, error, errorInfo),
+                (errorInfo = ""),
+                (segment = RecoverableException))
               : ((errorInfo = logRecoverableError(request, error, errorInfo)),
                 (segment = error)),
             abortRemainingReplayNodes(
@@ -5944,9 +5965,9 @@ function finishAbortedTask(task, request, error) {
               finishedTask(request, boundary, task.row, segment)
             );
           boundary.status = 4;
-          errorInfo = isRecoverableAbort
-            ? ""
-            : logRecoverableError(request, error, errorInfo);
+          isRecoverableAbort
+            ? (logBrowserBailout(request, error, errorInfo), (errorInfo = ""))
+            : (errorInfo = logRecoverableError(request, error, errorInfo));
           boundary.errorDigest = errorInfo;
           untrackBoundary(request, boundary);
           boundary.parentFlushed &&
@@ -6342,11 +6363,7 @@ function performWork(request$jscomp$1) {
                 request.allPendingTasks--;
                 if (null === boundary$jscomp$0)
                   if (x$jscomp$0 === RecoverableException) {
-                    if (null === suspendedRecoverableError)
-                      throw Error(formatProdErrorMessage(606));
-                    request$jscomp$0 = suspendedRecoverableError;
-                    suspendedRecoverableError = null;
-                    var useError = request$jscomp$0;
+                    var useError = getSuspendedRecoverableError();
                     logRecoverableError(request, useError, errorInfo$jscomp$0);
                     fatalError(request, useError);
                   } else
@@ -7135,6 +7152,7 @@ function renderToStringImpl(
     Infinity,
     onError,
     void 0,
+    void 0,
     function () {
       readyToStream = !0;
     },
@@ -7178,4 +7196,4 @@ exports.renderToString = function (children, options) {
     'The server used "renderToString" which does not support Suspense. If you intended for this Suspense boundary to render the fallback content on the server consider throwing an Error somewhere within the Suspense boundary. If you intended to have the server wait for the suspended component please switch to "renderToReadableStream" which supports Suspense on the server'
   );
 };
-exports.version = "19.3.0-www-classic-3a717e42-20260731";
+exports.version = "19.3.0-www-classic-20425723-20260807";
