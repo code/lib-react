@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<a3490d0afd22733fe354082c171992e8>>
+ * @generated SignedSource<<39d9c8734be630312b9f7c65023f80dc>>
  */
 
 "use strict";
@@ -123,7 +123,7 @@ __DEV__ &&
       Internals;
     exports.browser = function () {
       var recoverable = Error(
-        "Recoverable Exception: This is not a real error! It's an implementation detail of `use(browser())` to defer rendering to the browser. `use(browser())` can only be used inside a `<Suspense>` boundary. If a server render errors with this as its cause, the component that called `use(browser())` does not have a `<Suspense>` boundary above it."
+        "Browser-only rendering was requested by `browser()`."
       );
       Object.defineProperty(recoverable, "$$typeof", {
         value: REACT_RECOVERABLE_TYPE
@@ -429,5 +429,5 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-native-fb-3a717e42-20260731";
+    exports.version = "19.3.0-native-fb-20425723-20260807";
   })();

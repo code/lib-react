@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<b2a5a96e017067f1719eb65ff645fe00>>
+ * @generated SignedSource<<14ac8d166f17695ad72902fc2dbe04e2>>
  */
 
 /*
@@ -32317,11 +32317,11 @@ __DEV__ &&
     };
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-native-fb-3a717e42-20260731" !== isomorphicReactPackageVersion)
+      if ("19.3.0-native-fb-20425723-20260807" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-native-fb-3a717e42-20260731\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-native-fb-20425723-20260807\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -32358,10 +32358,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-native-fb-3a717e42-20260731",
+          version: "19.3.0-native-fb-20425723-20260807",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-native-fb-3a717e42-20260731"
+          reconcilerVersion: "19.3.0-native-fb-20425723-20260807"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -32430,7 +32430,7 @@ __DEV__ &&
       Internals;
     exports.browser = function () {
       var recoverable = Error(
-        "Recoverable Exception: This is not a real error! It's an implementation detail of `use(browser())` to defer rendering to the browser. `use(browser())` can only be used inside a `<Suspense>` boundary. If a server render errors with this as its cause, the component that called `use(browser())` does not have a `<Suspense>` boundary above it."
+        "Browser-only rendering was requested by `browser()`."
       );
       Object.defineProperty(recoverable, "$$typeof", {
         value: REACT_RECOVERABLE_TYPE
@@ -32845,7 +32845,7 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-native-fb-3a717e42-20260731";
+    exports.version = "19.3.0-native-fb-20425723-20260807";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&
