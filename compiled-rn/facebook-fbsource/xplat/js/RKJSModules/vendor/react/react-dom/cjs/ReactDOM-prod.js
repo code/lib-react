@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<5019e850ab25e7280ea83d9398fd89dc>>
+ * @generated SignedSource<<22bc09d8f6780280cda07d655e1df944>>
  */
 
 "use strict";
@@ -73,12 +73,8 @@ function getCrossOriginStringAs(as, input) {
 }
 exports.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE =
   Internals;
-exports.browser = function () {
-  var recoverable = Error(formatProdErrorMessage(603));
-  Object.defineProperty(recoverable, "$$typeof", {
-    value: REACT_RECOVERABLE_TYPE
-  });
-  return recoverable;
+exports.browser = function (reason) {
+  return { $$typeof: REACT_RECOVERABLE_TYPE, _reason: reason };
 };
 exports.createPortal = function (children, container) {
   var key =
@@ -226,4 +222,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-native-fb-20425723-20260807";
+exports.version = "19.3.0-native-fb-37180110-20260810";

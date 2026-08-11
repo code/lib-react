@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<891590ef8e828e2b2de78f5e1e223cc3>>
+ * @generated SignedSource<<209a9e7b8dd429b5faa6610847580824>>
  */
 
 /*
@@ -19387,14 +19387,14 @@ ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function (target) {
 };
 var isomorphicReactPackageVersion$jscomp$inline_2143 = React.version;
 if (
-  "19.3.0-native-fb-20425723-20260807" !==
+  "19.3.0-native-fb-37180110-20260810" !==
   isomorphicReactPackageVersion$jscomp$inline_2143
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2143,
-      "19.3.0-native-fb-20425723-20260807"
+      "19.3.0-native-fb-37180110-20260810"
     )
   );
 ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
@@ -19416,10 +19416,10 @@ ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
 };
 var internals$jscomp$inline_2718 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-20425723-20260807",
+  version: "19.3.0-native-fb-37180110-20260810",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-20425723-20260807"
+  reconcilerVersion: "19.3.0-native-fb-37180110-20260810"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_2719 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -19456,12 +19456,8 @@ exports.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = {
   p: 0,
   findDOMNode: null
 };
-exports.browser = function () {
-  var recoverable = Error(formatProdErrorMessage(603));
-  Object.defineProperty(recoverable, "$$typeof", {
-    value: REACT_RECOVERABLE_TYPE
-  });
-  return recoverable;
+exports.browser = function (reason) {
+  return { $$typeof: REACT_RECOVERABLE_TYPE, _reason: reason };
 };
 exports.createPortal = function (children, container) {
   var key =
@@ -19695,4 +19691,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-native-fb-20425723-20260807";
+exports.version = "19.3.0-native-fb-37180110-20260810";
