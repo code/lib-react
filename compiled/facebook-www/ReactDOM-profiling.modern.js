@@ -22478,14 +22478,14 @@ function getCrossOriginStringAs(as, input) {
 }
 var isomorphicReactPackageVersion$jscomp$inline_2405 = React.version;
 if (
-  "19.3.0-www-modern-20425723-20260807" !==
+  "19.3.0-www-modern-37180110-20260810" !==
   isomorphicReactPackageVersion$jscomp$inline_2405
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2405,
-      "19.3.0-www-modern-20425723-20260807"
+      "19.3.0-www-modern-37180110-20260810"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -22503,10 +22503,10 @@ Internals.Events = [
 ];
 var internals$jscomp$inline_2407 = {
   bundleType: 0,
-  version: "19.3.0-www-modern-20425723-20260807",
+  version: "19.3.0-www-modern-37180110-20260810",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-modern-20425723-20260807"
+  reconcilerVersion: "19.3.0-www-modern-37180110-20260810"
 };
 enableSchedulingProfiler &&
   ((internals$jscomp$inline_2407.getLaneLabelMap = getLaneLabelMap),
@@ -22640,12 +22640,8 @@ assign(Internals, {
 });
 exports.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE =
   Internals;
-exports.browser = function () {
-  var recoverable = Error(formatProdErrorMessage(603));
-  Object.defineProperty(recoverable, "$$typeof", {
-    value: REACT_RECOVERABLE_TYPE
-  });
-  return recoverable;
+exports.browser = function (reason) {
+  return { $$typeof: REACT_RECOVERABLE_TYPE, _reason: reason };
 };
 exports.createPortal = function (children, container) {
   var key =
@@ -22955,7 +22951,7 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-modern-20425723-20260807";
+exports.version = "19.3.0-www-modern-37180110-20260810";
 "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
   "function" ===
     typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&
