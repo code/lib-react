@@ -8910,43 +8910,37 @@ function commitReconciliationEffects(finishedWork) {
   if (flags & 2) {
     try {
       for (
-        var hostParentFiber,
-          parentFragmentInstances = null,
-          collectFragmentInstances = enableFragmentRefs,
-          parentFiber = finishedWork.return;
+        var hostParentFiber, parentFiber = finishedWork.return;
         null !== parentFiber;
 
       ) {
-        if (
-          collectFragmentInstances &&
-          parentFiber &&
-          7 === parentFiber.tag &&
-          null !== parentFiber.stateNode
-        ) {
-          var fragmentInstance = parentFiber.stateNode;
-          null === parentFragmentInstances
-            ? (parentFragmentInstances = [fragmentInstance])
-            : parentFragmentInstances.push(fragmentInstance);
-        }
-        collectFragmentInstances &&
-          (5 === parentFiber.tag ||
-            3 === parentFiber.tag ||
-            4 === parentFiber.tag) &&
-          (collectFragmentInstances = !1);
         if (isHostParent(parentFiber)) {
           hostParentFiber = parentFiber;
           break;
         }
         parentFiber = parentFiber.return;
       }
+      if (enableFragmentRefs) {
+        parentFiber = null;
+        for (var parent = finishedWork.return; null !== parent; ) {
+          if (parent && 7 === parent.tag && null !== parent.stateNode) {
+            var fragmentInstance = parent.stateNode;
+            null === parentFiber
+              ? (parentFiber = [fragmentInstance])
+              : parentFiber.push(fragmentInstance);
+          }
+          if (5 === parent.tag || 3 === parent.tag) break;
+          parent = parent.return;
+        }
+      } else null;
       if (null == hostParentFiber) throw Error(formatProdErrorMessage(160));
       switch (hostParentFiber.tag) {
         case 27:
         case 5:
-          var parent = hostParentFiber.stateNode;
+          var parent$jscomp$0 = hostParentFiber.stateNode;
           hostParentFiber.flags & 32 && (hostParentFiber.flags &= -33);
           var before = getHostSibling(finishedWork);
-          insertOrAppendPlacementNode(finishedWork, before, parent);
+          insertOrAppendPlacementNode(finishedWork, before, parent$jscomp$0);
           break;
         case 3:
         case 4:
@@ -11755,24 +11749,24 @@ var slice = Array.prototype.slice,
     };
     return Text;
   })(React.Component);
-var internals$jscomp$inline_1604 = {
+var internals$jscomp$inline_1601 = {
   bundleType: 0,
-  version: "19.3.0-www-classic-bfb7a768-20260811",
+  version: "19.3.0-www-classic-22e4f993-20260811",
   rendererPackageName: "react-art",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-classic-bfb7a768-20260811"
+  reconcilerVersion: "19.3.0-www-classic-22e4f993-20260811"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1605 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1602 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1605.isDisabled &&
-    hook$jscomp$inline_1605.supportsFiber
+    !hook$jscomp$inline_1602.isDisabled &&
+    hook$jscomp$inline_1602.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1605.inject(
-        internals$jscomp$inline_1604
+      (rendererID = hook$jscomp$inline_1602.inject(
+        internals$jscomp$inline_1601
       )),
-        (injectedHook = hook$jscomp$inline_1605);
+        (injectedHook = hook$jscomp$inline_1602);
     } catch (err) {}
 }
 var Path = Mode$1.Path;
@@ -11786,4 +11780,4 @@ exports.RadialGradient = RadialGradient;
 exports.Shape = TYPES.SHAPE;
 exports.Surface = Surface;
 exports.Text = Text;
-exports.version = "19.3.0-www-classic-bfb7a768-20260811";
+exports.version = "19.3.0-www-classic-22e4f993-20260811";

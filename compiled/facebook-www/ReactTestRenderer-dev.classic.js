@@ -13,7 +13,7 @@
 "use strict";
 __DEV__ &&
   (function () {
-    function JSCompiler_object_inline_createNodeMock_1213() {
+    function JSCompiler_object_inline_createNodeMock_1218() {
       return null;
     }
     function findHook(fiber, id) {
@@ -9911,34 +9911,26 @@ __DEV__ &&
     }
     function commitPlacement(finishedWork) {
       for (
-        var hostParentFiber,
-          parentFragmentInstances = null,
-          collectFragmentInstances = !0,
-          parentFiber = finishedWork.return;
+        var hostParentFiber, parentFiber = finishedWork.return;
         null !== parentFiber;
 
       ) {
-        if (
-          collectFragmentInstances &&
-          parentFiber &&
-          7 === parentFiber.tag &&
-          null !== parentFiber.stateNode
-        ) {
-          var fragmentInstance = parentFiber.stateNode;
-          null === parentFragmentInstances
-            ? (parentFragmentInstances = [fragmentInstance])
-            : parentFragmentInstances.push(fragmentInstance);
-        }
-        !collectFragmentInstances ||
-          (5 !== parentFiber.tag &&
-            3 !== parentFiber.tag &&
-            4 !== parentFiber.tag) ||
-          (collectFragmentInstances = !1);
         if (isHostParent(parentFiber)) {
           hostParentFiber = parentFiber;
           break;
         }
         parentFiber = parentFiber.return;
+      }
+      parentFiber = null;
+      for (var parent = finishedWork.return; null !== parent; ) {
+        if (parent && 7 === parent.tag && null !== parent.stateNode) {
+          var fragmentInstance = parent.stateNode;
+          null === parentFiber
+            ? (parentFiber = [fragmentInstance])
+            : parentFiber.push(fragmentInstance);
+        }
+        if (5 === parent.tag || 3 === parent.tag) break;
+        parent = parent.return;
       }
       if (null == hostParentFiber)
         throw Error(
@@ -9947,22 +9939,22 @@ __DEV__ &&
       switch (hostParentFiber.tag) {
         case 27:
         case 5:
-          parentFragmentInstances = hostParentFiber.stateNode;
+          parentFiber = hostParentFiber.stateNode;
           hostParentFiber.flags & 32 && (hostParentFiber.flags &= -33);
           hostParentFiber = getHostSibling(finishedWork);
           insertOrAppendPlacementNode(
             finishedWork,
             hostParentFiber,
-            parentFragmentInstances
+            parentFiber
           );
           break;
         case 3:
         case 4:
           hostParentFiber = hostParentFiber.stateNode.containerInfo;
-          parentFragmentInstances = getHostSibling(finishedWork);
+          parentFiber = getHostSibling(finishedWork);
           insertOrAppendPlacementNodeIntoContainer(
             finishedWork,
-            parentFragmentInstances,
+            parentFiber,
             hostParentFiber
           );
           break;
@@ -16804,10 +16796,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-www-classic-bfb7a768-20260811",
+        version: "19.3.0-www-classic-22e4f993-20260811",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-bfb7a768-20260811"
+        reconcilerVersion: "19.3.0-www-classic-22e4f993-20260811"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -16828,7 +16820,7 @@ __DEV__ &&
     exports._Scheduler = Scheduler;
     exports.act = act;
     exports.create = function (element, options) {
-      var createNodeMock = JSCompiler_object_inline_createNodeMock_1213,
+      var createNodeMock = JSCompiler_object_inline_createNodeMock_1218,
         isConcurrentOnly = !0 !== global.IS_REACT_NATIVE_TEST_ENVIRONMENT,
         isConcurrent = isConcurrentOnly,
         isStrictMode = !1;
@@ -16943,5 +16935,5 @@ __DEV__ &&
     exports.unstable_batchedUpdates = function (fn, a) {
       return fn(a);
     };
-    exports.version = "19.3.0-www-classic-bfb7a768-20260811";
+    exports.version = "19.3.0-www-classic-22e4f993-20260811";
   })();

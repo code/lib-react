@@ -12723,6 +12723,38 @@ __DEV__ &&
         ? (viewTransitionMutationContext = !0)
         : (rootMutationContext = !0);
     }
+    function commitNewChildToFragmentInstances(fiber, parentFragmentInstances) {
+      if (
+        (5 === fiber.tag ||
+          27 === fiber.tag ||
+          (enableFragmentRefsTextNodes && 6 === fiber.tag)) &&
+        null === fiber.alternate &&
+        null !== parentFragmentInstances
+      )
+        for (var i = 0; i < parentFragmentInstances.length; i++)
+          commitNewChildToFragmentInstance(
+            fiber.stateNode,
+            parentFragmentInstances[i]
+          );
+    }
+    function commitFragmentInstanceDeletionEffects(fiber) {
+      for (var parent = fiber.return; null !== parent; ) {
+        isFragmentInstanceParent(parent) &&
+          deleteChildFromFragmentInstance(fiber.stateNode, parent.stateNode);
+        if (isFragmentInstanceHostBoundary(parent)) break;
+        parent = parent.return;
+      }
+    }
+    function isFragmentInstanceHostBoundary(fiber) {
+      return (
+        5 === fiber.tag ||
+        3 === fiber.tag ||
+        (supportsSingletons ? 27 === fiber.tag : !1)
+      );
+    }
+    function isFragmentInstanceParent(fiber) {
+      return fiber && 7 === fiber.tag && null !== fiber.stateNode;
+    }
     function commitHostMount(finishedWork) {
       var type = finishedWork.type,
         props = finishedWork.memoizedProps,
@@ -12755,28 +12787,6 @@ __DEV__ &&
         captureCommitPhaseError(finishedWork, finishedWork.return, error);
       }
     }
-    function commitNewChildToFragmentInstances(fiber, parentFragmentInstances) {
-      if (
-        (5 === fiber.tag ||
-          27 === fiber.tag ||
-          (enableFragmentRefsTextNodes && 6 === fiber.tag)) &&
-        null === fiber.alternate &&
-        null !== parentFragmentInstances
-      )
-        for (var i = 0; i < parentFragmentInstances.length; i++)
-          commitNewChildToFragmentInstance(
-            fiber.stateNode,
-            parentFragmentInstances[i]
-          );
-    }
-    function commitFragmentInstanceDeletionEffects(fiber) {
-      for (var parent = fiber.return; null !== parent; ) {
-        isFragmentInstanceParent(parent) &&
-          deleteChildFromFragmentInstance(fiber.stateNode, parent.stateNode);
-        if (isFragmentInstanceHostParent(parent)) break;
-        parent = parent.return;
-      }
-    }
     function isHostParent(fiber) {
       return (
         5 === fiber.tag ||
@@ -12785,17 +12795,6 @@ __DEV__ &&
         (supportsSingletons
           ? 27 === fiber.tag && isSingletonScope(fiber.type)
           : !1) ||
-        4 === fiber.tag
-      );
-    }
-    function isFragmentInstanceParent(fiber) {
-      return fiber && 7 === fiber.tag && null !== fiber.stateNode;
-    }
-    function isFragmentInstanceHostParent(fiber) {
-      return (
-        5 === fiber.tag ||
-        (supportsSingletons ? 27 === fiber.tag : !1) ||
-        3 === fiber.tag ||
         4 === fiber.tag
       );
     }
@@ -12915,28 +12914,29 @@ __DEV__ &&
     }
     function commitPlacement(finishedWork) {
       for (
-        var hostParentFiber,
-          parentFragmentInstances = null,
-          collectFragmentInstances = enableFragmentRefs,
-          parentFiber = finishedWork.return;
+        var hostParentFiber, parentFiber = finishedWork.return;
         null !== parentFiber;
 
       ) {
-        if (collectFragmentInstances && isFragmentInstanceParent(parentFiber)) {
-          var fragmentInstance = parentFiber.stateNode;
-          null === parentFragmentInstances
-            ? (parentFragmentInstances = [fragmentInstance])
-            : parentFragmentInstances.push(fragmentInstance);
-        }
-        collectFragmentInstances &&
-          isFragmentInstanceHostParent(parentFiber) &&
-          (collectFragmentInstances = !1);
         if (isHostParent(parentFiber)) {
           hostParentFiber = parentFiber;
           break;
         }
         parentFiber = parentFiber.return;
       }
+      if (enableFragmentRefs) {
+        parentFiber = null;
+        for (var parent = finishedWork.return; null !== parent; ) {
+          if (isFragmentInstanceParent(parent)) {
+            var fragmentInstance = parent.stateNode;
+            null === parentFiber
+              ? (parentFiber = [fragmentInstance])
+              : parentFiber.push(fragmentInstance);
+          }
+          if (isFragmentInstanceHostBoundary(parent)) break;
+          parent = parent.return;
+        }
+      } else parentFiber = null;
       if (supportsMutation) {
         if (null == hostParentFiber)
           throw Error(
@@ -12946,37 +12946,36 @@ __DEV__ &&
           case 27:
             if (supportsSingletons) {
               hostParentFiber = hostParentFiber.stateNode;
-              collectFragmentInstances = getHostSibling(finishedWork);
+              parent = getHostSibling(finishedWork);
               insertOrAppendPlacementNode(
                 finishedWork,
-                collectFragmentInstances,
+                parent,
                 hostParentFiber,
-                parentFragmentInstances
+                parentFiber
               );
               break;
             }
           case 5:
-            collectFragmentInstances = hostParentFiber.stateNode;
+            parent = hostParentFiber.stateNode;
             hostParentFiber.flags & 32 &&
-              (resetTextContent(collectFragmentInstances),
-              (hostParentFiber.flags &= -33));
+              (resetTextContent(parent), (hostParentFiber.flags &= -33));
             hostParentFiber = getHostSibling(finishedWork);
             insertOrAppendPlacementNode(
               finishedWork,
               hostParentFiber,
-              collectFragmentInstances,
-              parentFragmentInstances
+              parent,
+              parentFiber
             );
             break;
           case 3:
           case 4:
             hostParentFiber = hostParentFiber.stateNode.containerInfo;
-            collectFragmentInstances = getHostSibling(finishedWork);
+            parent = getHostSibling(finishedWork);
             insertOrAppendPlacementNodeIntoContainer(
               finishedWork,
-              collectFragmentInstances,
+              parent,
               hostParentFiber,
-              parentFragmentInstances
+              parentFiber
             );
             break;
           default:
@@ -12988,7 +12987,7 @@ __DEV__ &&
         enableFragmentRefs &&
           commitImmutablePlacementNodeToFragmentInstances(
             finishedWork,
-            parentFragmentInstances
+            parentFiber
           );
     }
     function commitImmutablePlacementNodeToFragmentInstances(
@@ -15594,7 +15593,7 @@ __DEV__ &&
                   finishedWork.stateNode,
                   parent.stateNode
                 );
-              if (isFragmentInstanceHostParent(parent)) break a;
+              if (isFragmentInstanceHostBoundary(parent)) break a;
               parent = parent.return;
             }
           recursivelyTraverseReappearLayoutEffects(
@@ -23459,7 +23458,7 @@ __DEV__ &&
         version: rendererVersion,
         rendererPackageName: rendererPackageName,
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-bfb7a768-20260811"
+        reconcilerVersion: "19.3.0-www-classic-22e4f993-20260811"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);
