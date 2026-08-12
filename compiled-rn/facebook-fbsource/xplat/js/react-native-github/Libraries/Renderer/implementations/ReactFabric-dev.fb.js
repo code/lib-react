@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<615d1cc0f3ecf4b4c2ffca49c0c6b4a3>>
+ * @generated SignedSource<<1ad9556cbb64727fe5003038c9969a1d>>
  */
 
 "use strict";
@@ -13226,7 +13226,12 @@ __DEV__ &&
               offscreenSubtreeIsHidden ||
               offscreenSubtreeWasHidden ||
               0 === (finishedWork.mode & 1) ||
-              (recursivelyTraverseDisappearLayoutEffects(finishedWork),
+              ((root = _eventPayloads$ii2 || offscreenSubtreeWasHidden),
+              (lanes = offscreenSubtreeIsHidden),
+              (current = offscreenSubtreeWasHidden),
+              (offscreenSubtreeIsHidden = ii || offscreenSubtreeIsHidden),
+              (offscreenSubtreeWasHidden = root),
+              recursivelyTraverseDisappearLayoutEffects(finishedWork),
               0 !== (finishedWork.mode & 2) &&
                 0 <= componentEffectStartTime &&
                 0 <= componentEffectEndTime &&
@@ -13236,7 +13241,9 @@ __DEV__ &&
                   componentEffectStartTime,
                   componentEffectEndTime,
                   "Disconnect"
-                )));
+                ),
+              (offscreenSubtreeIsHidden = lanes),
+              (offscreenSubtreeWasHidden = current)));
           flags & 4 &&
             ((root = finishedWork.updateQueue),
             null !== root &&
@@ -13463,7 +13470,6 @@ __DEV__ &&
           recursivelyTraverseDisappearLayoutEffects(finishedWork);
           break;
         case 27:
-        case 26:
         case 5:
           safelyDetachRef(finishedWork, finishedWork.return);
           enableFragmentRefs &&
@@ -13471,6 +13477,10 @@ __DEV__ &&
               27 === finishedWork.tag ||
               (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
             commitFragmentInstanceDeletionEffects(finishedWork);
+          recursivelyTraverseDisappearLayoutEffects(finishedWork);
+          break;
+        case 26:
+          safelyDetachRef(finishedWork, finishedWork.return);
           recursivelyTraverseDisappearLayoutEffects(finishedWork);
           break;
         case 22:
@@ -13562,7 +13572,6 @@ __DEV__ &&
           safelyAttachRef(finishedWork, finishedWork.return);
           break;
         case 27:
-        case 26:
         case 5:
           if (
             enableFragmentRefs &&
@@ -13577,6 +13586,18 @@ __DEV__ &&
               if (isFragmentInstanceHostParent(parent)) break a;
               parent = parent.return;
             }
+          recursivelyTraverseReappearLayoutEffects(
+            finishedRoot,
+            finishedWork,
+            layoutEffectTraversalFlags
+          );
+          includeWorkInProgressEffects &&
+            null === current &&
+            flags & 4 &&
+            commitHostMount(finishedWork);
+          safelyAttachRef(finishedWork, finishedWork.return);
+          break;
+        case 26:
           recursivelyTraverseReappearLayoutEffects(
             finishedRoot,
             finishedWork,
@@ -13946,14 +13967,14 @@ __DEV__ &&
         case 23:
           break;
         case 22:
-          var _instance = finishedWork.stateNode;
+          var _instance3 = finishedWork.stateNode;
           prevProfilerEffectDuration = finishedWork.alternate;
           null !== finishedWork.memoizedState
             ? (isViewTransitionEligible &&
                 null !== prevProfilerEffectDuration &&
                 null === prevProfilerEffectDuration.memoizedState &&
                 restoreEnterOrExitViewTransitions(prevProfilerEffectDuration),
-              _instance._visibility & OffscreenPassiveEffectsConnected
+              _instance3._visibility & OffscreenPassiveEffectsConnected
                 ? recursivelyTraversePassiveMountEffects(
                     finishedRoot,
                     finishedWork,
@@ -13969,7 +13990,7 @@ __DEV__ &&
                       committedTransitions,
                       endTime
                     )
-                  : ((_instance._visibility |=
+                  : ((_instance3._visibility |=
                       OffscreenPassiveEffectsConnected),
                     recursivelyTraversePassiveMountEffects(
                       finishedRoot,
@@ -13982,7 +14003,7 @@ __DEV__ &&
                 null !== prevProfilerEffectDuration &&
                 null !== prevProfilerEffectDuration.memoizedState &&
                 restoreEnterOrExitViewTransitions(finishedWork),
-              _instance._visibility & OffscreenPassiveEffectsConnected
+              _instance3._visibility & OffscreenPassiveEffectsConnected
                 ? recursivelyTraversePassiveMountEffects(
                     finishedRoot,
                     finishedWork,
@@ -13990,7 +14011,7 @@ __DEV__ &&
                     committedTransitions,
                     endTime
                   )
-                : ((_instance._visibility |= OffscreenPassiveEffectsConnected),
+                : ((_instance3._visibility |= OffscreenPassiveEffectsConnected),
                   recursivelyTraverseReconnectPassiveEffects(
                     finishedRoot,
                     finishedWork,
@@ -14167,9 +14188,9 @@ __DEV__ &&
         case 23:
           break;
         case 22:
-          var _instance2 = finishedWork.stateNode;
+          var _instance4 = finishedWork.stateNode;
           null !== finishedWork.memoizedState
-            ? _instance2._visibility & OffscreenPassiveEffectsConnected
+            ? _instance4._visibility & OffscreenPassiveEffectsConnected
               ? recursivelyTraverseReconnectPassiveEffects(
                   finishedRoot,
                   finishedWork,
@@ -14186,7 +14207,7 @@ __DEV__ &&
                     committedTransitions,
                     endTime
                   )
-                : ((_instance2._visibility |= OffscreenPassiveEffectsConnected),
+                : ((_instance4._visibility |= OffscreenPassiveEffectsConnected),
                   recursivelyTraverseReconnectPassiveEffects(
                     finishedRoot,
                     finishedWork,
@@ -14195,7 +14216,7 @@ __DEV__ &&
                     includeWorkInProgressEffects,
                     endTime
                   ))
-            : ((_instance2._visibility |= OffscreenPassiveEffectsConnected),
+            : ((_instance4._visibility |= OffscreenPassiveEffectsConnected),
               recursivelyTraverseReconnectPassiveEffects(
                 finishedRoot,
                 finishedWork,
@@ -21353,10 +21374,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-37180110-20260810",
+        version: "19.3.0-native-fb-bfb7a768-20260811",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-37180110-20260810"
+        reconcilerVersion: "19.3.0-native-fb-bfb7a768-20260811"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);

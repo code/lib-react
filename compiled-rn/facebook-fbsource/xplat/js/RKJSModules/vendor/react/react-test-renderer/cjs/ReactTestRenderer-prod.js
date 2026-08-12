@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<f276350bbaa95c41cb2f4a4d00540686>>
+ * @generated SignedSource<<09df2b3eaf8c75ea4dd017087c9f0006>>
  */
 
 "use strict";
@@ -8230,13 +8230,20 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
       flags & 8192 &&
         ((root = finishedWork.stateNode),
         (root._visibility = ii ? root._visibility & -2 : root._visibility | 1),
-        ii &&
-          (null === current ||
-            _eventPayloads$ii2 ||
-            offscreenSubtreeIsHidden ||
-            offscreenSubtreeWasHidden ||
-            (0 !== (finishedWork.mode & 1) &&
-              recursivelyTraverseDisappearLayoutEffects(finishedWork))),
+        !ii ||
+          null === current ||
+          _eventPayloads$ii2 ||
+          offscreenSubtreeIsHidden ||
+          offscreenSubtreeWasHidden ||
+          0 === (finishedWork.mode & 1) ||
+          ((root = _eventPayloads$ii2 || offscreenSubtreeWasHidden),
+          (lanes = offscreenSubtreeIsHidden),
+          (current = offscreenSubtreeWasHidden),
+          (offscreenSubtreeIsHidden = ii || offscreenSubtreeIsHidden),
+          (offscreenSubtreeWasHidden = root),
+          recursivelyTraverseDisappearLayoutEffects(finishedWork),
+          (offscreenSubtreeIsHidden = lanes),
+          (offscreenSubtreeWasHidden = current)),
         (!ii && offscreenDirectParentIsHidden) ||
           hideOrUnhideAllChildren(finishedWork, ii));
       flags & 4 &&
@@ -8447,8 +8454,11 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
         break;
       case 27:
-      case 26:
       case 5:
+        safelyDetachRef(finishedWork, finishedWork.return);
+        recursivelyTraverseDisappearLayoutEffects(finishedWork);
+        break;
+      case 26:
         safelyDetachRef(finishedWork, finishedWork.return);
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
         break;
@@ -8528,8 +8538,15 @@ function recursivelyTraverseReappearLayoutEffects(
         safelyAttachRef(finishedWork, finishedWork.return);
         break;
       case 27:
-      case 26:
       case 5:
+        recursivelyTraverseReappearLayoutEffects(
+          finishedRoot,
+          finishedWork,
+          layoutEffectTraversalFlags
+        );
+        safelyAttachRef(finishedWork, finishedWork.return);
+        break;
+      case 26:
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
@@ -9686,8 +9703,8 @@ function renderRootSync(root, lanes, shouldYieldForPrerendering) {
       workLoopSync();
       exitStatus = workInProgressRootExitStatus;
       break;
-    } catch (thrownValue$134) {
-      handleThrow(root, thrownValue$134);
+    } catch (thrownValue$136) {
+      handleThrow(root, thrownValue$136);
     }
   while (1);
   lanes && root.shellSuspendCounter++;
@@ -9802,8 +9819,8 @@ function renderRootConcurrent(root, lanes) {
       }
       workLoopConcurrentByScheduler();
       break;
-    } catch (thrownValue$136) {
-      handleThrow(root, thrownValue$136);
+    } catch (thrownValue$138) {
+      handleThrow(root, thrownValue$138);
     }
   while (1);
   lastContextDependency = currentlyRenderingFiber$1 = null;
@@ -11030,24 +11047,24 @@ function wrapFiber(fiber) {
     fiberToWrapper.set(fiber, wrapper));
   return wrapper;
 }
-var internals$jscomp$inline_1557 = {
+var internals$jscomp$inline_1559 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-37180110-20260810",
+  version: "19.3.0-native-fb-bfb7a768-20260811",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-37180110-20260810"
+  reconcilerVersion: "19.3.0-native-fb-bfb7a768-20260811"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1558 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1560 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1558.isDisabled &&
-    hook$jscomp$inline_1558.supportsFiber
+    !hook$jscomp$inline_1560.isDisabled &&
+    hook$jscomp$inline_1560.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1558.inject(
-        internals$jscomp$inline_1557
+      (rendererID = hook$jscomp$inline_1560.inject(
+        internals$jscomp$inline_1559
       )),
-        (injectedHook = hook$jscomp$inline_1558);
+        (injectedHook = hook$jscomp$inline_1560);
     } catch (err) {}
 }
 exports._Scheduler = Scheduler;
@@ -11171,4 +11188,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.3.0-native-fb-37180110-20260810";
+exports.version = "19.3.0-native-fb-bfb7a768-20260811";

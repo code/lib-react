@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<41555a4c40aca71db6c8b51187f3fa67>>
+ * @generated SignedSource<<0aaff0a6cd5cb667eefe952dd4eaca8e>>
  */
 
 "use strict";
@@ -1285,7 +1285,7 @@ eventPluginOrder = Array.prototype.slice.call([
   "ReactNativeBridgeEventPlugin"
 ]);
 recomputePluginOrdering();
-var injectedNamesToPlugins$jscomp$inline_335 = {
+var injectedNamesToPlugins$jscomp$inline_337 = {
     ResponderEventPlugin: ResponderEventPlugin,
     ReactNativeBridgeEventPlugin: {
       eventTypes: {},
@@ -1331,32 +1331,32 @@ var injectedNamesToPlugins$jscomp$inline_335 = {
       }
     }
   },
-  isOrderingDirty$jscomp$inline_336 = !1,
-  pluginName$jscomp$inline_337;
-for (pluginName$jscomp$inline_337 in injectedNamesToPlugins$jscomp$inline_335)
+  isOrderingDirty$jscomp$inline_338 = !1,
+  pluginName$jscomp$inline_339;
+for (pluginName$jscomp$inline_339 in injectedNamesToPlugins$jscomp$inline_337)
   if (
-    injectedNamesToPlugins$jscomp$inline_335.hasOwnProperty(
-      pluginName$jscomp$inline_337
+    injectedNamesToPlugins$jscomp$inline_337.hasOwnProperty(
+      pluginName$jscomp$inline_339
     )
   ) {
-    var pluginModule$jscomp$inline_338 =
-      injectedNamesToPlugins$jscomp$inline_335[pluginName$jscomp$inline_337];
+    var pluginModule$jscomp$inline_340 =
+      injectedNamesToPlugins$jscomp$inline_337[pluginName$jscomp$inline_339];
     if (
-      !namesToPlugins.hasOwnProperty(pluginName$jscomp$inline_337) ||
-      namesToPlugins[pluginName$jscomp$inline_337] !==
-        pluginModule$jscomp$inline_338
+      !namesToPlugins.hasOwnProperty(pluginName$jscomp$inline_339) ||
+      namesToPlugins[pluginName$jscomp$inline_339] !==
+        pluginModule$jscomp$inline_340
     ) {
-      if (namesToPlugins[pluginName$jscomp$inline_337])
+      if (namesToPlugins[pluginName$jscomp$inline_339])
         throw Error(
           "EventPluginRegistry: Cannot inject two different event plugins using the same name, `" +
-            (pluginName$jscomp$inline_337 + "`.")
+            (pluginName$jscomp$inline_339 + "`.")
         );
-      namesToPlugins[pluginName$jscomp$inline_337] =
-        pluginModule$jscomp$inline_338;
-      isOrderingDirty$jscomp$inline_336 = !0;
+      namesToPlugins[pluginName$jscomp$inline_339] =
+        pluginModule$jscomp$inline_340;
+      isOrderingDirty$jscomp$inline_338 = !0;
     }
   }
-isOrderingDirty$jscomp$inline_336 && recomputePluginOrdering();
+isOrderingDirty$jscomp$inline_338 && recomputePluginOrdering();
 function batchedUpdatesImpl(fn, bookkeeping) {
   return fn(bookkeeping);
 }
@@ -10381,7 +10381,12 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
           offscreenSubtreeIsHidden ||
           offscreenSubtreeWasHidden ||
           0 === (finishedWork.mode & 1) ||
-          (recursivelyTraverseDisappearLayoutEffects(finishedWork),
+          ((root = _eventPayloads$ii2 || offscreenSubtreeWasHidden),
+          (lanes = offscreenSubtreeIsHidden),
+          (current = offscreenSubtreeWasHidden),
+          (offscreenSubtreeIsHidden = ii || offscreenSubtreeIsHidden),
+          (offscreenSubtreeWasHidden = root),
+          recursivelyTraverseDisappearLayoutEffects(finishedWork),
           0 !== (finishedWork.mode & 2) &&
             0 <= componentEffectStartTime &&
             0 <= componentEffectEndTime &&
@@ -10391,7 +10396,9 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
               componentEffectStartTime,
               componentEffectEndTime,
               "Disconnect"
-            )));
+            ),
+          (offscreenSubtreeIsHidden = lanes),
+          (offscreenSubtreeWasHidden = current)));
       flags & 4 &&
         ((root = finishedWork.updateQueue),
         null !== root &&
@@ -10626,7 +10633,6 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
         break;
       case 27:
-      case 26:
       case 5:
         safelyDetachRef(finishedWork, finishedWork.return);
         enableFragmentRefs &&
@@ -10634,6 +10640,10 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
             27 === finishedWork.tag ||
             (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
           commitFragmentInstanceDeletionEffects(finishedWork);
+        recursivelyTraverseDisappearLayoutEffects(finishedWork);
+        break;
+      case 26:
+        safelyDetachRef(finishedWork, finishedWork.return);
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
         break;
       case 22:
@@ -10735,7 +10745,6 @@ function recursivelyTraverseReappearLayoutEffects(
         safelyAttachRef(finishedWork, finishedWork.return);
         break;
       case 27:
-      case 26:
       case 5:
         if (
           enableFragmentRefs &&
@@ -10752,6 +10761,18 @@ function recursivelyTraverseReappearLayoutEffects(
             parent = parent.return;
           }
         }
+        recursivelyTraverseReappearLayoutEffects(
+          finishedRoot,
+          finishedWork,
+          layoutEffectTraversalFlags
+        );
+        includeWorkInProgressEffects &&
+          null === current &&
+          flags & 4 &&
+          commitHostMount(finishedWork);
+        safelyAttachRef(finishedWork, finishedWork.return);
+        break;
+      case 26:
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
@@ -12325,7 +12346,7 @@ function prepareFreshStack(root, lanes) {
       0 <= blockingEventTime && blockingEventTime < blockingClampTime
         ? blockingClampTime
         : blockingEventTime;
-    var clampedRenderStartTime$171 =
+    var clampedRenderStartTime$173 =
       0 <= endTime
         ? endTime
         : 0 <= previousRenderStartTime
@@ -12335,13 +12356,13 @@ function prepareFreshStack(root, lanes) {
       ? (setCurrentTrackFromLanes(2),
         logSuspendedWithDelayPhase(
           blockingSuspendedTime,
-          clampedRenderStartTime$171,
+          clampedRenderStartTime$173,
           lanes
         ))
       : 0 !== (animatingLanes & 127) &&
         (setCurrentTrackFromLanes(2),
-        logAnimatingPhase(blockingClampTime, clampedRenderStartTime$171));
-    clampedRenderStartTime$171 = blockingEventType;
+        logAnimatingPhase(blockingClampTime, clampedRenderStartTime$173));
+    clampedRenderStartTime$173 = blockingEventType;
     var eventIsRepeat = 0 < blockingEventRepeatTime,
       isSpawnedUpdate = 1 === blockingUpdateType,
       isPingedUpdate = 2 === blockingUpdateType,
@@ -12356,12 +12377,12 @@ function prepareFreshStack(root, lanes) {
         ? endTime > previousRenderStartTime &&
           (endTime = previousRenderStartTime)
         : (endTime = previousRenderStartTime),
-      null !== clampedRenderStartTime$171 &&
+      null !== clampedRenderStartTime$173 &&
         previousRenderStartTime > endTime &&
         console.timeStamp(
           eventIsRepeat
             ? "Consecutive"
-            : "Event: " + clampedRenderStartTime$171,
+            : "Event: " + clampedRenderStartTime$173,
           endTime,
           previousRenderStartTime,
           currentTrack,
@@ -12403,13 +12424,13 @@ function prepareFreshStack(root, lanes) {
       0 <= transitionUpdateTime && transitionUpdateTime < transitionClampTime
         ? transitionClampTime
         : transitionUpdateTime),
-    (clampedRenderStartTime$171 =
+    (clampedRenderStartTime$173 =
       0 <= transitionEventTime && transitionEventTime < transitionClampTime
         ? transitionClampTime
         : transitionEventTime),
     (eventIsRepeat =
-      0 <= clampedRenderStartTime$171
-        ? clampedRenderStartTime$171
+      0 <= clampedRenderStartTime$173
+        ? clampedRenderStartTime$173
         : 0 <= endTime
           ? endTime
           : renderStartTime),
@@ -12437,15 +12458,15 @@ function prepareFreshStack(root, lanes) {
         ? previousRenderStartTime > endTime &&
           (previousRenderStartTime = endTime)
         : (previousRenderStartTime = endTime),
-      0 < clampedRenderStartTime$171
-        ? clampedRenderStartTime$171 > previousRenderStartTime &&
-          (clampedRenderStartTime$171 = previousRenderStartTime)
-        : (clampedRenderStartTime$171 = previousRenderStartTime),
-      previousRenderStartTime > clampedRenderStartTime$171 &&
+      0 < clampedRenderStartTime$173
+        ? clampedRenderStartTime$173 > previousRenderStartTime &&
+          (clampedRenderStartTime$173 = previousRenderStartTime)
+        : (clampedRenderStartTime$173 = previousRenderStartTime),
+      previousRenderStartTime > clampedRenderStartTime$173 &&
         null !== eventIsRepeat &&
         console.timeStamp(
           isSpawnedUpdate ? "Consecutive" : "Event: " + eventIsRepeat,
-          clampedRenderStartTime$171,
+          clampedRenderStartTime$173,
           previousRenderStartTime,
           currentTrack,
           "Scheduler \u269b",
@@ -12520,9 +12541,9 @@ function prepareFreshStack(root, lanes) {
   endTime = root.entangledLanes;
   if (0 !== endTime)
     for (root = root.entanglements, endTime &= lanes; 0 < endTime; )
-      (clampedRenderStartTime$171 = 31 - clz32(endTime)),
-        (eventIsRepeat = 1 << clampedRenderStartTime$171),
-        (lanes |= root[clampedRenderStartTime$171]),
+      (clampedRenderStartTime$173 = 31 - clz32(endTime)),
+        (eventIsRepeat = 1 << clampedRenderStartTime$173),
+        (lanes |= root[clampedRenderStartTime$173]),
         (endTime &= ~eventIsRepeat);
   entangledRenderLanes = lanes;
   finishQueueingConcurrentUpdates();
@@ -12666,8 +12687,8 @@ function renderRootSync(root, lanes, shouldYieldForPrerendering) {
       workLoopSync();
       memoizedUpdaters = workInProgressRootExitStatus;
       break;
-    } catch (thrownValue$176) {
-      handleThrow(root, thrownValue$176);
+    } catch (thrownValue$178) {
+      handleThrow(root, thrownValue$178);
     }
   while (1);
   lanes && root.shellSuspendCounter++;
@@ -12790,8 +12811,8 @@ function renderRootConcurrent(root, lanes) {
         }
       workLoopConcurrentByScheduler();
       break;
-    } catch (thrownValue$178) {
-      handleThrow(root, thrownValue$178);
+    } catch (thrownValue$180) {
+      handleThrow(root, thrownValue$180);
     }
   while (1);
   lastContextDependency = currentlyRenderingFiber$1 = null;
@@ -14448,20 +14469,20 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1676 = {
+  internals$jscomp$inline_1678 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-37180110-20260810",
+    version: "19.3.0-native-fb-bfb7a768-20260811",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-37180110-20260810"
+    reconcilerVersion: "19.3.0-native-fb-bfb7a768-20260811"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1676.rendererConfig = extraDevToolsConfig);
-internals$jscomp$inline_1676.getLaneLabelMap = function () {
+  (internals$jscomp$inline_1678.rendererConfig = extraDevToolsConfig);
+internals$jscomp$inline_1678.getLaneLabelMap = function () {
   for (
-    var map = new Map(), lane = 1, index$184 = 0;
-    31 > index$184;
-    index$184++
+    var map = new Map(), lane = 1, index$186 = 0;
+    31 > index$186;
+    index$186++
   ) {
     var label = getLabelForLane(lane);
     map.set(lane, label);
@@ -14469,20 +14490,20 @@ internals$jscomp$inline_1676.getLaneLabelMap = function () {
   }
   return map;
 };
-internals$jscomp$inline_1676.injectProfilingHooks = function (profilingHooks) {
+internals$jscomp$inline_1678.injectProfilingHooks = function (profilingHooks) {
   injectedProfilingHooks = profilingHooks;
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2053 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2055 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2053.isDisabled &&
-    hook$jscomp$inline_2053.supportsFiber
+    !hook$jscomp$inline_2055.isDisabled &&
+    hook$jscomp$inline_2055.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2053.inject(
-        internals$jscomp$inline_1676
+      (rendererID = hook$jscomp$inline_2055.inject(
+        internals$jscomp$inline_1678
       )),
-        (injectedHook = hook$jscomp$inline_2053);
+        (injectedHook = hook$jscomp$inline_2055);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {

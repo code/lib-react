@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<f84819169d108a73f6186d5b065e8514>>
+ * @generated SignedSource<<56d10abccbb6efb8e233563fb378f829>>
  */
 
 "use strict";
@@ -1281,7 +1281,7 @@ eventPluginOrder = Array.prototype.slice.call([
   "ReactNativeBridgeEventPlugin"
 ]);
 recomputePluginOrdering();
-var injectedNamesToPlugins$jscomp$inline_292 = {
+var injectedNamesToPlugins$jscomp$inline_294 = {
     ResponderEventPlugin: ResponderEventPlugin,
     ReactNativeBridgeEventPlugin: {
       eventTypes: {},
@@ -1327,32 +1327,32 @@ var injectedNamesToPlugins$jscomp$inline_292 = {
       }
     }
   },
-  isOrderingDirty$jscomp$inline_293 = !1,
-  pluginName$jscomp$inline_294;
-for (pluginName$jscomp$inline_294 in injectedNamesToPlugins$jscomp$inline_292)
+  isOrderingDirty$jscomp$inline_295 = !1,
+  pluginName$jscomp$inline_296;
+for (pluginName$jscomp$inline_296 in injectedNamesToPlugins$jscomp$inline_294)
   if (
-    injectedNamesToPlugins$jscomp$inline_292.hasOwnProperty(
-      pluginName$jscomp$inline_294
+    injectedNamesToPlugins$jscomp$inline_294.hasOwnProperty(
+      pluginName$jscomp$inline_296
     )
   ) {
-    var pluginModule$jscomp$inline_295 =
-      injectedNamesToPlugins$jscomp$inline_292[pluginName$jscomp$inline_294];
+    var pluginModule$jscomp$inline_297 =
+      injectedNamesToPlugins$jscomp$inline_294[pluginName$jscomp$inline_296];
     if (
-      !namesToPlugins.hasOwnProperty(pluginName$jscomp$inline_294) ||
-      namesToPlugins[pluginName$jscomp$inline_294] !==
-        pluginModule$jscomp$inline_295
+      !namesToPlugins.hasOwnProperty(pluginName$jscomp$inline_296) ||
+      namesToPlugins[pluginName$jscomp$inline_296] !==
+        pluginModule$jscomp$inline_297
     ) {
-      if (namesToPlugins[pluginName$jscomp$inline_294])
+      if (namesToPlugins[pluginName$jscomp$inline_296])
         throw Error(
           "EventPluginRegistry: Cannot inject two different event plugins using the same name, `" +
-            (pluginName$jscomp$inline_294 + "`.")
+            (pluginName$jscomp$inline_296 + "`.")
         );
-      namesToPlugins[pluginName$jscomp$inline_294] =
-        pluginModule$jscomp$inline_295;
-      isOrderingDirty$jscomp$inline_293 = !0;
+      namesToPlugins[pluginName$jscomp$inline_296] =
+        pluginModule$jscomp$inline_297;
+      isOrderingDirty$jscomp$inline_295 = !0;
     }
   }
-isOrderingDirty$jscomp$inline_293 && recomputePluginOrdering();
+isOrderingDirty$jscomp$inline_295 && recomputePluginOrdering();
 function batchedUpdatesImpl(fn, bookkeeping) {
   return fn(bookkeeping);
 }
@@ -9368,11 +9368,11 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
         offscreenSubtreeIsHidden &&
         ((finishedWork = finishedWork.updateQueue),
         null !== finishedWork &&
-          ((root = finishedWork.callbacks),
-          null !== root &&
-            ((lanes = finishedWork.shared.hiddenCallbacks),
+          ((flags = finishedWork.callbacks),
+          null !== flags &&
+            ((root = finishedWork.shared.hiddenCallbacks),
             (finishedWork.shared.hiddenCallbacks =
-              null === lanes ? root : lanes.concat(root)))));
+              null === root ? flags : root.concat(flags)))));
       break;
     case 26:
     case 27:
@@ -9432,10 +9432,10 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
       recursivelyTraverseMutationEffects(root, finishedWork, lanes);
       commitReconciliationEffects(finishedWork);
       flags & 4 &&
-        ((root = finishedWork.updateQueue),
-        null !== root &&
+        ((flags = finishedWork.updateQueue),
+        null !== flags &&
           ((finishedWork.updateQueue = null),
-          attachSuspenseRetryListeners(finishedWork, root)));
+          attachSuspenseRetryListeners(finishedWork, flags)));
       break;
     case 13:
       recursivelyTraverseMutationEffects(root, finishedWork, lanes);
@@ -9456,10 +9456,10 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
         } catch (error) {
           captureCommitPhaseError(finishedWork, finishedWork.return, error);
         }
-        root = finishedWork.updateQueue;
-        null !== root &&
+        flags = finishedWork.updateQueue;
+        null !== flags &&
           ((finishedWork.updateQueue = null),
-          attachSuspenseRetryListeners(finishedWork, root));
+          attachSuspenseRetryListeners(finishedWork, flags));
       }
       break;
     case 22:
@@ -9479,29 +9479,36 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
       flags & 8192 &&
         ((root = finishedWork.stateNode),
         (root._visibility = ii ? root._visibility & -2 : root._visibility | 1),
-        ii &&
-          (null === current ||
-            _eventPayloads$ii2 ||
-            offscreenSubtreeIsHidden ||
-            offscreenSubtreeWasHidden ||
-            (0 !== (finishedWork.mode & 1) &&
-              recursivelyTraverseDisappearLayoutEffects(finishedWork))));
+        !ii ||
+          null === current ||
+          _eventPayloads$ii2 ||
+          offscreenSubtreeIsHidden ||
+          offscreenSubtreeWasHidden ||
+          0 === (finishedWork.mode & 1) ||
+          ((root = _eventPayloads$ii2 || offscreenSubtreeWasHidden),
+          (lanes = offscreenSubtreeIsHidden),
+          (current = offscreenSubtreeWasHidden),
+          (offscreenSubtreeIsHidden = ii || offscreenSubtreeIsHidden),
+          (offscreenSubtreeWasHidden = root),
+          recursivelyTraverseDisappearLayoutEffects(finishedWork),
+          (offscreenSubtreeIsHidden = lanes),
+          (offscreenSubtreeWasHidden = current)));
       flags & 4 &&
-        ((root = finishedWork.updateQueue),
-        null !== root &&
-          ((lanes = root.retryQueue),
-          null !== lanes &&
-            ((root.retryQueue = null),
-            attachSuspenseRetryListeners(finishedWork, lanes))));
+        ((flags = finishedWork.updateQueue),
+        null !== flags &&
+          ((root = flags.retryQueue),
+          null !== root &&
+            ((flags.retryQueue = null),
+            attachSuspenseRetryListeners(finishedWork, root))));
       break;
     case 19:
       recursivelyTraverseMutationEffects(root, finishedWork, lanes);
       commitReconciliationEffects(finishedWork);
       flags & 4 &&
-        ((root = finishedWork.updateQueue),
-        null !== root &&
+        ((flags = finishedWork.updateQueue),
+        null !== flags &&
           ((finishedWork.updateQueue = null),
-          attachSuspenseRetryListeners(finishedWork, root)));
+          attachSuspenseRetryListeners(finishedWork, flags)));
       break;
     case 30:
       flags & 512 &&
@@ -9690,7 +9697,6 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
         break;
       case 27:
-      case 26:
       case 5:
         safelyDetachRef(finishedWork, finishedWork.return);
         enableFragmentRefs &&
@@ -9698,6 +9704,10 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
             27 === finishedWork.tag ||
             (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
           commitFragmentInstanceDeletionEffects(finishedWork);
+        recursivelyTraverseDisappearLayoutEffects(finishedWork);
+        break;
+      case 26:
+        safelyDetachRef(finishedWork, finishedWork.return);
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
         break;
       case 22:
@@ -9780,7 +9790,6 @@ function recursivelyTraverseReappearLayoutEffects(
         safelyAttachRef(finishedWork, finishedWork.return);
         break;
       case 27:
-      case 26:
       case 5:
         if (
           enableFragmentRefs &&
@@ -9797,6 +9806,18 @@ function recursivelyTraverseReappearLayoutEffects(
             parent = parent.return;
           }
         }
+        recursivelyTraverseReappearLayoutEffects(
+          finishedRoot,
+          finishedWork,
+          layoutEffectTraversalFlags
+        );
+        includeWorkInProgressEffects &&
+          null === current &&
+          flags & 4 &&
+          commitHostMount(finishedWork);
+        safelyAttachRef(finishedWork, finishedWork.return);
+        break;
+      case 26:
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
@@ -10948,8 +10969,8 @@ function renderRootSync(root, lanes, shouldYieldForPrerendering) {
       workLoopSync();
       exitStatus = workInProgressRootExitStatus;
       break;
-    } catch (thrownValue$135) {
-      handleThrow(root, thrownValue$135);
+    } catch (thrownValue$137) {
+      handleThrow(root, thrownValue$137);
     }
   while (1);
   lanes && root.shellSuspendCounter++;
@@ -11064,8 +11085,8 @@ function renderRootConcurrent(root, lanes) {
       }
       workLoopConcurrentByScheduler();
       break;
-    } catch (thrownValue$137) {
-      handleThrow(root, thrownValue$137);
+    } catch (thrownValue$139) {
+      handleThrow(root, thrownValue$139);
     }
   while (1);
   lastContextDependency = currentlyRenderingFiber$1 = null;
@@ -12432,26 +12453,26 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1353 = {
+  internals$jscomp$inline_1355 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-37180110-20260810",
+    version: "19.3.0-native-fb-bfb7a768-20260811",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-37180110-20260810"
+    reconcilerVersion: "19.3.0-native-fb-bfb7a768-20260811"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1353.rendererConfig = extraDevToolsConfig);
+  (internals$jscomp$inline_1355.rendererConfig = extraDevToolsConfig);
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1697 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1699 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1697.isDisabled &&
-    hook$jscomp$inline_1697.supportsFiber
+    !hook$jscomp$inline_1699.isDisabled &&
+    hook$jscomp$inline_1699.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1697.inject(
-        internals$jscomp$inline_1353
+      (rendererID = hook$jscomp$inline_1699.inject(
+        internals$jscomp$inline_1355
       )),
-        (injectedHook = hook$jscomp$inline_1697);
+        (injectedHook = hook$jscomp$inline_1699);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {

@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<c2be5fa6fdb5cee5ed5f173661183462>>
+ * @generated SignedSource<<ba87f5cfdccf3229f9f5474293862149>>
  */
 
 "use strict";
@@ -8683,13 +8683,20 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
       flags & 8192 &&
         ((root = finishedWork.stateNode),
         (root._visibility = ii ? root._visibility & -2 : root._visibility | 1),
-        ii &&
-          (null === current ||
-            _eventPayloads$ii2 ||
-            offscreenSubtreeIsHidden ||
-            offscreenSubtreeWasHidden ||
-            (0 !== (finishedWork.mode & 1) &&
-              recursivelyTraverseDisappearLayoutEffects(finishedWork))),
+        !ii ||
+          null === current ||
+          _eventPayloads$ii2 ||
+          offscreenSubtreeIsHidden ||
+          offscreenSubtreeWasHidden ||
+          0 === (finishedWork.mode & 1) ||
+          ((root = _eventPayloads$ii2 || offscreenSubtreeWasHidden),
+          (lanes = offscreenSubtreeIsHidden),
+          (current = offscreenSubtreeWasHidden),
+          (offscreenSubtreeIsHidden = ii || offscreenSubtreeIsHidden),
+          (offscreenSubtreeWasHidden = root),
+          recursivelyTraverseDisappearLayoutEffects(finishedWork),
+          (offscreenSubtreeIsHidden = lanes),
+          (offscreenSubtreeWasHidden = current)),
         (!ii && offscreenDirectParentIsHidden) ||
           hideOrUnhideAllChildren(finishedWork, ii));
       flags & 4 &&
@@ -8902,8 +8909,11 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
         break;
       case 27:
-      case 26:
       case 5:
+        safelyDetachRef(finishedWork, finishedWork.return);
+        recursivelyTraverseDisappearLayoutEffects(finishedWork);
+        break;
+      case 26:
         safelyDetachRef(finishedWork, finishedWork.return);
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
         break;
@@ -8986,8 +8996,15 @@ function recursivelyTraverseReappearLayoutEffects(
         safelyAttachRef(finishedWork, finishedWork.return);
         break;
       case 27:
-      case 26:
       case 5:
+        recursivelyTraverseReappearLayoutEffects(
+          finishedRoot,
+          finishedWork,
+          layoutEffectTraversalFlags
+        );
+        safelyAttachRef(finishedWork, finishedWork.return);
+        break;
+      case 26:
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
@@ -10224,8 +10241,8 @@ function renderRootSync(root, lanes, shouldYieldForPrerendering) {
       workLoopSync();
       exitStatus = workInProgressRootExitStatus;
       break;
-    } catch (thrownValue$149) {
-      handleThrow(root, thrownValue$149);
+    } catch (thrownValue$151) {
+      handleThrow(root, thrownValue$151);
     }
   while (1);
   lanes && root.shellSuspendCounter++;
@@ -10342,8 +10359,8 @@ function renderRootConcurrent(root, lanes) {
       }
       workLoopConcurrentByScheduler();
       break;
-    } catch (thrownValue$151) {
-      handleThrow(root, thrownValue$151);
+    } catch (thrownValue$153) {
+      handleThrow(root, thrownValue$153);
     }
   while (1);
   lastContextDependency = currentlyRenderingFiber$1 = null;
@@ -11669,17 +11686,17 @@ function wrapFiber(fiber) {
     fiberToWrapper.set(fiber, wrapper));
   return wrapper;
 }
-var internals$jscomp$inline_1321 = {
+var internals$jscomp$inline_1323 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-37180110-20260810",
+  version: "19.3.0-native-fb-bfb7a768-20260811",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-37180110-20260810",
+  reconcilerVersion: "19.3.0-native-fb-bfb7a768-20260811",
   getLaneLabelMap: function () {
     for (
-      var map = new Map(), lane = 1, index$157 = 0;
-      31 > index$157;
-      index$157++
+      var map = new Map(), lane = 1, index$159 = 0;
+      31 > index$159;
+      index$159++
     ) {
       var label = getLabelForLane(lane);
       map.set(lane, label);
@@ -11692,16 +11709,16 @@ var internals$jscomp$inline_1321 = {
   }
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1623 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1625 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1623.isDisabled &&
-    hook$jscomp$inline_1623.supportsFiber
+    !hook$jscomp$inline_1625.isDisabled &&
+    hook$jscomp$inline_1625.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1623.inject(
-        internals$jscomp$inline_1321
+      (rendererID = hook$jscomp$inline_1625.inject(
+        internals$jscomp$inline_1323
       )),
-        (injectedHook = hook$jscomp$inline_1623);
+        (injectedHook = hook$jscomp$inline_1625);
     } catch (err) {}
 }
 exports._Scheduler = Scheduler;
@@ -11825,4 +11842,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.3.0-native-fb-37180110-20260810";
+exports.version = "19.3.0-native-fb-bfb7a768-20260811";
