@@ -8390,6 +8390,7 @@ __DEV__ &&
             return (
               (current = mountActivityChildren(workInProgress, nextProps)),
               (workInProgress.lanes = 536870912),
+              (current.memoizedState = { baseLanes: 0, cachePool: null }),
               bailoutOffscreenComponent(null, current)
             );
           pushDehydratedActivitySuspenseHandler(workInProgress);
@@ -14372,7 +14373,8 @@ __DEV__ &&
             deletedFiber.memoizedState
               ? releaseResource(deletedFiber.memoizedState)
               : deletedFiber.stateNode &&
-                unmountHoistable(deletedFiber.stateNode);
+                (offscreenSubtreeWasHidden ||
+                  unmountHoistable(deletedFiber.stateNode));
             break;
           }
         case 27:
@@ -14828,11 +14830,11 @@ __DEV__ &&
             offscreenSubtreeIsHidden &&
             ((root = finishedWork.updateQueue),
             null !== root &&
-              ((lanes = root.callbacks),
-              null !== lanes &&
-                ((flags = root.shared.hiddenCallbacks),
+              ((flags = root.callbacks),
+              null !== flags &&
+                ((lanes = root.shared.hiddenCallbacks),
                 (root.shared.hiddenCallbacks =
-                  null === flags ? lanes : flags.concat(lanes)))));
+                  null === lanes ? flags : lanes.concat(flags)))));
           break;
         case 26:
           if (supportsResources) {
@@ -14844,40 +14846,51 @@ __DEV__ &&
                 null === current ||
                 safelyDetachRef(current, current.return));
             flags & 4 &&
-              ((root = null !== current ? current.memoizedState : null),
-              (lanes = finishedWork.memoizedState),
+              ((lanes = null !== current ? current.memoizedState : null),
+              (flags = finishedWork.memoizedState),
               null === current
-                ? null === lanes
+                ? null === flags
                   ? null === finishedWork.stateNode
-                    ? (finishedWork.stateNode = hydrateHoistable(
-                        ii,
-                        finishedWork.type,
-                        finishedWork.memoizedProps,
-                        finishedWork
-                      ))
-                    : mountHoistable(
+                    ? (finishedWork.stateNode = offscreenSubtreeIsHidden
+                        ? createHoistableInstance(
+                            finishedWork.type,
+                            finishedWork.memoizedProps,
+                            root.containerInfo,
+                            finishedWork
+                          )
+                        : hydrateHoistable(
+                            ii,
+                            finishedWork.type,
+                            finishedWork.memoizedProps,
+                            finishedWork
+                          ))
+                    : offscreenSubtreeIsHidden ||
+                      mountHoistable(
                         ii,
                         finishedWork.type,
                         finishedWork.stateNode
                       )
                   : (finishedWork.stateNode = acquireResource(
                       ii,
-                      lanes,
+                      flags,
                       finishedWork.memoizedProps
                     ))
-                : root !== lanes
-                  ? (null === root
-                      ? null !== current.stateNode &&
-                        unmountHoistable(current.stateNode)
-                      : releaseResource(root),
-                    null === lanes
-                      ? mountHoistable(
+                : lanes !== flags
+                  ? (null === lanes
+                      ? ((root = current.stateNode),
+                        null === root ||
+                          offscreenSubtreeWasHidden ||
+                          unmountHoistable(root))
+                      : releaseResource(lanes),
+                    null === flags
+                      ? offscreenSubtreeIsHidden ||
+                        mountHoistable(
                           ii,
                           finishedWork.type,
                           finishedWork.stateNode
                         )
-                      : acquireResource(ii, lanes, finishedWork.memoizedProps))
-                  : null === lanes &&
+                      : acquireResource(ii, flags, finishedWork.memoizedProps))
+                  : null === flags &&
                     null !== finishedWork.stateNode &&
                     commitHostUpdate(
                       finishedWork,
@@ -14955,14 +14968,14 @@ __DEV__ &&
                 "This should have a text node initialized. This error is likely caused by a bug in React. Please file an issue."
               );
             root = finishedWork.memoizedProps;
-            lanes = null !== current ? current.memoizedProps : root;
-            flags = finishedWork.stateNode;
+            flags = null !== current ? current.memoizedProps : root;
+            lanes = finishedWork.stateNode;
             try {
               runWithFiberInDEV(
                 finishedWork,
                 commitTextUpdate,
-                flags,
                 lanes,
+                flags,
                 root
               ),
                 trackHostMutation();
@@ -15143,12 +15156,15 @@ __DEV__ &&
               _eventPayloads$ii2 ||
               offscreenSubtreeIsHidden ||
               offscreenSubtreeWasHidden ||
-              (recursivelyTraverseDisappearLayoutEffects(
-                finishedWork,
-                supportsSingletons
-                  ? IncludeHostSingletons
-                  : NoLayoutEffectTraversalFlags
-              ),
+              ((root = supportsSingletons
+                ? IncludeHostSingletons
+                : NoLayoutEffectTraversalFlags),
+              (lanes = _eventPayloads$ii2 || offscreenSubtreeWasHidden),
+              (current = offscreenSubtreeIsHidden),
+              (_eventPayloads$ii2 = offscreenSubtreeWasHidden),
+              (offscreenSubtreeIsHidden = ii || offscreenSubtreeIsHidden),
+              (offscreenSubtreeWasHidden = lanes),
+              recursivelyTraverseDisappearLayoutEffects(finishedWork, root),
               (finishedWork.mode & 2) !== NoMode &&
                 0 <= componentEffectStartTime &&
                 0 <= componentEffectEndTime &&
@@ -15158,17 +15174,19 @@ __DEV__ &&
                   componentEffectStartTime,
                   componentEffectEndTime,
                   "Disconnect"
-                )),
+                ),
+              (offscreenSubtreeIsHidden = current),
+              (offscreenSubtreeWasHidden = _eventPayloads$ii2)),
             supportsMutation &&
               (ii || !offscreenDirectParentIsHidden) &&
               hideOrUnhideAllChildren(finishedWork, ii));
           flags & 4 &&
             ((root = finishedWork.updateQueue),
             null !== root &&
-              ((lanes = root.retryQueue),
-              null !== lanes &&
+              ((flags = root.retryQueue),
+              null !== flags &&
                 ((root.retryQueue = null),
-                attachSuspenseRetryListeners(finishedWork, lanes))));
+                attachSuspenseRetryListeners(finishedWork, flags))));
           break;
         case 19:
           recursivelyTraverseMutationEffects(root, finishedWork, lanes);
@@ -15427,7 +15445,6 @@ __DEV__ &&
               finishedWork.type,
               finishedWork.memoizedProps
             );
-        case 26:
         case 5:
           safelyDetachRef(finishedWork, finishedWork.return);
           enableFragmentRefs &&
@@ -15435,6 +15452,19 @@ __DEV__ &&
               27 === finishedWork.tag ||
               (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
             commitFragmentInstanceDeletionEffects(finishedWork);
+          recursivelyTraverseDisappearLayoutEffects(
+            finishedWork,
+            layoutEffectTraversalFlags
+          );
+          break;
+        case 26:
+          safelyDetachRef(finishedWork, finishedWork.return);
+          supportsResources &&
+            ((instance = finishedWork.stateNode),
+            null !== finishedWork.memoizedState ||
+              null === instance ||
+              offscreenSubtreeWasHidden ||
+              unmountHoistable(instance));
           recursivelyTraverseDisappearLayoutEffects(
             finishedWork,
             layoutEffectTraversalFlags
@@ -15553,7 +15583,6 @@ __DEV__ &&
             (layoutEffectTraversalFlags & IncludeHostSingletons) !==
               NoLayoutEffectTraversalFlags &&
             commitHostSingletonAcquisition(finishedWork);
-        case 26:
         case 5:
           if (
             enableFragmentRefs &&
@@ -15568,6 +15597,28 @@ __DEV__ &&
               if (isFragmentInstanceHostParent(parent)) break a;
               parent = parent.return;
             }
+          recursivelyTraverseReappearLayoutEffects(
+            finishedRoot,
+            finishedWork,
+            layoutEffectTraversalFlags
+          );
+          includeWorkInProgressEffects &&
+            null === current &&
+            flags & 4 &&
+            commitHostMount(finishedWork);
+          safelyAttachRef(finishedWork, finishedWork.return);
+          break;
+        case 26:
+          supportsResources &&
+            ((parent = finishedWork.stateNode),
+            null !== finishedWork.memoizedState ||
+              null === parent ||
+              offscreenSubtreeIsHidden ||
+              mountHoistable(
+                getHoistableRoot(parent.ownerDocument),
+                finishedWork.type,
+                parent
+              ));
           recursivelyTraverseReappearLayoutEffects(
             finishedRoot,
             finishedWork,
@@ -16326,9 +16377,9 @@ __DEV__ &&
             );
           break;
         case 22:
-          var _instance2 = finishedWork.stateNode;
+          var _instance4 = finishedWork.stateNode;
           null !== finishedWork.memoizedState
-            ? _instance2._visibility & OffscreenPassiveEffectsConnected
+            ? _instance4._visibility & OffscreenPassiveEffectsConnected
               ? recursivelyTraverseReconnectPassiveEffects(
                   finishedRoot,
                   finishedWork,
@@ -16344,7 +16395,7 @@ __DEV__ &&
                   committedTransitions,
                   endTime
                 )
-            : ((_instance2._visibility |= OffscreenPassiveEffectsConnected),
+            : ((_instance4._visibility |= OffscreenPassiveEffectsConnected),
               recursivelyTraverseReconnectPassiveEffects(
                 finishedRoot,
                 finishedWork,
@@ -16358,7 +16409,7 @@ __DEV__ &&
             commitOffscreenPassiveMountEffects(
               finishedWork.alternate,
               finishedWork,
-              _instance2
+              _instance4
             );
           break;
         case 24:
@@ -23408,7 +23459,7 @@ __DEV__ &&
         version: rendererVersion,
         rendererPackageName: rendererPackageName,
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-37180110-20260810"
+        reconcilerVersion: "19.3.0-www-classic-bfb7a768-20260811"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);

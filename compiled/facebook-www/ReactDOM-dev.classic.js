@@ -10255,6 +10255,7 @@ __DEV__ &&
             return (
               (current = mountActivityChildren(workInProgress, nextProps)),
               (workInProgress.lanes = 536870912),
+              (current.memoizedState = { baseLanes: 0, cachePool: null }),
               bailoutOffscreenComponent(null, current)
             );
           pushDehydratedActivitySuspenseHandler(workInProgress);
@@ -12392,20 +12393,12 @@ __DEV__ &&
                 ))
                 ? (workInProgress.memoizedState = renderLanes)
                 : isHydrating ||
-                  ((renderLanes = workInProgress.type),
-                  (current = workInProgress.pendingProps),
-                  (returnFiber = requiredContext(
-                    rootInstanceStackCursor.current
-                  )),
-                  (returnFiber =
-                    getOwnerDocumentFromRootContainer(
-                      returnFiber
-                    ).createElement(renderLanes)),
-                  precacheFiberNode(workInProgress, returnFiber),
-                  updateFiberProps(returnFiber, current),
-                  setInitialProperties(returnFiber, renderLanes, current),
-                  markNodeAsHoistable(returnFiber),
-                  (workInProgress.stateNode = returnFiber))
+                  (workInProgress.stateNode = createHoistableInstance(
+                    workInProgress.type,
+                    workInProgress.pendingProps,
+                    requiredContext(rootInstanceStackCursor.current),
+                    workInProgress
+                  ))
               : (workInProgress.memoizedState = getResource(
                   workInProgress.type,
                   current.memoizedProps,
@@ -16218,6 +16211,7 @@ __DEV__ &&
           deletedFiber.memoizedState
             ? deletedFiber.memoizedState.count--
             : deletedFiber.stateNode &&
+              !offscreenSubtreeWasHidden &&
               ((nearestMountedAncestor = deletedFiber.stateNode),
               nearestMountedAncestor.parentNode.removeChild(
                 nearestMountedAncestor
@@ -16656,11 +16650,11 @@ __DEV__ &&
             offscreenSubtreeIsHidden &&
             ((root = finishedWork.updateQueue),
             null !== root &&
-              ((lanes = root.callbacks),
-              null !== lanes &&
-                ((current = root.shared.hiddenCallbacks),
+              ((flags = root.callbacks),
+              null !== flags &&
+                ((lanes = root.shared.hiddenCallbacks),
                 (root.shared.hiddenCallbacks =
-                  null === current ? lanes : current.concat(lanes)))));
+                  null === lanes ? flags : lanes.concat(flags)))));
           break;
         case 26:
           ii = currentHoistableRoot;
@@ -16673,149 +16667,167 @@ __DEV__ &&
           if (flags & 4)
             if (
               ((lanes = null !== current ? current.memoizedState : null),
-              (root = finishedWork.memoizedState),
+              (flags = finishedWork.memoizedState),
               null === current)
             )
-              if (null === root)
-                if (null === finishedWork.stateNode) {
-                  a: {
-                    root = finishedWork.type;
-                    lanes = finishedWork.memoizedProps;
-                    current = ii.ownerDocument || ii;
-                    b: switch (root) {
-                      case "title":
-                        flags = current.getElementsByTagName("title")[0];
-                        if (
-                          !flags ||
-                          isOwnedInstance(flags) ||
-                          flags.namespaceURI === SVG_NAMESPACE ||
-                          flags.hasAttribute("itemprop")
-                        )
-                          (flags = current.createElement(root)),
-                            current.head.insertBefore(
-                              flags,
-                              current.querySelector("head > title")
-                            );
-                        setInitialProperties(flags, root, lanes);
-                        precacheFiberNode(finishedWork, flags);
-                        markNodeAsHoistable(flags);
-                        root = flags;
-                        break a;
-                      case "link":
-                        if (
-                          (ii = getHydratableHoistableCache(
-                            "link",
-                            "href",
-                            current
-                          ).get(root + (lanes.href || "")))
-                        )
-                          for (
-                            _eventPayloads$ii2 = 0;
-                            _eventPayloads$ii2 < ii.length;
-                            _eventPayloads$ii2++
+              if (null === flags)
+                if (null === finishedWork.stateNode)
+                  if (offscreenSubtreeIsHidden)
+                    finishedWork.stateNode = createHoistableInstance(
+                      finishedWork.type,
+                      finishedWork.memoizedProps,
+                      root.containerInfo,
+                      finishedWork
+                    );
+                  else {
+                    a: {
+                      root = finishedWork.type;
+                      flags = finishedWork.memoizedProps;
+                      lanes = ii.ownerDocument || ii;
+                      b: switch (root) {
+                        case "title":
+                          current = lanes.getElementsByTagName("title")[0];
+                          if (
+                            !current ||
+                            isOwnedInstance(current) ||
+                            current.namespaceURI === SVG_NAMESPACE ||
+                            current.hasAttribute("itemprop")
                           )
-                            if (
-                              ((flags = ii[_eventPayloads$ii2]),
-                              flags.getAttribute("href") ===
-                                (null == lanes.href || "" === lanes.href
-                                  ? null
-                                  : lanes.href) &&
-                                flags.getAttribute("rel") ===
-                                  (null == lanes.rel ? null : lanes.rel) &&
-                                flags.getAttribute("title") ===
-                                  (null == lanes.title ? null : lanes.title) &&
-                                flags.getAttribute("crossorigin") ===
-                                  (null == lanes.crossOrigin
-                                    ? null
-                                    : lanes.crossOrigin))
-                            ) {
-                              ii.splice(_eventPayloads$ii2, 1);
-                              break b;
-                            }
-                        flags = current.createElement(root);
-                        setInitialProperties(flags, root, lanes);
-                        current.head.appendChild(flags);
-                        break;
-                      case "meta":
-                        if (
-                          (ii = getHydratableHoistableCache(
-                            "meta",
-                            "content",
-                            current
-                          ).get(root + (lanes.content || "")))
-                        )
-                          for (
-                            _eventPayloads$ii2 = 0;
-                            _eventPayloads$ii2 < ii.length;
-                            _eventPayloads$ii2++
+                            (current = lanes.createElement(root)),
+                              lanes.head.insertBefore(
+                                current,
+                                lanes.querySelector("head > title")
+                              );
+                          setInitialProperties(current, root, flags);
+                          precacheFiberNode(finishedWork, current);
+                          markNodeAsHoistable(current);
+                          root = current;
+                          break a;
+                        case "link":
+                          if (
+                            (ii = getHydratableHoistableCache(
+                              "link",
+                              "href",
+                              lanes
+                            ).get(root + (flags.href || "")))
                           )
-                            if (
-                              ((flags = ii[_eventPayloads$ii2]),
-                              checkAttributeStringCoercion(
-                                lanes.content,
-                                "content"
-                              ),
-                              flags.getAttribute("content") ===
-                                (null == lanes.content
-                                  ? null
-                                  : "" + lanes.content) &&
-                                flags.getAttribute("name") ===
-                                  (null == lanes.name ? null : lanes.name) &&
-                                flags.getAttribute("property") ===
-                                  (null == lanes.property
+                            for (
+                              _eventPayloads$ii2 = 0;
+                              _eventPayloads$ii2 < ii.length;
+                              _eventPayloads$ii2++
+                            )
+                              if (
+                                ((current = ii[_eventPayloads$ii2]),
+                                current.getAttribute("href") ===
+                                  (null == flags.href || "" === flags.href
                                     ? null
-                                    : lanes.property) &&
-                                flags.getAttribute("http-equiv") ===
-                                  (null == lanes.httpEquiv
+                                    : flags.href) &&
+                                  current.getAttribute("rel") ===
+                                    (null == flags.rel ? null : flags.rel) &&
+                                  current.getAttribute("title") ===
+                                    (null == flags.title
+                                      ? null
+                                      : flags.title) &&
+                                  current.getAttribute("crossorigin") ===
+                                    (null == flags.crossOrigin
+                                      ? null
+                                      : flags.crossOrigin))
+                              ) {
+                                ii.splice(_eventPayloads$ii2, 1);
+                                break b;
+                              }
+                          current = lanes.createElement(root);
+                          setInitialProperties(current, root, flags);
+                          lanes.head.appendChild(current);
+                          break;
+                        case "meta":
+                          if (
+                            (ii = getHydratableHoistableCache(
+                              "meta",
+                              "content",
+                              lanes
+                            ).get(root + (flags.content || "")))
+                          )
+                            for (
+                              _eventPayloads$ii2 = 0;
+                              _eventPayloads$ii2 < ii.length;
+                              _eventPayloads$ii2++
+                            )
+                              if (
+                                ((current = ii[_eventPayloads$ii2]),
+                                checkAttributeStringCoercion(
+                                  flags.content,
+                                  "content"
+                                ),
+                                current.getAttribute("content") ===
+                                  (null == flags.content
                                     ? null
-                                    : lanes.httpEquiv) &&
-                                flags.getAttribute("charset") ===
-                                  (null == lanes.charSet
-                                    ? null
-                                    : lanes.charSet))
-                            ) {
-                              ii.splice(_eventPayloads$ii2, 1);
-                              break b;
-                            }
-                        flags = current.createElement(root);
-                        setInitialProperties(flags, root, lanes);
-                        current.head.appendChild(flags);
-                        break;
-                      default:
-                        throw Error(
-                          'getNodesForType encountered a type it did not expect: "' +
-                            root +
-                            '". This is a bug in React.'
-                        );
+                                    : "" + flags.content) &&
+                                  current.getAttribute("name") ===
+                                    (null == flags.name ? null : flags.name) &&
+                                  current.getAttribute("property") ===
+                                    (null == flags.property
+                                      ? null
+                                      : flags.property) &&
+                                  current.getAttribute("http-equiv") ===
+                                    (null == flags.httpEquiv
+                                      ? null
+                                      : flags.httpEquiv) &&
+                                  current.getAttribute("charset") ===
+                                    (null == flags.charSet
+                                      ? null
+                                      : flags.charSet))
+                              ) {
+                                ii.splice(_eventPayloads$ii2, 1);
+                                break b;
+                              }
+                          current = lanes.createElement(root);
+                          setInitialProperties(current, root, flags);
+                          lanes.head.appendChild(current);
+                          break;
+                        default:
+                          throw Error(
+                            'getNodesForType encountered a type it did not expect: "' +
+                              root +
+                              '". This is a bug in React.'
+                          );
+                      }
+                      precacheFiberNode(finishedWork, current);
+                      markNodeAsHoistable(current);
+                      root = current;
                     }
-                    precacheFiberNode(finishedWork, flags);
-                    markNodeAsHoistable(flags);
-                    root = flags;
+                    finishedWork.stateNode = root;
                   }
-                  finishedWork.stateNode = root;
-                } else
-                  mountHoistable(ii, finishedWork.type, finishedWork.stateNode);
+                else
+                  offscreenSubtreeIsHidden ||
+                    mountHoistable(
+                      ii,
+                      finishedWork.type,
+                      finishedWork.stateNode
+                    );
               else
                 finishedWork.stateNode = acquireResource(
                   ii,
-                  root,
+                  flags,
                   finishedWork.memoizedProps
                 );
             else
-              lanes !== root
+              lanes !== flags
                 ? (null === lanes
-                    ? null !== current.stateNode &&
-                      ((lanes = current.stateNode),
-                      lanes.parentNode.removeChild(lanes))
+                    ? ((root = current.stateNode),
+                      null === root ||
+                        offscreenSubtreeWasHidden ||
+                        root.parentNode.removeChild(root))
                     : lanes.count--,
-                  null === root
-                    ? mountHoistable(
+                  null === flags
+                    ? offscreenSubtreeIsHidden ||
+                      mountHoistable(
                         ii,
                         finishedWork.type,
                         finishedWork.stateNode
                       )
-                    : acquireResource(ii, root, finishedWork.memoizedProps))
-                : null === root &&
+                    : acquireResource(ii, flags, finishedWork.memoizedProps))
+                : null === flags &&
                   null !== finishedWork.stateNode &&
                   commitHostUpdate(
                     finishedWork,
@@ -16881,14 +16893,14 @@ __DEV__ &&
                 "This should have a text node initialized. This error is likely caused by a bug in React. Please file an issue."
               );
             root = finishedWork.memoizedProps;
-            lanes = null !== current ? current.memoizedProps : root;
-            current = finishedWork.stateNode;
+            flags = null !== current ? current.memoizedProps : root;
+            lanes = finishedWork.stateNode;
             try {
               runWithFiberInDEV(
                 finishedWork,
                 commitTextUpdate,
-                current,
                 lanes,
+                flags,
                 root
               ),
                 trackHostMutation();
@@ -16931,9 +16943,9 @@ __DEV__ &&
             (needsIsomorphicIndicator = !1));
           break;
         case 4:
-          current = offscreenDirectParentIsHidden;
+          flags = offscreenDirectParentIsHidden;
           offscreenDirectParentIsHidden = offscreenSubtreeIsHidden;
-          flags = pushMutationContext();
+          current = pushMutationContext();
           ii = currentHoistableRoot;
           currentHoistableRoot = getHoistableRoot(
             finishedWork.stateNode.containerInfo
@@ -16944,15 +16956,15 @@ __DEV__ &&
           viewTransitionMutationContext &&
             inUpdateViewTransition &&
             (rootViewTransitionAffected = !0);
-          popMutationContext(flags);
-          offscreenDirectParentIsHidden = current;
+          popMutationContext(current);
+          offscreenDirectParentIsHidden = flags;
           break;
         case 12:
-          current = pushNestedEffectDurations();
+          flags = pushNestedEffectDurations();
           recursivelyTraverseMutationEffects(root, finishedWork, lanes);
           commitReconciliationEffects(finishedWork);
           finishedWork.stateNode.effectDuration +=
-            bubbleNestedEffectDurations(current);
+            bubbleNestedEffectDurations(flags);
           break;
         case 31:
           recursivelyTraverseMutationEffects(root, finishedWork, lanes);
@@ -17031,10 +17043,13 @@ __DEV__ &&
               _eventPayloads$ii2 ||
               offscreenSubtreeIsHidden ||
               offscreenSubtreeWasHidden ||
-              (recursivelyTraverseDisappearLayoutEffects(
-                finishedWork,
-                IncludeHostSingletons
-              ),
+              ((root = IncludeHostSingletons),
+              (lanes = _eventPayloads$ii2 || offscreenSubtreeWasHidden),
+              (current = offscreenSubtreeIsHidden),
+              (_eventPayloads$ii2 = offscreenSubtreeWasHidden),
+              (offscreenSubtreeIsHidden = ii || offscreenSubtreeIsHidden),
+              (offscreenSubtreeWasHidden = lanes),
+              recursivelyTraverseDisappearLayoutEffects(finishedWork, root),
               (finishedWork.mode & ProfileMode) !== NoMode &&
                 0 <= componentEffectStartTime &&
                 0 <= componentEffectEndTime &&
@@ -17044,16 +17059,18 @@ __DEV__ &&
                   componentEffectStartTime,
                   componentEffectEndTime,
                   "Disconnect"
-                )),
+                ),
+              (offscreenSubtreeIsHidden = current),
+              (offscreenSubtreeWasHidden = _eventPayloads$ii2)),
             (!ii && offscreenDirectParentIsHidden) ||
               hideOrUnhideAllChildren(finishedWork, ii));
           flags & 4 &&
             ((root = finishedWork.updateQueue),
             null !== root &&
-              ((lanes = root.retryQueue),
-              null !== lanes &&
+              ((flags = root.retryQueue),
+              null !== flags &&
                 ((root.retryQueue = null),
-                attachSuspenseRetryListeners(finishedWork, lanes))));
+                attachSuspenseRetryListeners(finishedWork, flags))));
           break;
         case 19:
           recursivelyTraverseMutationEffects(root, finishedWork, lanes);
@@ -17348,7 +17365,6 @@ __DEV__ &&
               finishedWork.type,
               finishedWork.memoizedProps
             );
-        case 26:
         case 5:
           safelyDetachRef(finishedWork, finishedWork.return);
           enableFragmentRefs &&
@@ -17356,6 +17372,18 @@ __DEV__ &&
               27 === finishedWork.tag ||
               (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
             commitFragmentInstanceDeletionEffects(finishedWork);
+          recursivelyTraverseDisappearLayoutEffects(
+            finishedWork,
+            layoutEffectTraversalFlags
+          );
+          break;
+        case 26:
+          safelyDetachRef(finishedWork, finishedWork.return);
+          instance = finishedWork.stateNode;
+          null !== finishedWork.memoizedState ||
+            null === instance ||
+            offscreenSubtreeWasHidden ||
+            instance.parentNode.removeChild(instance);
           recursivelyTraverseDisappearLayoutEffects(
             finishedWork,
             layoutEffectTraversalFlags
@@ -17473,7 +17501,6 @@ __DEV__ &&
           (layoutEffectTraversalFlags & IncludeHostSingletons) !==
             NoLayoutEffectTraversalFlags &&
             commitHostSingletonAcquisition(finishedWork);
-        case 26:
         case 5:
           if (
             enableFragmentRefs &&
@@ -17488,6 +17515,27 @@ __DEV__ &&
               if (isFragmentInstanceHostParent(parent)) break a;
               parent = parent.return;
             }
+          recursivelyTraverseReappearLayoutEffects(
+            finishedRoot,
+            finishedWork,
+            layoutEffectTraversalFlags
+          );
+          includeWorkInProgressEffects &&
+            null === current &&
+            flags & 4 &&
+            commitHostMount(finishedWork);
+          safelyAttachRef(finishedWork, finishedWork.return);
+          break;
+        case 26:
+          parent = finishedWork.stateNode;
+          null !== finishedWork.memoizedState ||
+            null === parent ||
+            offscreenSubtreeIsHidden ||
+            mountHoistable(
+              getHoistableRoot(parent.ownerDocument),
+              finishedWork.type,
+              parent
+            );
           recursivelyTraverseReappearLayoutEffects(
             finishedRoot,
             finishedWork,
@@ -18245,9 +18293,9 @@ __DEV__ &&
             );
           break;
         case 22:
-          var _instance2 = finishedWork.stateNode;
+          var _instance4 = finishedWork.stateNode;
           null !== finishedWork.memoizedState
-            ? _instance2._visibility & OffscreenPassiveEffectsConnected
+            ? _instance4._visibility & OffscreenPassiveEffectsConnected
               ? recursivelyTraverseReconnectPassiveEffects(
                   finishedRoot,
                   finishedWork,
@@ -18263,7 +18311,7 @@ __DEV__ &&
                   committedTransitions,
                   endTime
                 )
-            : ((_instance2._visibility |= OffscreenPassiveEffectsConnected),
+            : ((_instance4._visibility |= OffscreenPassiveEffectsConnected),
               recursivelyTraverseReconnectPassiveEffects(
                 finishedRoot,
                 finishedWork,
@@ -18277,7 +18325,7 @@ __DEV__ &&
             commitOffscreenPassiveMountEffects(
               finishedWork.alternate,
               finishedWork,
-              _instance2
+              _instance4
             );
           break;
         case 24:
@@ -26353,6 +26401,21 @@ __DEV__ &&
       target.dispatchEvent(event);
       _enabled = !1;
     }
+    function createHoistableInstance(
+      type,
+      props,
+      rootContainerInstance,
+      internalInstanceHandle
+    ) {
+      rootContainerInstance = getOwnerDocumentFromRootContainer(
+        rootContainerInstance
+      ).createElement(type);
+      precacheFiberNode(internalInstanceHandle, rootContainerInstance);
+      updateFiberProps(rootContainerInstance, props);
+      setInitialProperties(rootContainerInstance, type, props);
+      markNodeAsHoistable(rootContainerInstance);
+      return rootContainerInstance;
+    }
     function isScriptDataBlock(props) {
       props = props.type;
       if ("string" !== typeof props || "" === props) return !1;
@@ -33555,11 +33618,11 @@ __DEV__ &&
       return_targetInst = null;
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-www-classic-37180110-20260810" !== isomorphicReactPackageVersion)
+      if ("19.3.0-www-classic-bfb7a768-20260811" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-www-classic-37180110-20260810\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-www-classic-bfb7a768-20260811\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -33602,10 +33665,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-www-classic-37180110-20260810",
+          version: "19.3.0-www-classic-bfb7a768-20260811",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-www-classic-37180110-20260810"
+          reconcilerVersion: "19.3.0-www-classic-bfb7a768-20260811"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -34230,7 +34293,7 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-www-classic-37180110-20260810";
+    exports.version = "19.3.0-www-classic-bfb7a768-20260811";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&
