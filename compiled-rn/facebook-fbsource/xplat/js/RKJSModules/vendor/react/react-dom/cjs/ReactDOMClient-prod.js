@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<bd12850c40961affdda79177a869b307>>
+ * @generated SignedSource<<ec5e2f9ecbc175827827f0fa8f3abef1>>
  */
 
 /*
@@ -194,22 +194,41 @@ function getFragmentParentInstanceOrContainerFiber(fiber) {
   }
   return null;
 }
-function findFragmentInstanceOrTextInstanceSiblings(result, self, child) {
-  for (
-    var foundSelf =
-      3 < arguments.length && void 0 !== arguments[3] ? arguments[3] : !1;
-    null !== child;
-
-  ) {
-    if (child === self)
-      if (((foundSelf = !0), child.sibling)) child = child.sibling;
-      else return !0;
-    if (
+function fiberIsPortaledIntoHost(fiber) {
+  var foundPortalParent = !1;
+  for (fiber = fiber.return; null !== fiber; ) {
+    4 === fiber.tag && (foundPortalParent = !0);
+    if (3 === fiber.tag || 5 === fiber.tag || 27 === fiber.tag) break;
+    fiber = fiber.return;
+  }
+  return foundPortalParent;
+}
+function getFragmentInstanceOrTextInstanceSiblings(fiber) {
+  var result = [null, null],
+    parentHostFiber = getFragmentParentInstanceOrContainerFiber(fiber);
+  if (null === parentHostFiber) return result;
+  findFragmentInstanceOrTextInstanceSiblings(
+    result,
+    fiber,
+    parentHostFiber.child,
+    { foundSelf: !1 }
+  );
+  return result;
+}
+function findFragmentInstanceOrTextInstanceSiblings(
+  result,
+  self,
+  child,
+  state
+) {
+  for (; null !== child; ) {
+    if (child === self) state.foundSelf = !0;
+    else if (
       5 === child.tag ||
       27 === child.tag ||
       (enableFragmentRefsTextNodes && 6 === child.tag)
     ) {
-      if (foundSelf) return (result[1] = child), !0;
+      if (state.foundSelf) return (result[1] = child), !0;
       result[0] = child;
     } else if (
       (22 !== child.tag || null === child.memoizedState) &&
@@ -217,7 +236,7 @@ function findFragmentInstanceOrTextInstanceSiblings(result, self, child) {
         result,
         self,
         child.child,
-        foundSelf
+        state
       )
     )
       return !0;
@@ -239,10 +258,6 @@ function getInstanceFromHostFiber(fiber) {
 }
 var searchTarget = null,
   searchBoundary = null;
-function findNextSibling(child) {
-  searchTarget = child;
-  return !0;
-}
 function isFiberPrecedingCheck(child, target, boundary) {
   return child === boundary
     ? !0
@@ -9609,6 +9624,50 @@ function safelyDetachRef(current, nearestMountedAncestor) {
       }
     else ref.current = null;
 }
+function commitNewChildToFragmentInstances(fiber, parentFragmentInstances) {
+  if (
+    (5 === fiber.tag ||
+      27 === fiber.tag ||
+      (enableFragmentRefsTextNodes && 6 === fiber.tag)) &&
+    null === fiber.alternate &&
+    null !== parentFragmentInstances
+  )
+    for (var i = 0; i < parentFragmentInstances.length; i++)
+      commitNewChildToFragmentInstance(
+        fiber.stateNode,
+        parentFragmentInstances[i]
+      );
+}
+function commitFragmentInstanceDeletionEffects(fiber) {
+  for (var parent = fiber.return; null !== parent; ) {
+    if (isFragmentInstanceParent(parent)) {
+      var fragmentInstance = parent.stateNode;
+      var childInstance = fiber.stateNode,
+        eventListeners = fragmentInstance._eventListeners;
+      if (null !== eventListeners)
+        for (var i = 0; i < eventListeners.length; i++) {
+          var _eventListeners$i4 = eventListeners[i];
+          childInstance.removeEventListener(
+            _eventListeners$i4.type,
+            _eventListeners$i4.listener,
+            _eventListeners$i4.optionsOrUseCapture
+          );
+        }
+      3 !== childInstance.nodeType &&
+        enableFragmentRefsInstanceHandles &&
+        null != childInstance.reactFragments &&
+        childInstance.reactFragments.delete(fragmentInstance);
+    }
+    if (isFragmentInstanceHostBoundary(parent)) break;
+    parent = parent.return;
+  }
+}
+function isFragmentInstanceHostBoundary(fiber) {
+  return 5 === fiber.tag || 3 === fiber.tag || 27 === fiber.tag;
+}
+function isFragmentInstanceParent(fiber) {
+  return fiber && 7 === fiber.tag && null !== fiber.stateNode;
+}
 function commitHostMount(finishedWork) {
   var type = finishedWork.type,
     props = finishedWork.memoizedProps,
@@ -9639,45 +9698,6 @@ function commitHostUpdate(finishedWork, newProps, oldProps) {
     captureCommitPhaseError(finishedWork, finishedWork.return, error);
   }
 }
-function commitNewChildToFragmentInstances(fiber, parentFragmentInstances) {
-  if (
-    (5 === fiber.tag ||
-      27 === fiber.tag ||
-      (enableFragmentRefsTextNodes && 6 === fiber.tag)) &&
-    null === fiber.alternate &&
-    null !== parentFragmentInstances
-  )
-    for (var i = 0; i < parentFragmentInstances.length; i++)
-      commitNewChildToFragmentInstance(
-        fiber.stateNode,
-        parentFragmentInstances[i]
-      );
-}
-function commitFragmentInstanceDeletionEffects(fiber) {
-  for (var parent = fiber.return; null !== parent; ) {
-    if (isFragmentInstanceParent(parent)) {
-      var fragmentInstance = parent.stateNode;
-      var childInstance = fiber.stateNode;
-      if (3 !== childInstance.nodeType) {
-        var eventListeners = fragmentInstance._eventListeners;
-        if (null !== eventListeners)
-          for (var i = 0; i < eventListeners.length; i++) {
-            var _eventListeners$i4 = eventListeners[i];
-            childInstance.removeEventListener(
-              _eventListeners$i4.type,
-              _eventListeners$i4.listener,
-              _eventListeners$i4.optionsOrUseCapture
-            );
-          }
-        enableFragmentRefsInstanceHandles &&
-          null != childInstance.reactFragments &&
-          childInstance.reactFragments.delete(fragmentInstance);
-      }
-    }
-    if (isFragmentInstanceHostParent(parent)) break;
-    parent = parent.return;
-  }
-}
 function isHostParent(fiber) {
   return (
     5 === fiber.tag ||
@@ -9685,14 +9705,6 @@ function isHostParent(fiber) {
     26 === fiber.tag ||
     (27 === fiber.tag && isSingletonScope(fiber.type)) ||
     4 === fiber.tag
-  );
-}
-function isFragmentInstanceParent(fiber) {
-  return fiber && 7 === fiber.tag && null !== fiber.stateNode;
-}
-function isFragmentInstanceHostParent(fiber) {
-  return (
-    5 === fiber.tag || 27 === fiber.tag || 3 === fiber.tag || 4 === fiber.tag
   );
 }
 function getHostSibling(fiber) {
@@ -11643,38 +11655,40 @@ function commitReconciliationEffects(finishedWork) {
   if (flags & 2) {
     try {
       for (
-        var hostParentFiber,
-          parentFragmentInstances = null,
-          collectFragmentInstances = enableFragmentRefs,
-          parentFiber = finishedWork.return;
+        var hostParentFiber, parentFiber = finishedWork.return;
         null !== parentFiber;
 
       ) {
-        if (collectFragmentInstances && isFragmentInstanceParent(parentFiber)) {
-          var fragmentInstance = parentFiber.stateNode;
-          null === parentFragmentInstances
-            ? (parentFragmentInstances = [fragmentInstance])
-            : parentFragmentInstances.push(fragmentInstance);
-        }
-        collectFragmentInstances &&
-          isFragmentInstanceHostParent(parentFiber) &&
-          (collectFragmentInstances = !1);
         if (isHostParent(parentFiber)) {
           hostParentFiber = parentFiber;
           break;
         }
         parentFiber = parentFiber.return;
       }
+      if (enableFragmentRefs) {
+        parentFiber = null;
+        for (var parent = finishedWork.return; null !== parent; ) {
+          if (isFragmentInstanceParent(parent)) {
+            var fragmentInstance = parent.stateNode;
+            null === parentFiber
+              ? (parentFiber = [fragmentInstance])
+              : parentFiber.push(fragmentInstance);
+          }
+          if (isFragmentInstanceHostBoundary(parent)) break;
+          parent = parent.return;
+        }
+        var JSCompiler_temp = parentFiber;
+      } else JSCompiler_temp = null;
       if (null == hostParentFiber) throw Error(formatProdErrorMessage(160));
       switch (hostParentFiber.tag) {
         case 27:
-          var parent = hostParentFiber.stateNode,
+          var parent$jscomp$0 = hostParentFiber.stateNode,
             before = getHostSibling(finishedWork);
           insertOrAppendPlacementNode(
             finishedWork,
             before,
-            parent,
-            parentFragmentInstances
+            parent$jscomp$0,
+            JSCompiler_temp
           );
           break;
         case 5:
@@ -11686,7 +11700,7 @@ function commitReconciliationEffects(finishedWork) {
             finishedWork,
             before$164,
             parent$163,
-            parentFragmentInstances
+            JSCompiler_temp
           );
           break;
         case 3:
@@ -11697,7 +11711,7 @@ function commitReconciliationEffects(finishedWork) {
             finishedWork,
             before$166,
             parent$165,
-            parentFragmentInstances
+            JSCompiler_temp
           );
           break;
         default:
@@ -12020,7 +12034,7 @@ function recursivelyTraverseReappearLayoutEffects(
                 instance.stateNode,
                 parent.stateNode
               );
-            if (isFragmentInstanceHostParent(parent)) break;
+            if (isFragmentInstanceHostBoundary(parent)) break;
             parent = parent.return;
           }
         }
@@ -14595,20 +14609,20 @@ function debounceScrollEnd(targetInst, nativeEvent, nativeEventTarget) {
     (nativeEventTarget[internalScrollTimer] = targetInst));
 }
 for (
-  var i$jscomp$inline_1717 = 0;
-  i$jscomp$inline_1717 < simpleEventPluginEvents.length;
-  i$jscomp$inline_1717++
+  var i$jscomp$inline_1711 = 0;
+  i$jscomp$inline_1711 < simpleEventPluginEvents.length;
+  i$jscomp$inline_1711++
 ) {
-  var eventName$jscomp$inline_1718 =
-      simpleEventPluginEvents[i$jscomp$inline_1717],
-    domEventName$jscomp$inline_1719 =
-      eventName$jscomp$inline_1718.toLowerCase(),
-    capitalizedEvent$jscomp$inline_1720 =
-      eventName$jscomp$inline_1718[0].toUpperCase() +
-      eventName$jscomp$inline_1718.slice(1);
+  var eventName$jscomp$inline_1712 =
+      simpleEventPluginEvents[i$jscomp$inline_1711],
+    domEventName$jscomp$inline_1713 =
+      eventName$jscomp$inline_1712.toLowerCase(),
+    capitalizedEvent$jscomp$inline_1714 =
+      eventName$jscomp$inline_1712[0].toUpperCase() +
+      eventName$jscomp$inline_1712.slice(1);
   registerSimpleEvent(
-    domEventName$jscomp$inline_1719,
-    "on" + capitalizedEvent$jscomp$inline_1720
+    domEventName$jscomp$inline_1713,
+    "on" + capitalizedEvent$jscomp$inline_1714
   );
 }
 registerSimpleEvent(ANIMATION_END, "onAnimationEnd");
@@ -17011,24 +17025,24 @@ FragmentInstance.prototype.removeEventListener = function (
   optionsOrUseCapture
 ) {
   var listeners = this._eventListeners;
-  null !== listeners &&
-    "undefined" !== typeof listeners &&
-    0 < listeners.length &&
-    (traverseVisibleInstancesAndTextInstances(
-      this._fragmentFiber.child,
-      !1,
-      removeEventListenerFromChild,
-      type,
-      listener,
-      optionsOrUseCapture
-    ),
-    (type = indexOfEventListener(
+  if (null !== listeners) {
+    var index = indexOfEventListener(
       listeners,
       type,
       listener,
       optionsOrUseCapture
-    )),
-    null !== this._eventListeners && this._eventListeners.splice(type, 1));
+    );
+    -1 !== index &&
+      (traverseVisibleInstancesAndTextInstances(
+        this._fragmentFiber.child,
+        !1,
+        removeEventListenerFromChild,
+        type,
+        listener,
+        optionsOrUseCapture
+      ),
+      listeners.splice(index, 1));
+  }
 };
 function removeEventListenerFromChild(
   child,
@@ -17080,7 +17094,10 @@ FragmentInstance.prototype.dispatchEvent = function (event) {
     (null !== eventListeners && 0 < eventListeners.length) ||
     !event.bubbles
   ) {
-    var temp = document.createTextNode("");
+    var temp =
+      9 === parentHostFiber.nodeType
+        ? parentHostFiber.createComment("")
+        : document.createTextNode("");
     if (eventListeners)
       for (var i = 0; i < eventListeners.length; i++) {
         var _eventListeners$i = eventListeners[i];
@@ -17144,21 +17161,19 @@ FragmentInstance.prototype.blur = function () {
   var parentHostFiber = getFragmentParentInstanceOrContainerFiber(
     this._fragmentFiber
   );
-  if (null !== parentHostFiber) {
-    parentHostFiber = getInstanceFromHostFiber(parentHostFiber);
-    var activeElement =
-      getOwnerDocumentFromRootContainer(parentHostFiber).activeElement;
-    null !== activeElement &&
-      parentHostFiber.contains(activeElement) &&
+  null !== parentHostFiber &&
+    ((parentHostFiber = getInstanceFromHostFiber(parentHostFiber)),
+    (parentHostFiber =
+      getOwnerDocumentFromRootContainer(parentHostFiber).activeElement),
+    null !== parentHostFiber &&
       traverseVisibleInstancesAndTextInstances(
         this._fragmentFiber.child,
         !1,
         blurActiveElementWithinFragment,
-        activeElement,
+        parentHostFiber,
         void 0,
         void 0
-      );
-  }
+      ));
 };
 function blurActiveElementWithinFragment(child, activeElement) {
   if (enableFragmentRefsTextNodes && 6 === child.tag) return !1;
@@ -17252,72 +17267,83 @@ FragmentInstance.prototype.compareDocumentPosition = function (otherNode) {
   );
   var parentHostInstance = getInstanceFromHostFiber(parentHostFiber);
   if (0 === children.length) {
-    children = this._fragmentFiber;
-    var parentResult = parentHostInstance.compareDocumentPosition(otherNode);
-    parentHostFiber = parentResult;
-    parentHostInstance === otherNode
-      ? (parentHostFiber = Node.DOCUMENT_POSITION_CONTAINS)
-      : parentResult & Node.DOCUMENT_POSITION_CONTAINED_BY &&
-        (traverseVisibleInstancesAndTextInstances(
-          children.sibling,
-          !1,
-          findNextSibling
-        ),
-        (children = searchTarget),
-        (searchTarget = null),
+    children = parentHostInstance;
+    if (fiberIsPortaledIntoHost(this._fragmentFiber)) {
+      a: {
+        for (
+          parentHostFiber = this._fragmentFiber.return;
+          null !== parentHostFiber;
+
+        ) {
+          if (4 === parentHostFiber.tag) {
+            parentHostFiber = parentHostFiber.stateNode.containerInfo;
+            break a;
+          }
+          if (
+            3 === parentHostFiber.tag ||
+            5 === parentHostFiber.tag ||
+            27 === parentHostFiber.tag
+          )
+            break;
+          parentHostFiber = parentHostFiber.return;
+        }
+        parentHostFiber = null;
+      }
+      null != parentHostFiber && (children = parentHostFiber);
+    }
+    parentHostFiber = this._fragmentFiber;
+    var result = (parentHostInstance =
+      children.compareDocumentPosition(otherNode));
+    children === otherNode
+      ? (result = Node.DOCUMENT_POSITION_CONTAINS)
+      : parentHostInstance & Node.DOCUMENT_POSITION_CONTAINED_BY &&
+        ((children =
+          getFragmentInstanceOrTextInstanceSiblings(parentHostFiber)[1]),
         null === children
-          ? (parentHostFiber = Node.DOCUMENT_POSITION_PRECEDING)
+          ? (result = Node.DOCUMENT_POSITION_PRECEDING)
           : ((otherNode =
               getInstanceFromHostFiber(children).compareDocumentPosition(
                 otherNode
               )),
-            (parentHostFiber =
+            (result =
               0 === otherNode || otherNode & Node.DOCUMENT_POSITION_FOLLOWING
                 ? Node.DOCUMENT_POSITION_FOLLOWING
                 : Node.DOCUMENT_POSITION_PRECEDING)));
-    return (parentHostFiber |= Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC);
+    return (result |= Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC);
   }
   parentHostFiber = getInstanceFromHostFiber(children[0]);
-  parentResult = getInstanceFromHostFiber(children[children.length - 1]);
-  for (
-    var foundPortalParent = !1, parent = this._fragmentFiber.return;
-    null !== parent;
-
-  ) {
-    4 === parent.tag && (foundPortalParent = !0);
-    if (3 === parent.tag || 5 === parent.tag || 27 === parent.tag) break;
-    parent = parent.return;
-  }
-  foundPortalParent = foundPortalParent
+  result = getInstanceFromHostFiber(children[children.length - 1]);
+  var parentHostInstanceFromDOM = fiberIsPortaledIntoHost(this._fragmentFiber)
     ? parentHostFiber.parentElement
     : parentHostInstance;
-  if (null == foundPortalParent) return Node.DOCUMENT_POSITION_DISCONNECTED;
+  if (null == parentHostInstanceFromDOM)
+    return Node.DOCUMENT_POSITION_DISCONNECTED;
   parentHostInstance =
-    foundPortalParent.compareDocumentPosition(parentHostFiber) &
+    parentHostInstanceFromDOM.compareDocumentPosition(parentHostFiber) &
     Node.DOCUMENT_POSITION_CONTAINED_BY;
-  foundPortalParent =
-    foundPortalParent.compareDocumentPosition(parentResult) &
+  parentHostInstanceFromDOM =
+    parentHostInstanceFromDOM.compareDocumentPosition(result) &
     Node.DOCUMENT_POSITION_CONTAINED_BY;
-  parent = parentHostFiber.compareDocumentPosition(otherNode);
-  var lastResult = parentResult.compareDocumentPosition(otherNode),
+  var firstResult = parentHostFiber.compareDocumentPosition(otherNode),
+    lastResult = result.compareDocumentPosition(otherNode),
     otherNodeIsWithinFirstOrLastChild =
-      parent & Node.DOCUMENT_POSITION_CONTAINED_BY ||
+      firstResult & Node.DOCUMENT_POSITION_CONTAINED_BY ||
       lastResult & Node.DOCUMENT_POSITION_CONTAINED_BY;
   lastResult =
     parentHostInstance &&
-    foundPortalParent &&
-    parent & Node.DOCUMENT_POSITION_FOLLOWING &&
+    parentHostInstanceFromDOM &&
+    firstResult & Node.DOCUMENT_POSITION_FOLLOWING &&
     lastResult & Node.DOCUMENT_POSITION_PRECEDING;
   parentHostFiber =
     (parentHostInstance && parentHostFiber === otherNode) ||
-    (foundPortalParent && parentResult === otherNode) ||
+    (parentHostInstanceFromDOM && result === otherNode) ||
     otherNodeIsWithinFirstOrLastChild ||
     lastResult
       ? Node.DOCUMENT_POSITION_CONTAINED_BY
       : (!parentHostInstance && parentHostFiber === otherNode) ||
-          (!foundPortalParent && parentResult === otherNode)
+          (!parentHostInstanceFromDOM && result === otherNode)
         ? Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC
-        : parent;
+        : firstResult;
   return parentHostFiber & Node.DOCUMENT_POSITION_DISCONNECTED ||
     parentHostFiber & Node.DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC ||
     validateDocumentPositionWithFiberTree(
@@ -17360,7 +17386,9 @@ function validateDocumentPositionWithFiberTree(
     if (null === otherFiber)
       return (
         (otherFiber = otherNode.ownerDocument),
-        otherNode === otherFiber || otherNode === otherFiber.body
+        otherNode === otherFiber ||
+          otherNode === otherFiber.documentElement ||
+          otherNode === otherFiber.body
       );
     a: {
       otherFiber = fragmentFiber;
@@ -17458,48 +17486,44 @@ enableFragmentRefsScrollIntoView &&
     );
     var resolvedAlignToTop = !1 !== alignToTop;
     if (0 === children.length) {
-      var fiber = this._fragmentFiber,
-        result = [null, null],
-        parentHostFiber = getFragmentParentInstanceOrContainerFiber(fiber);
-      null !== parentHostFiber &&
-        findFragmentInstanceOrTextInstanceSiblings(
-          result,
-          fiber,
-          parentHostFiber.child
-        );
-      fiber = resolvedAlignToTop
-        ? result[1] ||
-          result[0] ||
+      var hostSiblings = getFragmentInstanceOrTextInstanceSiblings(
+        this._fragmentFiber
+      );
+      hostSiblings = resolvedAlignToTop
+        ? hostSiblings[1] ||
+          hostSiblings[0] ||
           getFragmentParentInstanceOrContainerFiber(this._fragmentFiber)
-        : result[0] || result[1];
-      if (null === fiber) return;
-      if (enableFragmentRefsTextNodes && 6 === fiber.tag) {
-        alignToTop = getInstanceFromHostFiber(fiber);
+        : hostSiblings[0] || hostSiblings[1];
+      if (null === hostSiblings) return;
+      if (enableFragmentRefsTextNodes && 6 === hostSiblings.tag) {
+        alignToTop = getInstanceFromHostFiber(hostSiblings);
         scrollTextNodeIntoView(alignToTop, resolvedAlignToTop);
         return;
       }
-      fiber = getInstanceFromHostFiber(fiber);
-      if (9 !== fiber.nodeType) {
-        if (11 === fiber.nodeType) {
-          resolvedAlignToTop = "host" in fiber ? fiber.host : null;
+      hostSiblings = getInstanceFromHostFiber(hostSiblings);
+      if (9 !== hostSiblings.nodeType) {
+        if (11 === hostSiblings.nodeType) {
+          resolvedAlignToTop =
+            "host" in hostSiblings ? hostSiblings.host : null;
           null !== resolvedAlignToTop &&
             resolvedAlignToTop.scrollIntoView(alignToTop);
           return;
         }
-        fiber.scrollIntoView(alignToTop);
+        hostSiblings.scrollIntoView(alignToTop);
       }
     }
     for (
-      fiber = resolvedAlignToTop ? children.length - 1 : 0;
-      fiber !== (resolvedAlignToTop ? -1 : children.length);
+      hostSiblings = resolvedAlignToTop ? children.length - 1 : 0;
+      hostSiblings !== (resolvedAlignToTop ? -1 : children.length);
 
-    )
-      (result = children[fiber]),
-        enableFragmentRefsTextNodes && 6 === result.tag
-          ? ((result = getInstanceFromHostFiber(result)),
-            scrollTextNodeIntoView(result, resolvedAlignToTop))
-          : getInstanceFromHostFiber(result).scrollIntoView(alignToTop),
-        (fiber += resolvedAlignToTop ? -1 : 1);
+    ) {
+      var child = children[hostSiblings];
+      enableFragmentRefsTextNodes && 6 === child.tag
+        ? ((child = getInstanceFromHostFiber(child)),
+          scrollTextNodeIntoView(child, resolvedAlignToTop))
+        : getInstanceFromHostFiber(child).scrollIntoView(alignToTop);
+      hostSiblings += resolvedAlignToTop ? -1 : 1;
+    }
   });
 function addFragmentHandleToFiber(child, fragmentInstance) {
   enableFragmentRefsInstanceHandles &&
@@ -17513,24 +17537,23 @@ function addFragmentHandleToInstance(instance, fragmentInstance) {
     instance.reactFragments.add(fragmentInstance));
 }
 function commitNewChildToFragmentInstance(childInstance, fragmentInstance) {
-  if (3 !== childInstance.nodeType) {
-    var eventListeners = fragmentInstance._eventListeners;
-    if (null !== eventListeners)
-      for (var i = 0; i < eventListeners.length; i++) {
-        var _eventListeners$i3 = eventListeners[i];
-        childInstance.addEventListener(
-          _eventListeners$i3.type,
-          _eventListeners$i3.listener,
-          _eventListeners$i3.optionsOrUseCapture
-        );
-      }
-    null !== fragmentInstance._observers &&
+  var eventListeners = fragmentInstance._eventListeners;
+  if (null !== eventListeners)
+    for (var i = 0; i < eventListeners.length; i++) {
+      var _eventListeners$i3 = eventListeners[i];
+      childInstance.addEventListener(
+        _eventListeners$i3.type,
+        _eventListeners$i3.listener,
+        _eventListeners$i3.optionsOrUseCapture
+      );
+    }
+  3 !== childInstance.nodeType &&
+    (null !== fragmentInstance._observers &&
       fragmentInstance._observers.forEach(function (observer) {
         observer.observe(childInstance);
-      });
+      }),
     enableFragmentRefsInstanceHandles &&
-      addFragmentHandleToInstance(childInstance, fragmentInstance);
-  }
+      addFragmentHandleToInstance(childInstance, fragmentInstance));
 }
 function clearContainerSparingly(container) {
   var nextNode = container.firstChild;
@@ -18090,29 +18113,29 @@ function getResource(type, currentProps, pendingProps, currentResource) {
         "string" === typeof pendingProps.precedence
       ) {
         type = getStyleKey(pendingProps.href);
-        var styles$286 = getResourcesFromRoot(
+        var styles$285 = getResourcesFromRoot(
             JSCompiler_inline_result
           ).hoistableStyles,
-          resource$287 = styles$286.get(type);
-        resource$287 ||
+          resource$286 = styles$285.get(type);
+        resource$286 ||
           ((JSCompiler_inline_result =
             JSCompiler_inline_result.ownerDocument || JSCompiler_inline_result),
-          (resource$287 = {
+          (resource$286 = {
             type: "stylesheet",
             instance: null,
             count: 0,
             state: { loading: 0, preload: null }
           }),
-          styles$286.set(type, resource$287),
-          (styles$286 = JSCompiler_inline_result.querySelector(
+          styles$285.set(type, resource$286),
+          (styles$285 = JSCompiler_inline_result.querySelector(
             getStylesheetSelectorFromKey(type)
           ))
-            ? styles$286._p ||
-              ((resource$287.instance = styles$286),
-              (resource$287.state.loading = 5))
-            : ((styles$286 = preloadPropsMap.get(type)),
-              styles$286 ||
-                ((styles$286 = {
+            ? styles$285._p ||
+              ((resource$286.instance = styles$285),
+              (resource$286.state.loading = 5))
+            : ((styles$285 = preloadPropsMap.get(type)),
+              styles$285 ||
+                ((styles$285 = {
                   rel: "preload",
                   as: "style",
                   href: pendingProps.href,
@@ -18122,16 +18145,16 @@ function getResource(type, currentProps, pendingProps, currentResource) {
                   hrefLang: pendingProps.hrefLang,
                   referrerPolicy: pendingProps.referrerPolicy
                 }),
-                preloadPropsMap.set(type, styles$286)),
+                preloadPropsMap.set(type, styles$285)),
               preloadStylesheet(
                 JSCompiler_inline_result,
                 type,
-                styles$286,
-                resource$287.state
+                styles$285,
+                resource$286.state
               )));
         if (currentProps && null === currentResource)
           throw Error(formatProdErrorMessage(528, ""));
-        return resource$287;
+        return resource$286;
       }
       if (currentProps && null !== currentResource)
         throw Error(formatProdErrorMessage(529, ""));
@@ -18238,37 +18261,37 @@ function acquireResource(hoistableRoot, resource, props) {
         return (resource.instance = instance);
       case "stylesheet":
         styleProps = getStyleKey(props.href);
-        var instance$292 = hoistableRoot.querySelector(
+        var instance$291 = hoistableRoot.querySelector(
           getStylesheetSelectorFromKey(styleProps)
         );
-        if (instance$292)
+        if (instance$291)
           return (
             (resource.state.loading |= 4),
-            (resource.instance = instance$292),
-            markNodeAsHoistable(instance$292),
-            instance$292
+            (resource.instance = instance$291),
+            markNodeAsHoistable(instance$291),
+            instance$291
           );
         instance = stylesheetPropsFromRawProps(props);
         (styleProps = preloadPropsMap.get(styleProps)) &&
           adoptPreloadPropsForStylesheet(instance, styleProps);
-        instance$292 = (
+        instance$291 = (
           hoistableRoot.ownerDocument || hoistableRoot
         ).createElement("link");
-        markNodeAsHoistable(instance$292);
-        var linkInstance = instance$292;
+        markNodeAsHoistable(instance$291);
+        var linkInstance = instance$291;
         linkInstance._p = new Promise(function (resolve, reject) {
           linkInstance.onload = resolve;
           linkInstance.onerror = reject;
         });
-        setInitialProperties(instance$292, "link", instance);
+        setInitialProperties(instance$291, "link", instance);
         resource.state.loading |= 4;
-        insertStylesheet(instance$292, props.precedence, hoistableRoot);
-        return (resource.instance = instance$292);
+        insertStylesheet(instance$291, props.precedence, hoistableRoot);
+        return (resource.instance = instance$291);
       case "script":
-        instance$292 = getScriptKey(props.src);
+        instance$291 = getScriptKey(props.src);
         if (
           (styleProps = hoistableRoot.querySelector(
-            getScriptSelectorFromKey(instance$292)
+            getScriptSelectorFromKey(instance$291)
           ))
         )
           return (
@@ -18277,7 +18300,7 @@ function acquireResource(hoistableRoot, resource, props) {
             styleProps
           );
         instance = props;
-        if ((styleProps = preloadPropsMap.get(instance$292)))
+        if ((styleProps = preloadPropsMap.get(instance$291)))
           (instance = assign({}, props)),
             adoptPreloadPropsForScript(instance, styleProps);
         hoistableRoot = hoistableRoot.ownerDocument || hoistableRoot;
@@ -19431,16 +19454,16 @@ ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function (target) {
     0 === i && attemptExplicitHydrationTarget(target);
   }
 };
-var isomorphicReactPackageVersion$jscomp$inline_2144 = React.version;
+var isomorphicReactPackageVersion$jscomp$inline_2134 = React.version;
 if (
-  "19.3.0-native-fb-bfb7a768-20260811" !==
-  isomorphicReactPackageVersion$jscomp$inline_2144
+  "19.3.0-native-fb-22e4f993-20260811" !==
+  isomorphicReactPackageVersion$jscomp$inline_2134
 )
   throw Error(
     formatProdErrorMessage(
       527,
-      isomorphicReactPackageVersion$jscomp$inline_2144,
-      "19.3.0-native-fb-bfb7a768-20260811"
+      isomorphicReactPackageVersion$jscomp$inline_2134,
+      "19.3.0-native-fb-22e4f993-20260811"
     )
   );
 ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
@@ -19460,24 +19483,24 @@ ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
     null === componentOrElement ? null : componentOrElement.stateNode;
   return componentOrElement;
 };
-var internals$jscomp$inline_2721 = {
+var internals$jscomp$inline_2705 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-bfb7a768-20260811",
+  version: "19.3.0-native-fb-22e4f993-20260811",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-bfb7a768-20260811"
+  reconcilerVersion: "19.3.0-native-fb-22e4f993-20260811"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2722 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2706 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2722.isDisabled &&
-    hook$jscomp$inline_2722.supportsFiber
+    !hook$jscomp$inline_2706.isDisabled &&
+    hook$jscomp$inline_2706.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2722.inject(
-        internals$jscomp$inline_2721
+      (rendererID = hook$jscomp$inline_2706.inject(
+        internals$jscomp$inline_2705
       )),
-        (injectedHook = hook$jscomp$inline_2722);
+        (injectedHook = hook$jscomp$inline_2706);
     } catch (err) {}
 }
 exports.createRoot = function (container, options) {
@@ -19572,4 +19595,4 @@ exports.hydrateRoot = function (container, initialChildren, options) {
   listenToAllSupportedEvents(container);
   return new ReactDOMHydrationRoot(initialChildren);
 };
-exports.version = "19.3.0-native-fb-bfb7a768-20260811";
+exports.version = "19.3.0-native-fb-22e4f993-20260811";

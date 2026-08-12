@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<0aaff0a6cd5cb667eefe952dd4eaca8e>>
+ * @generated SignedSource<<7e22bd6785097d06411b9c195d914708>>
  */
 
 "use strict";
@@ -1979,10 +1979,34 @@ function getFragmentParentInstanceOrContainerFiber(fiber) {
   }
   return null;
 }
-var searchTarget = null;
-function findNextSibling(child) {
-  searchTarget = child;
-  return !0;
+function findFragmentInstanceOrTextInstanceSiblings(
+  result,
+  self,
+  child,
+  state
+) {
+  for (; null !== child; ) {
+    if (child === self) state.foundSelf = !0;
+    else if (
+      5 === child.tag ||
+      27 === child.tag ||
+      (enableFragmentRefsTextNodes && 6 === child.tag)
+    ) {
+      if (state.foundSelf) return (result[1] = child), !0;
+      result[0] = child;
+    } else if (
+      (22 !== child.tag || null === child.memoizedState) &&
+      findFragmentInstanceOrTextInstanceSiblings(
+        result,
+        self,
+        child.child,
+        state
+      )
+    )
+      return !0;
+    child = child.sibling;
+  }
+  return !1;
 }
 var valueStack = [],
   index = -1;
@@ -9137,15 +9161,6 @@ function pushMutationContext() {
   viewTransitionMutationContext = !1;
   return prev;
 }
-function commitHostMount(finishedWork) {
-  try {
-    throw Error(
-      "The current renderer does not support mutation. This error is likely caused by a bug in React. Please file an issue."
-    );
-  } catch (error) {
-    captureCommitPhaseError(finishedWork, finishedWork.return, error);
-  }
-}
 function commitFragmentInstanceDeletionEffects(fiber) {
   for (var parent = fiber.return; null !== parent; ) {
     if (isFragmentInstanceParent(parent)) {
@@ -9157,15 +9172,24 @@ function commitFragmentInstanceDeletionEffects(fiber) {
           null != childInstance.reactFragments &&
           childInstance.reactFragments.delete(fragmentInstance));
     }
-    if (isFragmentInstanceHostParent(parent)) break;
+    if (isFragmentInstanceHostBoundary(parent)) break;
     parent = parent.return;
   }
+}
+function isFragmentInstanceHostBoundary(fiber) {
+  return 5 === fiber.tag || 3 === fiber.tag || !1;
 }
 function isFragmentInstanceParent(fiber) {
   return fiber && 7 === fiber.tag && null !== fiber.stateNode;
 }
-function isFragmentInstanceHostParent(fiber) {
-  return 5 === fiber.tag || 3 === fiber.tag || 4 === fiber.tag;
+function commitHostMount(finishedWork) {
+  try {
+    throw Error(
+      "The current renderer does not support mutation. This error is likely caused by a bug in React. Please file an issue."
+    );
+  } catch (error) {
+    captureCommitPhaseError(finishedWork, finishedWork.return, error);
+  }
 }
 function commitImmutablePlacementNodeToFragmentInstances(
   finishedWork,
@@ -10481,34 +10505,27 @@ function commitReconciliationEffects(finishedWork) {
   var flags = finishedWork.flags;
   if (flags & 2) {
     try {
-      for (
-        var parentFragmentInstances = null,
-          collectFragmentInstances = enableFragmentRefs,
-          parentFiber = finishedWork.return;
-        null !== parentFiber;
+      if (enableFragmentRefs) {
+        for (
+          var parentFragmentInstances = null, parent = finishedWork.return;
+          null !== parent;
 
-      ) {
-        if (collectFragmentInstances && isFragmentInstanceParent(parentFiber)) {
-          var fragmentInstance = parentFiber.stateNode;
-          null === parentFragmentInstances
-            ? (parentFragmentInstances = [fragmentInstance])
-            : parentFragmentInstances.push(fragmentInstance);
+        ) {
+          if (isFragmentInstanceParent(parent)) {
+            var fragmentInstance = parent.stateNode;
+            null === parentFragmentInstances
+              ? (parentFragmentInstances = [fragmentInstance])
+              : parentFragmentInstances.push(fragmentInstance);
+          }
+          if (isFragmentInstanceHostBoundary(parent)) break;
+          parent = parent.return;
         }
-        collectFragmentInstances &&
-          isFragmentInstanceHostParent(parentFiber) &&
-          (collectFragmentInstances = !1);
-        if (
-          5 === parentFiber.tag ||
-          3 === parentFiber.tag ||
-          4 === parentFiber.tag
-        )
-          break;
-        parentFiber = parentFiber.return;
-      }
+        var JSCompiler_temp = parentFragmentInstances;
+      } else JSCompiler_temp = null;
       enableFragmentRefs &&
         commitImmutablePlacementNodeToFragmentInstances(
           finishedWork,
-          parentFragmentInstances
+          JSCompiler_temp
         );
     } catch (error) {
       captureCommitPhaseError(finishedWork, finishedWork.return, error);
@@ -10757,7 +10774,7 @@ function recursivelyTraverseReappearLayoutEffects(
                 instance.stateNode,
                 parent.stateNode
               );
-            if (isFragmentInstanceHostParent(parent)) break;
+            if (isFragmentInstanceHostBoundary(parent)) break;
             parent = parent.return;
           }
         }
@@ -14291,21 +14308,24 @@ FragmentInstance.prototype.compareDocumentPosition = function (otherNode) {
     void 0
   );
   if (0 === children.length) {
-    children = getPublicInstanceFromHostFiber(parentHostFiber);
-    var fragmentFiber = this._fragmentFiber;
+    var parentHostInstance = getPublicInstanceFromHostFiber(parentHostFiber);
+    children = this._fragmentFiber;
     parentHostFiber = getPublicInstanceFromHostFiber;
-    var parentResult = children.compareDocumentPosition(otherNode);
+    var parentResult = parentHostInstance.compareDocumentPosition(otherNode);
     var result = parentResult;
-    children === otherNode
+    parentHostInstance === otherNode
       ? (result = Node.DOCUMENT_POSITION_CONTAINS)
       : parentResult & Node.DOCUMENT_POSITION_CONTAINED_BY &&
-        (traverseVisibleInstancesAndTextInstances(
-          fragmentFiber.sibling,
-          !1,
-          findNextSibling
-        ),
-        (children = searchTarget),
-        (searchTarget = null),
+        ((parentHostInstance = [null, null]),
+        (result = getFragmentParentInstanceOrContainerFiber(children)),
+        null !== result &&
+          findFragmentInstanceOrTextInstanceSiblings(
+            parentHostInstance,
+            children,
+            result.child,
+            { foundSelf: !1 }
+          ),
+        (children = parentHostInstance[1]),
         null === children
           ? (result = Node.DOCUMENT_POSITION_PRECEDING)
           : ((otherNode =
@@ -14318,20 +14338,20 @@ FragmentInstance.prototype.compareDocumentPosition = function (otherNode) {
   }
   parentHostFiber = getPublicInstanceFromHostFiber(children[0]);
   children = getPublicInstanceFromHostFiber(children[children.length - 1]);
-  fragmentFiber = parentHostFiber.compareDocumentPosition(otherNode);
+  parentHostInstance = parentHostFiber.compareDocumentPosition(otherNode);
   parentResult = children.compareDocumentPosition(otherNode);
   result =
-    fragmentFiber & Node.DOCUMENT_POSITION_CONTAINED_BY ||
+    parentHostInstance & Node.DOCUMENT_POSITION_CONTAINED_BY ||
     parentResult & Node.DOCUMENT_POSITION_CONTAINED_BY;
   parentResult =
-    fragmentFiber & Node.DOCUMENT_POSITION_FOLLOWING &&
+    parentHostInstance & Node.DOCUMENT_POSITION_FOLLOWING &&
     parentResult & Node.DOCUMENT_POSITION_PRECEDING;
   return parentHostFiber === otherNode ||
     children === otherNode ||
     result ||
     parentResult
     ? Node.DOCUMENT_POSITION_CONTAINED_BY
-    : fragmentFiber;
+    : parentHostInstance;
 };
 function collectChildren(child, collection) {
   collection.push(child);
@@ -14469,16 +14489,16 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1678 = {
+  internals$jscomp$inline_1675 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-bfb7a768-20260811",
+    version: "19.3.0-native-fb-22e4f993-20260811",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-bfb7a768-20260811"
+    reconcilerVersion: "19.3.0-native-fb-22e4f993-20260811"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1678.rendererConfig = extraDevToolsConfig);
-internals$jscomp$inline_1678.getLaneLabelMap = function () {
+  (internals$jscomp$inline_1675.rendererConfig = extraDevToolsConfig);
+internals$jscomp$inline_1675.getLaneLabelMap = function () {
   for (
     var map = new Map(), lane = 1, index$186 = 0;
     31 > index$186;
@@ -14490,20 +14510,20 @@ internals$jscomp$inline_1678.getLaneLabelMap = function () {
   }
   return map;
 };
-internals$jscomp$inline_1678.injectProfilingHooks = function (profilingHooks) {
+internals$jscomp$inline_1675.injectProfilingHooks = function (profilingHooks) {
   injectedProfilingHooks = profilingHooks;
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2055 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2050 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2055.isDisabled &&
-    hook$jscomp$inline_2055.supportsFiber
+    !hook$jscomp$inline_2050.isDisabled &&
+    hook$jscomp$inline_2050.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2055.inject(
-        internals$jscomp$inline_1678
+      (rendererID = hook$jscomp$inline_2050.inject(
+        internals$jscomp$inline_1675
       )),
-        (injectedHook = hook$jscomp$inline_2055);
+        (injectedHook = hook$jscomp$inline_2050);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {
