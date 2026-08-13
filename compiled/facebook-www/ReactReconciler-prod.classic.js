@@ -8046,6 +8046,14 @@ module.exports = function ($$$config) {
           parentFragmentInstances[i]
         );
   }
+  function commitFragmentInstanceInsertionEffects(fiber) {
+    for (var parent = fiber.return; null !== parent; ) {
+      isFragmentInstanceParent(parent) &&
+        commitNewChildToFragmentInstance(fiber.stateNode, parent.stateNode);
+      if (isFragmentInstanceHostBoundary(parent)) break;
+      parent = parent.return;
+    }
+  }
   function commitFragmentInstanceDeletionEffects(fiber) {
     for (var parent = fiber.return; null !== parent; ) {
       isFragmentInstanceParent(parent) &&
@@ -9402,10 +9410,12 @@ module.exports = function ($$$config) {
         offscreenSubtreeWasHidden ||
           safelyDetachRef(deletedFiber, nearestMountedAncestor),
           enableFragmentRefs &&
-            (5 === deletedFiber.tag ||
-              (enableFragmentRefsTextNodes && 6 === deletedFiber.tag)) &&
             commitFragmentInstanceDeletionEffects(deletedFiber);
       case 6:
+        enableFragmentRefs &&
+          enableFragmentRefsTextNodes &&
+          6 === deletedFiber.tag &&
+          commitFragmentInstanceDeletionEffects(deletedFiber);
         if (supportsMutation) {
           if (
             ((prevHostParent = hostParent),
@@ -10325,15 +10335,18 @@ module.exports = function ($$$config) {
             );
         case 5:
           safelyDetachRef(finishedWork, finishedWork.return);
-          enableFragmentRefs &&
-            (5 === finishedWork.tag ||
-              27 === finishedWork.tag ||
-              (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
+          !enableFragmentRefs ||
+            (5 !== finishedWork.tag && 27 !== finishedWork.tag) ||
             commitFragmentInstanceDeletionEffects(finishedWork);
           recursivelyTraverseDisappearLayoutEffects(
             finishedWork,
             layoutEffectTraversalFlags
           );
+          break;
+        case 6:
+          enableFragmentRefs &&
+            enableFragmentRefsTextNodes &&
+            commitFragmentInstanceDeletionEffects(finishedWork);
           break;
         case 26:
           safelyDetachRef(finishedWork, finishedWork.return);
@@ -10442,21 +10455,9 @@ module.exports = function ($$$config) {
             0 !== (layoutEffectTraversalFlags & 2) &&
             commitHostSingletonAcquisition(finishedWork);
         case 5:
-          if (
-            enableFragmentRefs &&
-            (5 === finishedWork.tag || 27 === finishedWork.tag)
-          ) {
-            instance = finishedWork;
-            for (var parent = instance.return; null !== parent; ) {
-              isFragmentInstanceParent(parent) &&
-                commitNewChildToFragmentInstance(
-                  instance.stateNode,
-                  parent.stateNode
-                );
-              if (isFragmentInstanceHostBoundary(parent)) break;
-              parent = parent.return;
-            }
-          }
+          !enableFragmentRefs ||
+            (5 !== finishedWork.tag && 27 !== finishedWork.tag) ||
+            commitFragmentInstanceInsertionEffects(finishedWork);
           recursivelyTraverseReappearLayoutEffects(
             finishedRoot,
             finishedWork,
@@ -10467,6 +10468,11 @@ module.exports = function ($$$config) {
             flags & 4 &&
             commitHostMount(finishedWork);
           safelyAttachRef(finishedWork, finishedWork.return);
+          break;
+        case 6:
+          enableFragmentRefs &&
+            enableFragmentRefsTextNodes &&
+            commitFragmentInstanceInsertionEffects(finishedWork);
           break;
         case 26:
           supportsResources &&
@@ -14749,7 +14755,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-classic-22e4f993-20260811"
+      reconcilerVersion: "19.3.0-www-classic-98803845-20260812"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);

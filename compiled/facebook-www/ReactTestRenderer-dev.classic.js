@@ -11435,6 +11435,8 @@ __DEV__ &&
           safelyDetachRef(finishedWork, finishedWork.return);
           recursivelyTraverseDisappearLayoutEffects(finishedWork);
           break;
+        case 6:
+          break;
         case 26:
           safelyDetachRef(finishedWork, finishedWork.return);
           recursivelyTraverseDisappearLayoutEffects(finishedWork);
@@ -11528,6 +11530,8 @@ __DEV__ &&
             flags & 4 &&
             commitHostMount(finishedWork);
           safelyAttachRef(finishedWork, finishedWork.return);
+          break;
+        case 6:
           break;
         case 26:
           recursivelyTraverseReappearLayoutEffects(
@@ -16796,10 +16800,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-www-classic-22e4f993-20260811",
+        version: "19.3.0-www-classic-98803845-20260812",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-22e4f993-20260811"
+        reconcilerVersion: "19.3.0-www-classic-98803845-20260812"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -16935,5 +16939,5 @@ __DEV__ &&
     exports.unstable_batchedUpdates = function (fn, a) {
       return fn(a);
     };
-    exports.version = "19.3.0-www-classic-22e4f993-20260811";
+    exports.version = "19.3.0-www-classic-98803845-20260812";
   })();
