@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<7dbfec1e62a9e1cd58c7417d3e3a025d>>
+ * @generated SignedSource<<a894903b7e3bdd288ad5a661b541a87e>>
  */
 
 /*
@@ -9639,6 +9639,14 @@ function commitNewChildToFragmentInstances(fiber, parentFragmentInstances) {
         parentFragmentInstances[i]
       );
 }
+function commitFragmentInstanceInsertionEffects(fiber) {
+  for (var parent = fiber.return; null !== parent; ) {
+    isFragmentInstanceParent(parent) &&
+      commitNewChildToFragmentInstance(fiber.stateNode, parent.stateNode);
+    if (isFragmentInstanceHostBoundary(parent)) break;
+    parent = parent.return;
+  }
+}
 function commitFragmentInstanceDeletionEffects(fiber) {
   for (var parent = fiber.return; null !== parent; ) {
     if (isFragmentInstanceParent(parent)) {
@@ -10937,10 +10945,12 @@ function commitDeletionEffectsOnFiber(
       offscreenSubtreeWasHidden ||
         safelyDetachRef(deletedFiber, nearestMountedAncestor),
         enableFragmentRefs &&
-          (5 === deletedFiber.tag ||
-            (enableFragmentRefsTextNodes && 6 === deletedFiber.tag)) &&
           commitFragmentInstanceDeletionEffects(deletedFiber);
     case 6:
+      enableFragmentRefs &&
+        enableFragmentRefsTextNodes &&
+        6 === deletedFiber.tag &&
+        commitFragmentInstanceDeletionEffects(deletedFiber);
       prevHostParent = hostParent;
       prevHostParentIsContainer = hostParentIsContainer;
       hostParent = null;
@@ -11910,15 +11920,18 @@ function recursivelyTraverseDisappearLayoutEffects(
           );
       case 5:
         safelyDetachRef(finishedWork, finishedWork.return);
-        enableFragmentRefs &&
-          (5 === finishedWork.tag ||
-            27 === finishedWork.tag ||
-            (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
+        !enableFragmentRefs ||
+          (5 !== finishedWork.tag && 27 !== finishedWork.tag) ||
           commitFragmentInstanceDeletionEffects(finishedWork);
         recursivelyTraverseDisappearLayoutEffects(
           finishedWork,
           layoutEffectTraversalFlags
         );
+        break;
+      case 6:
+        enableFragmentRefs &&
+          enableFragmentRefsTextNodes &&
+          commitFragmentInstanceDeletionEffects(finishedWork);
         break;
       case 26:
         safelyDetachRef(finishedWork, finishedWork.return);
@@ -12024,21 +12037,9 @@ function recursivelyTraverseReappearLayoutEffects(
         0 !== (layoutEffectTraversalFlags & 2) &&
           commitHostSingletonAcquisition(finishedWork);
       case 5:
-        if (
-          enableFragmentRefs &&
-          (5 === finishedWork.tag || 27 === finishedWork.tag)
-        ) {
-          instance = finishedWork;
-          for (var parent = instance.return; null !== parent; ) {
-            isFragmentInstanceParent(parent) &&
-              commitNewChildToFragmentInstance(
-                instance.stateNode,
-                parent.stateNode
-              );
-            if (isFragmentInstanceHostBoundary(parent)) break;
-            parent = parent.return;
-          }
-        }
+        !enableFragmentRefs ||
+          (5 !== finishedWork.tag && 27 !== finishedWork.tag) ||
+          commitFragmentInstanceInsertionEffects(finishedWork);
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
@@ -12049,6 +12050,11 @@ function recursivelyTraverseReappearLayoutEffects(
           flags & 4 &&
           commitHostMount(finishedWork);
         safelyAttachRef(finishedWork, finishedWork.return);
+        break;
+      case 6:
+        enableFragmentRefs &&
+          enableFragmentRefsTextNodes &&
+          commitFragmentInstanceInsertionEffects(finishedWork);
         break;
       case 26:
         instance = finishedWork.stateNode;
@@ -19473,14 +19479,14 @@ ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function (target) {
 };
 var isomorphicReactPackageVersion$jscomp$inline_2135 = React.version;
 if (
-  "19.3.0-native-fb-22e4f993-20260811" !==
+  "19.3.0-native-fb-98803845-20260812" !==
   isomorphicReactPackageVersion$jscomp$inline_2135
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2135,
-      "19.3.0-native-fb-22e4f993-20260811"
+      "19.3.0-native-fb-98803845-20260812"
     )
   );
 ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
@@ -19500,24 +19506,24 @@ ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
     null === componentOrElement ? null : componentOrElement.stateNode;
   return componentOrElement;
 };
-var internals$jscomp$inline_2708 = {
+var internals$jscomp$inline_2704 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-22e4f993-20260811",
+  version: "19.3.0-native-fb-98803845-20260812",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-22e4f993-20260811"
+  reconcilerVersion: "19.3.0-native-fb-98803845-20260812"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2709 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2705 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2709.isDisabled &&
-    hook$jscomp$inline_2709.supportsFiber
+    !hook$jscomp$inline_2705.isDisabled &&
+    hook$jscomp$inline_2705.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2709.inject(
-        internals$jscomp$inline_2708
+      (rendererID = hook$jscomp$inline_2705.inject(
+        internals$jscomp$inline_2704
       )),
-        (injectedHook = hook$jscomp$inline_2709);
+        (injectedHook = hook$jscomp$inline_2705);
     } catch (err) {}
 }
 function getCrossOriginStringAs(as, input) {
@@ -19777,4 +19783,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-native-fb-22e4f993-20260811";
+exports.version = "19.3.0-native-fb-98803845-20260812";

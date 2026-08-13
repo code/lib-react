@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<7e22bd6785097d06411b9c195d914708>>
+ * @generated SignedSource<<a7de29b04c9e47a85f96f950aca3da31>>
  */
 
 "use strict";
@@ -9161,6 +9161,14 @@ function pushMutationContext() {
   viewTransitionMutationContext = !1;
   return prev;
 }
+function commitFragmentInstanceInsertionEffects(fiber) {
+  for (var parent = fiber.return; null !== parent; ) {
+    isFragmentInstanceParent(parent) &&
+      commitNewChildToFragmentInstance(fiber.stateNode, parent.stateNode);
+    if (isFragmentInstanceHostBoundary(parent)) break;
+    parent = parent.return;
+  }
+}
 function commitFragmentInstanceDeletionEffects(fiber) {
   for (var parent = fiber.return; null !== parent; ) {
     if (isFragmentInstanceParent(parent)) {
@@ -10032,10 +10040,12 @@ function commitDeletionEffectsOnFiber(
       offscreenSubtreeWasHidden ||
         safelyDetachRef(deletedFiber, nearestMountedAncestor),
         enableFragmentRefs &&
-          (5 === deletedFiber.tag ||
-            (enableFragmentRefsTextNodes && 6 === deletedFiber.tag)) &&
           commitFragmentInstanceDeletionEffects(deletedFiber);
     case 6:
+      enableFragmentRefs &&
+        enableFragmentRefsTextNodes &&
+        6 === deletedFiber.tag &&
+        commitFragmentInstanceDeletionEffects(deletedFiber);
       recursivelyTraverseDeletionEffects(
         finishedRoot,
         nearestMountedAncestor,
@@ -10652,12 +10662,15 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
       case 27:
       case 5:
         safelyDetachRef(finishedWork, finishedWork.return);
-        enableFragmentRefs &&
-          (5 === finishedWork.tag ||
-            27 === finishedWork.tag ||
-            (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
+        !enableFragmentRefs ||
+          (5 !== finishedWork.tag && 27 !== finishedWork.tag) ||
           commitFragmentInstanceDeletionEffects(finishedWork);
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
+        break;
+      case 6:
+        enableFragmentRefs &&
+          enableFragmentRefsTextNodes &&
+          commitFragmentInstanceDeletionEffects(finishedWork);
         break;
       case 26:
         safelyDetachRef(finishedWork, finishedWork.return);
@@ -10763,21 +10776,9 @@ function recursivelyTraverseReappearLayoutEffects(
         break;
       case 27:
       case 5:
-        if (
-          enableFragmentRefs &&
-          (5 === finishedWork.tag || 27 === finishedWork.tag)
-        ) {
-          instance = finishedWork;
-          for (var parent = instance.return; null !== parent; ) {
-            isFragmentInstanceParent(parent) &&
-              commitNewChildToFragmentInstance(
-                instance.stateNode,
-                parent.stateNode
-              );
-            if (isFragmentInstanceHostBoundary(parent)) break;
-            parent = parent.return;
-          }
-        }
+        !enableFragmentRefs ||
+          (5 !== finishedWork.tag && 27 !== finishedWork.tag) ||
+          commitFragmentInstanceInsertionEffects(finishedWork);
         recursivelyTraverseReappearLayoutEffects(
           finishedRoot,
           finishedWork,
@@ -10788,6 +10789,11 @@ function recursivelyTraverseReappearLayoutEffects(
           flags & 4 &&
           commitHostMount(finishedWork);
         safelyAttachRef(finishedWork, finishedWork.return);
+        break;
+      case 6:
+        enableFragmentRefs &&
+          enableFragmentRefsTextNodes &&
+          commitFragmentInstanceInsertionEffects(finishedWork);
         break;
       case 26:
         recursivelyTraverseReappearLayoutEffects(
@@ -14491,10 +14497,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1675 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-22e4f993-20260811",
+    version: "19.3.0-native-fb-98803845-20260812",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-22e4f993-20260811"
+    reconcilerVersion: "19.3.0-native-fb-98803845-20260812"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1675.rendererConfig = extraDevToolsConfig);
@@ -14514,16 +14520,16 @@ internals$jscomp$inline_1675.injectProfilingHooks = function (profilingHooks) {
   injectedProfilingHooks = profilingHooks;
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2050 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2046 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2050.isDisabled &&
-    hook$jscomp$inline_2050.supportsFiber
+    !hook$jscomp$inline_2046.isDisabled &&
+    hook$jscomp$inline_2046.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2050.inject(
+      (rendererID = hook$jscomp$inline_2046.inject(
         internals$jscomp$inline_1675
       )),
-        (injectedHook = hook$jscomp$inline_2050);
+        (injectedHook = hook$jscomp$inline_2046);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {

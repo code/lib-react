@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<17fb9908241750d75a240b0af24788d7>>
+ * @generated SignedSource<<3ad3a8975292563389f9c38b1f6d22ce>>
  */
 
 "use strict";
@@ -8458,6 +8458,8 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
         safelyDetachRef(finishedWork, finishedWork.return);
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
         break;
+      case 6:
+        break;
       case 26:
         safelyDetachRef(finishedWork, finishedWork.return);
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
@@ -8545,6 +8547,8 @@ function recursivelyTraverseReappearLayoutEffects(
           layoutEffectTraversalFlags
         );
         safelyAttachRef(finishedWork, finishedWork.return);
+        break;
+      case 6:
         break;
       case 26:
         recursivelyTraverseReappearLayoutEffects(
@@ -11049,10 +11053,10 @@ function wrapFiber(fiber) {
 }
 var internals$jscomp$inline_1559 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-22e4f993-20260811",
+  version: "19.3.0-native-fb-98803845-20260812",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-22e4f993-20260811"
+  reconcilerVersion: "19.3.0-native-fb-98803845-20260812"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_1560 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -11188,4 +11192,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.3.0-native-fb-22e4f993-20260811";
+exports.version = "19.3.0-native-fb-98803845-20260812";

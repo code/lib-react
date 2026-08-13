@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<b22212dd893be35cccec9c89013d4b93>>
+ * @generated SignedSource<<3784e7ae348404b07f4210509afc9a00>>
  */
 
 "use strict";
@@ -11827,6 +11827,14 @@ __DEV__ &&
       viewTransitionMutationContext = !1;
       return prev;
     }
+    function commitFragmentInstanceInsertionEffects(fiber) {
+      for (var parent = fiber.return; null !== parent; ) {
+        isFragmentInstanceParent(parent) &&
+          commitNewChildToFragmentInstance(fiber.stateNode, parent.stateNode);
+        if (isFragmentInstanceHostBoundary(parent)) break;
+        parent = parent.return;
+      }
+    }
     function commitFragmentInstanceDeletionEffects(fiber) {
       for (var parent = fiber.return; null !== parent; ) {
         if (isFragmentInstanceParent(parent)) {
@@ -12826,10 +12834,12 @@ __DEV__ &&
           offscreenSubtreeWasHidden ||
             safelyDetachRef(deletedFiber, nearestMountedAncestor),
             enableFragmentRefs &&
-              (5 === deletedFiber.tag ||
-                (enableFragmentRefsTextNodes && 6 === deletedFiber.tag)) &&
               commitFragmentInstanceDeletionEffects(deletedFiber);
         case 6:
+          enableFragmentRefs &&
+            enableFragmentRefsTextNodes &&
+            6 === deletedFiber.tag &&
+            commitFragmentInstanceDeletionEffects(deletedFiber);
           recursivelyTraverseDeletionEffects(
             finishedRoot,
             nearestMountedAncestor,
@@ -13486,12 +13496,15 @@ __DEV__ &&
         case 27:
         case 5:
           safelyDetachRef(finishedWork, finishedWork.return);
-          enableFragmentRefs &&
-            (5 === finishedWork.tag ||
-              27 === finishedWork.tag ||
-              (enableFragmentRefsTextNodes && 6 === finishedWork.tag)) &&
+          !enableFragmentRefs ||
+            (5 !== finishedWork.tag && 27 !== finishedWork.tag) ||
             commitFragmentInstanceDeletionEffects(finishedWork);
           recursivelyTraverseDisappearLayoutEffects(finishedWork);
+          break;
+        case 6:
+          enableFragmentRefs &&
+            enableFragmentRefsTextNodes &&
+            commitFragmentInstanceDeletionEffects(finishedWork);
           break;
         case 26:
           safelyDetachRef(finishedWork, finishedWork.return);
@@ -13587,19 +13600,9 @@ __DEV__ &&
           break;
         case 27:
         case 5:
-          if (
-            enableFragmentRefs &&
-            (5 === finishedWork.tag || 27 === finishedWork.tag)
-          )
-            a: for (var parent = finishedWork.return; null !== parent; ) {
-              isFragmentInstanceParent(parent) &&
-                commitNewChildToFragmentInstance(
-                  finishedWork.stateNode,
-                  parent.stateNode
-                );
-              if (isFragmentInstanceHostBoundary(parent)) break a;
-              parent = parent.return;
-            }
+          !enableFragmentRefs ||
+            (5 !== finishedWork.tag && 27 !== finishedWork.tag) ||
+            commitFragmentInstanceInsertionEffects(finishedWork);
           recursivelyTraverseReappearLayoutEffects(
             finishedRoot,
             finishedWork,
@@ -13610,6 +13613,11 @@ __DEV__ &&
             flags & 4 &&
             commitHostMount(finishedWork);
           safelyAttachRef(finishedWork, finishedWork.return);
+          break;
+        case 6:
+          enableFragmentRefs &&
+            enableFragmentRefsTextNodes &&
+            commitFragmentInstanceInsertionEffects(finishedWork);
           break;
         case 26:
           recursivelyTraverseReappearLayoutEffects(
@@ -21392,10 +21400,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-native-fb-22e4f993-20260811",
+        version: "19.3.0-native-fb-98803845-20260812",
         rendererPackageName: "react-native-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-native-fb-22e4f993-20260811"
+        reconcilerVersion: "19.3.0-native-fb-98803845-20260812"
       };
       null !== extraDevToolsConfig &&
         (internals.rendererConfig = extraDevToolsConfig);

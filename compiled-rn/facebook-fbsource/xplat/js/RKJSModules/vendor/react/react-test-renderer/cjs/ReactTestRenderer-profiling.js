@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<a8777aea194583e37372521adc302426>>
+ * @generated SignedSource<<54836fa8a4693477d514029efb9617df>>
  */
 
 "use strict";
@@ -8913,6 +8913,8 @@ function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
         safelyDetachRef(finishedWork, finishedWork.return);
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
         break;
+      case 6:
+        break;
       case 26:
         safelyDetachRef(finishedWork, finishedWork.return);
         recursivelyTraverseDisappearLayoutEffects(finishedWork);
@@ -9003,6 +9005,8 @@ function recursivelyTraverseReappearLayoutEffects(
           layoutEffectTraversalFlags
         );
         safelyAttachRef(finishedWork, finishedWork.return);
+        break;
+      case 6:
         break;
       case 26:
         recursivelyTraverseReappearLayoutEffects(
@@ -11688,10 +11692,10 @@ function wrapFiber(fiber) {
 }
 var internals$jscomp$inline_1323 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-22e4f993-20260811",
+  version: "19.3.0-native-fb-98803845-20260812",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-22e4f993-20260811",
+  reconcilerVersion: "19.3.0-native-fb-98803845-20260812",
   getLaneLabelMap: function () {
     for (
       var map = new Map(), lane = 1, index$159 = 0;
@@ -11842,4 +11846,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.3.0-native-fb-22e4f993-20260811";
+exports.version = "19.3.0-native-fb-98803845-20260812";
