@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<6bc9c2c247d4fef905a7dae3eeb1c389>>
+ * @generated SignedSource<<6cb0e497d2467d30e98016c9720c6196>>
  */
 
 /*
@@ -14708,8 +14708,8 @@ __DEV__ &&
               var _eventListeners$i3 = eventListeners[i];
               childInstance.removeEventListener(
                 _eventListeners$i3.type,
-                _eventListeners$i3.listener,
-                _eventListeners$i3.optionsOrUseCapture
+                _eventListeners$i3.attachedListener,
+                getAttachOptions(_eventListeners$i3.optionsOrUseCapture)
               );
             }
           3 !== childInstance.nodeType &&
@@ -25824,6 +25824,11 @@ __DEV__ &&
       );
       return !1;
     }
+    function getAttachOptions(opts) {
+      return null == opts || "boolean" === typeof opts || !0 !== opts.once
+        ? opts
+        : { capture: opts.capture, passive: opts.passive, signal: opts.signal };
+    }
     function normalizeListenerOptions(opts) {
       return null == opts
         ? "0"
@@ -26024,8 +26029,8 @@ __DEV__ &&
           var _eventListeners$i2 = eventListeners[i];
           childInstance.addEventListener(
             _eventListeners$i2.type,
-            _eventListeners$i2.listener,
-            _eventListeners$i2.optionsOrUseCapture
+            _eventListeners$i2.attachedListener,
+            getAttachOptions(_eventListeners$i2.optionsOrUseCapture)
           );
         }
       3 !== childInstance.nodeType &&
@@ -31567,20 +31572,40 @@ __DEV__ &&
     ) {
       null === this._eventListeners && (this._eventListeners = []);
       var listeners = this._eventListeners;
-      -1 ===
-        indexOfEventListener(listeners, type, listener, optionsOrUseCapture) &&
-        (listeners.push({
+      if (
+        -1 ===
+        indexOfEventListener(listeners, type, listener, optionsOrUseCapture)
+      ) {
+        var fragmentInstance = this,
+          attachedListener = listener;
+        null != optionsOrUseCapture &&
+          "boolean" !== typeof optionsOrUseCapture &&
+          !0 === optionsOrUseCapture.once &&
+          (attachedListener = function (event) {
+            fragmentInstance.removeEventListener(
+              type,
+              listener,
+              optionsOrUseCapture
+            );
+            "function" === typeof listener
+              ? listener.call(this, event)
+              : listener.handleEvent(event);
+          });
+        var attachOptions = getAttachOptions(optionsOrUseCapture);
+        listeners.push({
           type: type,
           listener: listener,
-          optionsOrUseCapture: optionsOrUseCapture
-        }),
+          optionsOrUseCapture: optionsOrUseCapture,
+          attachedListener: attachedListener
+        });
         traverseFragmentInstancesAndTextInstances(
           this._fragmentFiber,
           addEventListenerToChild,
           type,
-          listener,
-          optionsOrUseCapture
-        ));
+          attachedListener,
+          attachOptions
+        );
+      }
       this._eventListeners = listeners;
     };
     FragmentInstance.prototype.removeEventListener = function (
@@ -31589,22 +31614,29 @@ __DEV__ &&
       optionsOrUseCapture
     ) {
       var listeners = this._eventListeners;
-      if (null !== listeners) {
-        var index = indexOfEventListener(
+      if (
+        null !== listeners &&
+        ((listener = indexOfEventListener(
           listeners,
           type,
           listener,
           optionsOrUseCapture
+        )),
+        -1 !== listener)
+      ) {
+        var _listeners$index = listeners[listener];
+        optionsOrUseCapture = _listeners$index.attachedListener;
+        _listeners$index = getAttachOptions(
+          _listeners$index.optionsOrUseCapture
         );
-        -1 !== index &&
-          (traverseFragmentInstancesAndTextInstances(
-            this._fragmentFiber,
-            removeEventListenerFromChild,
-            type,
-            listener,
-            optionsOrUseCapture
-          ),
-          listeners.splice(index, 1));
+        traverseFragmentInstancesAndTextInstances(
+          this._fragmentFiber,
+          removeEventListenerFromChild,
+          type,
+          optionsOrUseCapture,
+          _listeners$index
+        );
+        listeners.splice(listener, 1);
       }
     };
     FragmentInstance.prototype.dispatchEvent = function (event) {
@@ -31627,8 +31659,8 @@ __DEV__ &&
             var _eventListeners$i = eventListeners[i];
             temp.addEventListener(
               _eventListeners$i.type,
-              _eventListeners$i.listener,
-              _eventListeners$i.optionsOrUseCapture
+              _eventListeners$i.attachedListener,
+              getAttachOptions(_eventListeners$i.optionsOrUseCapture)
             );
           }
         parentHostFiber.appendChild(temp);
@@ -31638,8 +31670,8 @@ __DEV__ &&
             (_eventListeners$i = eventListeners[i]),
               temp.removeEventListener(
                 _eventListeners$i.type,
-                _eventListeners$i.listener,
-                _eventListeners$i.optionsOrUseCapture
+                _eventListeners$i.attachedListener,
+                getAttachOptions(_eventListeners$i.optionsOrUseCapture)
               );
         parentHostFiber.removeChild(temp);
         return event;
@@ -32335,11 +32367,11 @@ __DEV__ &&
     };
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-native-fb-98803845-20260812" !== isomorphicReactPackageVersion)
+      if ("19.3.0-native-fb-beef6d60-20260813" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-native-fb-98803845-20260812\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-native-fb-beef6d60-20260813\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -32376,10 +32408,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-native-fb-98803845-20260812",
+          version: "19.3.0-native-fb-beef6d60-20260813",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-native-fb-98803845-20260812"
+          reconcilerVersion: "19.3.0-native-fb-beef6d60-20260813"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -32529,5 +32561,5 @@ __DEV__ &&
       listenToAllSupportedEvents(container);
       return new ReactDOMHydrationRoot(initialChildren);
     };
-    exports.version = "19.3.0-native-fb-98803845-20260812";
+    exports.version = "19.3.0-native-fb-beef6d60-20260813";
   })();

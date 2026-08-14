@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<3ad3a8975292563389f9c38b1f6d22ce>>
+ * @generated SignedSource<<6b6500f3b7dc94b6e53bcc94a6d4c92b>>
  */
 
 "use strict";
@@ -11053,10 +11053,10 @@ function wrapFiber(fiber) {
 }
 var internals$jscomp$inline_1559 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-98803845-20260812",
+  version: "19.3.0-native-fb-beef6d60-20260813",
   rendererPackageName: "react-test-renderer",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-98803845-20260812"
+  reconcilerVersion: "19.3.0-native-fb-beef6d60-20260813"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_1560 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -11192,4 +11192,4 @@ exports.unstable_batchedUpdates = function (fn, a) {
         flushSyncWorkAcrossRoots_impl(0, !0));
   }
 };
-exports.version = "19.3.0-native-fb-98803845-20260812";
+exports.version = "19.3.0-native-fb-beef6d60-20260813";
