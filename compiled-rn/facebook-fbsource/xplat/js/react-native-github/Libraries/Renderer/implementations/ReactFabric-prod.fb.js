@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<6be7b27c2c44f6c468e705c430ea9396>>
+ * @generated SignedSource<<9131101e600d654baef2d91d02ba08d3>>
  */
 
 "use strict";
@@ -1510,7 +1510,7 @@ function getHighestPriorityLanes(lanes) {
     case 32768:
     case 65536:
     case 131072:
-      return lanes & 261888;
+      return lanes & -lanes;
     case 262144:
     case 524288:
     case 1048576:
@@ -1582,6 +1582,22 @@ function checkIfRootIsPrerendering(root, renderLanes) {
       ~(root.suspendedLanes & ~root.pingedLanes) &
       renderLanes)
   );
+}
+function getEntangledLanes(root, renderLanes) {
+  0 !== (renderLanes & 8) && (renderLanes |= renderLanes & 32);
+  var allEntangledLanes = root.entangledLanes;
+  if (0 !== allEntangledLanes)
+    for (
+      root = root.entanglements, allEntangledLanes &= renderLanes;
+      0 < allEntangledLanes;
+
+    ) {
+      var index$6 = 31 - clz32(allEntangledLanes),
+        lane = 1 << index$6;
+      renderLanes |= root[index$6];
+      allEntangledLanes &= ~lane;
+    }
+  return renderLanes;
 }
 function computeExpirationTime(lane, currentTime) {
   switch (lane) {
@@ -10818,6 +10834,7 @@ function markRootSuspended(
   spawnedLane,
   didAttemptEntireTree
 ) {
+  suspendedLanes = getEntangledLanes(root, suspendedLanes);
   suspendedLanes &= ~workInProgressRootPingedLanes;
   suspendedLanes &= ~workInProgressRootInterleavedUpdatedLanes;
   root.suspendedLanes |= suspendedLanes;
@@ -10877,20 +10894,7 @@ function prepareFreshStack(root, lanes) {
   workInProgressRootRecoverableErrors = workInProgressRootConcurrentErrors =
     null;
   workInProgressRootDidIncludeRecursiveRenderUpdate = !1;
-  0 !== (lanes & 8) && (lanes |= lanes & 32);
-  var allEntangledLanes = root.entangledLanes;
-  if (0 !== allEntangledLanes)
-    for (
-      root = root.entanglements, allEntangledLanes &= lanes;
-      0 < allEntangledLanes;
-
-    ) {
-      var index$6 = 31 - clz32(allEntangledLanes),
-        lane = 1 << index$6;
-      lanes |= root[index$6];
-      allEntangledLanes &= ~lane;
-    }
-  entangledRenderLanes = lanes;
+  entangledRenderLanes = getEntangledLanes(root, lanes);
   finishQueueingConcurrentUpdates();
   return timeoutHandle;
 }
@@ -12479,26 +12483,26 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1352 = {
+  internals$jscomp$inline_1343 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-beef6d60-20260813",
+    version: "19.3.0-native-fb-eb8feb71-20260814",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-beef6d60-20260813"
+    reconcilerVersion: "19.3.0-native-fb-eb8feb71-20260814"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1352.rendererConfig = extraDevToolsConfig);
+  (internals$jscomp$inline_1343.rendererConfig = extraDevToolsConfig);
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_1690 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_1681 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_1690.isDisabled &&
-    hook$jscomp$inline_1690.supportsFiber
+    !hook$jscomp$inline_1681.isDisabled &&
+    hook$jscomp$inline_1681.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_1690.inject(
-        internals$jscomp$inline_1352
+      (rendererID = hook$jscomp$inline_1681.inject(
+        internals$jscomp$inline_1343
       )),
-        (injectedHook = hook$jscomp$inline_1690);
+        (injectedHook = hook$jscomp$inline_1681);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {

@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<31d89c9b1582653f13a2c26f26cb4be5>>
+ * @generated SignedSource<<a77877cac807154e3cd33c63f4f2b598>>
  */
 
 "use strict";
@@ -1562,7 +1562,7 @@ function getHighestPriorityLanes(lanes) {
     case 32768:
     case 65536:
     case 131072:
-      return lanes & 261888;
+      return lanes & -lanes;
     case 262144:
     case 524288:
     case 1048576:
@@ -1634,6 +1634,22 @@ function checkIfRootIsPrerendering(root, renderLanes) {
       ~(root.suspendedLanes & ~root.pingedLanes) &
       renderLanes)
   );
+}
+function getEntangledLanes(root, renderLanes) {
+  0 !== (renderLanes & 8) && (renderLanes |= renderLanes & 32);
+  var allEntangledLanes = root.entangledLanes;
+  if (0 !== allEntangledLanes)
+    for (
+      root = root.entanglements, allEntangledLanes &= renderLanes;
+      0 < allEntangledLanes;
+
+    ) {
+      var index$6 = 31 - clz32(allEntangledLanes),
+        lane = 1 << index$6;
+      renderLanes |= root[index$6];
+      allEntangledLanes &= ~lane;
+    }
+  return renderLanes;
 }
 function computeExpirationTime(lane, currentTime) {
   switch (lane) {
@@ -12260,6 +12276,7 @@ function markRootSuspended(
   spawnedLane,
   didAttemptEntireTree
 ) {
+  suspendedLanes = getEntangledLanes(root, suspendedLanes);
   suspendedLanes &= ~workInProgressRootPingedLanes;
   suspendedLanes &= ~workInProgressRootInterleavedUpdatedLanes;
   root.suspendedLanes |= suspendedLanes;
@@ -12560,15 +12577,7 @@ function prepareFreshStack(root, lanes) {
   workInProgressRootRecoverableErrors = workInProgressRootConcurrentErrors =
     null;
   workInProgressRootDidIncludeRecursiveRenderUpdate = !1;
-  0 !== (lanes & 8) && (lanes |= lanes & 32);
-  endTime = root.entangledLanes;
-  if (0 !== endTime)
-    for (root = root.entanglements, endTime &= lanes; 0 < endTime; )
-      (clampedRenderStartTime$173 = 31 - clz32(endTime)),
-        (eventIsRepeat = 1 << clampedRenderStartTime$173),
-        (lanes |= root[clampedRenderStartTime$173]),
-        (endTime &= ~eventIsRepeat);
-  entangledRenderLanes = lanes;
+  entangledRenderLanes = getEntangledLanes(root, lanes);
   finishQueueingConcurrentUpdates();
   return previousRenderStartTime;
 }
@@ -14495,16 +14504,16 @@ batchedUpdatesImpl = function (fn, a) {
   }
 };
 var roots = new Map(),
-  internals$jscomp$inline_1675 = {
+  internals$jscomp$inline_1666 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-beef6d60-20260813",
+    version: "19.3.0-native-fb-eb8feb71-20260814",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-beef6d60-20260813"
+    reconcilerVersion: "19.3.0-native-fb-eb8feb71-20260814"
   };
 null !== extraDevToolsConfig &&
-  (internals$jscomp$inline_1675.rendererConfig = extraDevToolsConfig);
-internals$jscomp$inline_1675.getLaneLabelMap = function () {
+  (internals$jscomp$inline_1666.rendererConfig = extraDevToolsConfig);
+internals$jscomp$inline_1666.getLaneLabelMap = function () {
   for (
     var map = new Map(), lane = 1, index$186 = 0;
     31 > index$186;
@@ -14516,20 +14525,20 @@ internals$jscomp$inline_1675.getLaneLabelMap = function () {
   }
   return map;
 };
-internals$jscomp$inline_1675.injectProfilingHooks = function (profilingHooks) {
+internals$jscomp$inline_1666.injectProfilingHooks = function (profilingHooks) {
   injectedProfilingHooks = profilingHooks;
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2046 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2037 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2046.isDisabled &&
-    hook$jscomp$inline_2046.supportsFiber
+    !hook$jscomp$inline_2037.isDisabled &&
+    hook$jscomp$inline_2037.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2046.inject(
-        internals$jscomp$inline_1675
+      (rendererID = hook$jscomp$inline_2037.inject(
+        internals$jscomp$inline_1666
       )),
-        (injectedHook = hook$jscomp$inline_2046);
+        (injectedHook = hook$jscomp$inline_2037);
     } catch (err) {}
 }
 exports.createPortal = function (children, containerTag) {
