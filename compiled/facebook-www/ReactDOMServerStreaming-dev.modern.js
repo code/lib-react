@@ -4617,6 +4617,7 @@ __DEV__ &&
       this.onShellReady = void 0 === onShellReady ? noop : onShellReady;
       this.onShellError = void 0 === onShellError ? noop : onShellError;
       this.onFatalError = void 0 === onFatalError ? noop : onFatalError;
+      this.renderLifetimeController = new AbortController();
       this.formState = void 0 === formState ? null : formState;
       this.didWarnForKey = null;
     }
@@ -5048,6 +5049,7 @@ __DEV__ &&
         ? (shellComplete || debugTask.run(errorInfo.bind(null, error)),
           debugTask.run(onFatalError.bind(null, error)))
         : (shellComplete || errorInfo(error), onFatalError(error));
+      request.renderLifetimeController.abort(RENDER_ENDED);
       null !== request.destination
         ? ((request.status = CLOSED),
           (request = request.destination),
@@ -8595,6 +8597,7 @@ __DEV__ &&
               console.error(
                 "There was still abortable task at the root when we closed. This is a bug in React."
               ),
+            request.renderLifetimeController.abort(RENDER_ENDED),
             (request.status = CLOSED),
             (destination.done = !0),
             (request.destination = null));
@@ -8634,6 +8637,7 @@ __DEV__ &&
       if (
         !(request.aborted || (11 !== request.status && 10 !== request.status))
       ) {
+        request.renderLifetimeController.abort(RENDER_ENDED);
         var isRecoverableReason =
           "object" === typeof reason &&
           null !== reason &&
@@ -10153,6 +10157,7 @@ __DEV__ &&
       ERRORED = 4,
       POSTPONED = 5,
       CLOSED = 13,
+      RENDER_ENDED = "The render ended.",
       currentRequest = null,
       didWarnAboutBadClass = {},
       didWarnAboutContextTypes = {},

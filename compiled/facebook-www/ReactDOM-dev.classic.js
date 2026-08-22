@@ -17140,9 +17140,13 @@ __DEV__ &&
           break;
         case 7:
           enableFragmentRefs &&
+            (flags & 512 &&
+              (offscreenSubtreeWasHidden ||
+                null === current ||
+                safelyDetachRef(current, current.return)),
             current &&
-            null !== current.stateNode &&
-            (current.stateNode._fragmentFiber = finishedWork);
+              null !== current.stateNode &&
+              (current.stateNode._fragmentFiber = finishedWork));
         default:
           recursivelyTraverseMutationEffects(root, finishedWork, lanes),
             commitReconciliationEffects(finishedWork);
@@ -33672,11 +33676,11 @@ __DEV__ &&
       return_targetInst = null;
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-www-classic-eb8feb71-20260814" !== isomorphicReactPackageVersion)
+      if ("19.3.0-www-classic-055705ca-20260822" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-www-classic-eb8feb71-20260814\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-www-classic-055705ca-20260822\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -33719,10 +33723,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-www-classic-eb8feb71-20260814",
+          version: "19.3.0-www-classic-055705ca-20260822",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-www-classic-eb8feb71-20260814"
+          reconcilerVersion: "19.3.0-www-classic-055705ca-20260822"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -34347,7 +34351,7 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-www-classic-eb8feb71-20260814";
+    exports.version = "19.3.0-www-classic-055705ca-20260822";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&

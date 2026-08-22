@@ -11313,6 +11313,11 @@ __DEV__ &&
           flags & 4 &&
             nodeToInstanceMap.set(finishedWork.stateNode, finishedWork);
           break;
+        case 7:
+          flags & 512 &&
+            (offscreenSubtreeWasHidden ||
+              null === current ||
+              safelyDetachRef(current, current.return));
         default:
           recursivelyTraverseMutationEffects(root, finishedWork, lanes),
             commitReconciliationEffects(finishedWork);
@@ -16804,10 +16809,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-www-classic-eb8feb71-20260814",
+        version: "19.3.0-www-classic-055705ca-20260822",
         rendererPackageName: "react-test-renderer",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-classic-eb8feb71-20260814"
+        reconcilerVersion: "19.3.0-www-classic-055705ca-20260822"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -16943,5 +16948,5 @@ __DEV__ &&
     exports.unstable_batchedUpdates = function (fn, a) {
       return fn(a);
     };
-    exports.version = "19.3.0-www-classic-eb8feb71-20260814";
+    exports.version = "19.3.0-www-classic-055705ca-20260822";
   })();

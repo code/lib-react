@@ -3550,16 +3550,16 @@ __DEV__ &&
         flushBuffered(debugDestination);
       }
       0 === request.pendingChunks &&
-        ((regularChunks = request.debugDestination),
+        (request.status < ABORTING &&
+          request.cacheController.abort(
+            Error(
+              "This render completed successfully. All cacheSignals are now aborted to allow clean up of any unused resources."
+            )
+          ),
+        (regularChunks = request.debugDestination),
         0 === request.pendingDebugChunks
           ? (null !== regularChunks &&
               (regularChunks.end(), (request.debugDestination = null)),
-            request.status < ABORTING &&
-              request.cacheController.abort(
-                Error(
-                  "This render completed successfully. All cacheSignals are now aborted to allow clean up of any unused resources."
-                )
-              ),
             null !== request.destination &&
               ((request.status = CLOSED),
               request.destination.end(),

@@ -11165,9 +11165,13 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
       break;
     case 7:
       enableFragmentRefs &&
+        (flags & 512 &&
+          (offscreenSubtreeWasHidden ||
+            null === current ||
+            safelyDetachRef(current, current.return)),
         current &&
-        null !== current.stateNode &&
-        (current.stateNode._fragmentFiber = finishedWork);
+          null !== current.stateNode &&
+          (current.stateNode._fragmentFiber = finishedWork));
     default:
       recursivelyTraverseMutationEffects(root, finishedWork, lanes),
         commitReconciliationEffects(finishedWork);
@@ -20419,14 +20423,14 @@ function getCrossOriginStringAs(as, input) {
 }
 var isomorphicReactPackageVersion$jscomp$inline_2050 = React.version;
 if (
-  "19.3.0-www-modern-eb8feb71-20260814" !==
+  "19.3.0-www-modern-055705ca-20260822" !==
   isomorphicReactPackageVersion$jscomp$inline_2050
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2050,
-      "19.3.0-www-modern-eb8feb71-20260814"
+      "19.3.0-www-modern-055705ca-20260822"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -20444,10 +20448,10 @@ Internals.Events = [
 ];
 var internals$jscomp$inline_2579 = {
   bundleType: 0,
-  version: "19.3.0-www-modern-eb8feb71-20260814",
+  version: "19.3.0-www-modern-055705ca-20260822",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-modern-eb8feb71-20260814"
+  reconcilerVersion: "19.3.0-www-modern-055705ca-20260822"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_2580 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -20888,4 +20892,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-modern-eb8feb71-20260814";
+exports.version = "19.3.0-www-modern-055705ca-20260822";

@@ -13281,6 +13281,12 @@ __DEV__ &&
               safelyAttachRef(finishedWork, finishedWork.return));
           flags & 4 && prepareScopeUpdate();
           break;
+        case 7:
+          enableFragmentRefs &&
+            flags & 512 &&
+            (offscreenSubtreeWasHidden ||
+              null === current ||
+              safelyDetachRef(current, current.return));
         default:
           recursivelyTraverseMutationEffects(root, finishedWork, lanes),
             commitReconciliationEffects(finishedWork);
@@ -20444,10 +20450,10 @@ __DEV__ &&
     (function () {
       var internals = {
         bundleType: 1,
-        version: "19.3.0-www-modern-eb8feb71-20260814",
+        version: "19.3.0-www-modern-055705ca-20260822",
         rendererPackageName: "react-art",
         currentDispatcherRef: ReactSharedInternals,
-        reconcilerVersion: "19.3.0-www-modern-eb8feb71-20260814"
+        reconcilerVersion: "19.3.0-www-modern-055705ca-20260822"
       };
       internals.overrideHookState = overrideHookState;
       internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -20482,7 +20488,7 @@ __DEV__ &&
     exports.Shape = Shape;
     exports.Surface = Surface;
     exports.Text = Text;
-    exports.version = "19.3.0-www-modern-eb8feb71-20260814";
+    exports.version = "19.3.0-www-modern-055705ca-20260822";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&

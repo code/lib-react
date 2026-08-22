@@ -11507,9 +11507,13 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
       break;
     case 7:
       enableFragmentRefs &&
+        (flags & 512 &&
+          (offscreenSubtreeWasHidden ||
+            null === current ||
+            safelyDetachRef(current, current.return)),
         current &&
-        null !== current.stateNode &&
-        (current.stateNode._fragmentFiber = finishedWork);
+          null !== current.stateNode &&
+          (current.stateNode._fragmentFiber = finishedWork));
     default:
       recursivelyTraverseMutationEffects(root, finishedWork, lanes),
         commitReconciliationEffects(finishedWork);
@@ -21007,14 +21011,14 @@ function getCrossOriginStringAs(as, input) {
 }
 var isomorphicReactPackageVersion$jscomp$inline_2089 = React.version;
 if (
-  "19.3.0-www-classic-eb8feb71-20260814" !==
+  "19.3.0-www-classic-055705ca-20260822" !==
   isomorphicReactPackageVersion$jscomp$inline_2089
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2089,
-      "19.3.0-www-classic-eb8feb71-20260814"
+      "19.3.0-www-classic-055705ca-20260822"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -21032,10 +21036,10 @@ Internals.Events = [
 ];
 var internals$jscomp$inline_2631 = {
   bundleType: 0,
-  version: "19.3.0-www-classic-eb8feb71-20260814",
+  version: "19.3.0-www-classic-055705ca-20260822",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-classic-eb8feb71-20260814"
+  reconcilerVersion: "19.3.0-www-classic-055705ca-20260822"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_2632 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -21627,4 +21631,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-classic-eb8feb71-20260814";
+exports.version = "19.3.0-www-classic-055705ca-20260822";

@@ -8651,6 +8651,12 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
           safelyAttachRef(finishedWork, finishedWork.return));
       flags & 4 && shim$1();
       break;
+    case 7:
+      enableFragmentRefs &&
+        flags & 512 &&
+        (offscreenSubtreeWasHidden ||
+          null === current ||
+          safelyDetachRef(current, current.return));
     default:
       recursivelyTraverseMutationEffects(root, finishedWork, lanes),
         commitReconciliationEffects(finishedWork);
@@ -11466,10 +11472,10 @@ var slice = Array.prototype.slice,
   })(React.Component);
 var internals$jscomp$inline_1574 = {
   bundleType: 0,
-  version: "19.3.0-www-modern-eb8feb71-20260814",
+  version: "19.3.0-www-modern-055705ca-20260822",
   rendererPackageName: "react-art",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-modern-eb8feb71-20260814"
+  reconcilerVersion: "19.3.0-www-modern-055705ca-20260822"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_1575 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -11495,4 +11501,4 @@ exports.RadialGradient = RadialGradient;
 exports.Shape = TYPES.SHAPE;
 exports.Surface = Surface;
 exports.Text = Text;
-exports.version = "19.3.0-www-modern-eb8feb71-20260814";
+exports.version = "19.3.0-www-modern-055705ca-20260822";

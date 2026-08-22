@@ -9842,9 +9842,13 @@ module.exports = function ($$$config) {
         break;
       case 7:
         enableFragmentRefs &&
+          (flags & 512 &&
+            (offscreenSubtreeWasHidden ||
+              null === current ||
+              safelyDetachRef(current, current.return)),
           current &&
-          null !== current.stateNode &&
-          updateFragmentInstanceFiber(finishedWork, current.stateNode);
+            null !== current.stateNode &&
+            updateFragmentInstanceFiber(finishedWork, current.stateNode));
       default:
         recursivelyTraverseMutationEffects(root, finishedWork, lanes),
           commitReconciliationEffects(finishedWork);
@@ -14470,7 +14474,7 @@ module.exports = function ($$$config) {
       version: rendererVersion,
       rendererPackageName: rendererPackageName,
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-modern-eb8feb71-20260814"
+      reconcilerVersion: "19.3.0-www-modern-055705ca-20260822"
     };
     null !== extraDevToolsConfig &&
       (internals.rendererConfig = extraDevToolsConfig);

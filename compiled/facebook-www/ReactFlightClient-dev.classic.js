@@ -288,9 +288,36 @@ __DEV__ &&
       root,
       formFieldPrefix,
       temporaryReferences,
-      resolve,
-      reject
+      onResolve,
+      onReject,
+      signal
     ) {
+      function endReplyLifetime() {
+        null !== replyLifetimeController &&
+          replyLifetimeController.abort("The reply ended.");
+      }
+      function resolve(value) {
+        settled = !0;
+        endReplyLifetime();
+        onResolve(value);
+      }
+      function reject(error) {
+        settled = !0;
+        endReplyLifetime();
+        onReject(error);
+      }
+      function attachAbortSignal(abortSignal) {
+        abortSignal.aborted
+          ? abort()
+          : ((replyLifetimeController = new AbortController()),
+            abortSignal.addEventListener(
+              "abort",
+              function () {
+                abort();
+              },
+              { signal: replyLifetimeController.signal }
+            ));
+      }
       function serializeTypedArray(tag, typedArray) {
         typedArray = new Blob([
           new Uint8Array(
@@ -699,22 +726,26 @@ __DEV__ &&
         modelRoot = model;
         return JSON.stringify(model, resolveToJSON);
       }
+      function abort() {
+        endReplyLifetime();
+        0 < pendingParts &&
+          ((pendingParts = 0),
+          null === formData ? resolve(json) : resolve(formData));
+      }
       var nextPartId = 1,
         pendingParts = 0,
         formData = null,
         writtenObjects = new WeakMap(),
-        modelRoot = root;
+        modelRoot = root,
+        settled = !1,
+        replyLifetimeController = null;
       checkEvalAvailabilityOnceDev();
       var json = serializeModel(root, 0);
       null === formData
         ? resolve(json)
         : (formData.set(formFieldPrefix + "0", json),
           0 === pendingParts && resolve(formData));
-      return function () {
-        0 < pendingParts &&
-          ((pendingParts = 0),
-          null === formData ? resolve(json) : resolve(formData));
-      };
+      void 0 === signal || settled || attachAbortSignal(signal);
     }
     function createFakeServerFunction(
       name,
@@ -5143,10 +5174,10 @@ __DEV__ &&
       return hook.checkDCE ? !0 : !1;
     })({
       bundleType: 1,
-      version: "19.3.0-www-classic-eb8feb71-20260814",
+      version: "19.3.0-www-classic-055705ca-20260822",
       rendererPackageName: "react-flight-server-fb",
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-classic-eb8feb71-20260814",
+      reconcilerVersion: "19.3.0-www-classic-055705ca-20260822",
       getCurrentComponentInfo: function () {
         return currentOwnerInDEV;
       }
@@ -5244,26 +5275,16 @@ __DEV__ &&
     };
     exports.encodeReply = function (value, options) {
       return new Promise(function (resolve, reject) {
-        var abort = processReply(
+        processReply(
           value,
           "",
           options && options.temporaryReferences
             ? options.temporaryReferences
             : void 0,
           resolve,
-          reject
+          reject,
+          options ? options.signal : void 0
         );
-        if (options && options.signal) {
-          var signal = options.signal;
-          if (signal.aborted) abort(signal.reason);
-          else {
-            var listener = function () {
-              abort(signal.reason);
-              signal.removeEventListener("abort", listener);
-            };
-            signal.addEventListener("abort", listener);
-          }
-        }
       });
     };
     exports.registerServerReference = function (reference, id) {
