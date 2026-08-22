@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<9131101e600d654baef2d91d02ba08d3>>
+ * @generated SignedSource<<f0215fa8a4c4f618e7fa3d65a2cdf0ff>>
  */
 
 "use strict";
@@ -9587,9 +9587,13 @@ function commitMutationEffectsOnFiber(finishedWork, root, lanes) {
       break;
     case 7:
       enableFragmentRefs &&
+        (flags & 512 &&
+          (offscreenSubtreeWasHidden ||
+            null === current ||
+            safelyDetachRef(current, current.return)),
         current &&
-        null !== current.stateNode &&
-        (current.stateNode._fragmentFiber = finishedWork);
+          null !== current.stateNode &&
+          (current.stateNode._fragmentFiber = finishedWork));
     default:
       recursivelyTraverseMutationEffects(root, finishedWork, lanes),
         commitReconciliationEffects(finishedWork);
@@ -12485,10 +12489,10 @@ batchedUpdatesImpl = function (fn, a) {
 var roots = new Map(),
   internals$jscomp$inline_1343 = {
     bundleType: 0,
-    version: "19.3.0-native-fb-eb8feb71-20260814",
+    version: "19.3.0-native-fb-055705ca-20260822",
     rendererPackageName: "react-native-renderer",
     currentDispatcherRef: ReactSharedInternals,
-    reconcilerVersion: "19.3.0-native-fb-eb8feb71-20260814"
+    reconcilerVersion: "19.3.0-native-fb-055705ca-20260822"
   };
 null !== extraDevToolsConfig &&
   (internals$jscomp$inline_1343.rendererConfig = extraDevToolsConfig);
