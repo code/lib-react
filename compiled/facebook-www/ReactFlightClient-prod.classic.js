@@ -1066,9 +1066,11 @@ function loadServerReference(response, metaData, parentObject, key) {
   );
   return null;
 }
+var EMPTY_REFERENCE_PATH = [];
 function getOutlinedModel(response, reference, parentObject, key, map) {
-  reference = reference.split(":");
-  var id = parseInt(reference[0], 16);
+  var id = parseInt(reference, 16);
+  reference =
+    -1 === reference.indexOf(":") ? EMPTY_REFERENCE_PATH : reference.split(":");
   id = getChunk(response, id);
   switch (id.status) {
     case "resolved_model":
@@ -1375,7 +1377,18 @@ function resolveBuffer(response, id, buffer) {
 function resolveModule(response, id, model) {
   var chunks = response._chunks,
     chunk = chunks.get(id),
-    clientReference = parseModel(response, model);
+    prevHandler = initializingHandler;
+  initializingHandler = null;
+  try {
+    var clientReferenceMetadata = parseModel(response, model);
+    if (null !== initializingHandler)
+      throw Error(
+        "A client reference was blocked on a row that has not been received yet. This is a bug in React."
+      );
+  } finally {
+    initializingHandler = prevHandler;
+  }
+  var clientReference = clientReferenceMetadata;
   if ((model = preloadModule(clientReference))) {
     if (chunk) {
       var blockedChunk = chunk;

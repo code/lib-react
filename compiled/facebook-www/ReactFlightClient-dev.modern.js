@@ -2406,22 +2406,25 @@ __DEV__ &&
       }
     }
     function getOutlinedModel(response, reference, parentObject, key, map) {
-      var path = reference.split(":");
-      reference = parseInt(path[0], 16);
-      reference = getChunk(response, reference);
+      var id = parseInt(reference, 16);
+      reference =
+        -1 === reference.indexOf(":")
+          ? EMPTY_REFERENCE_PATH
+          : reference.split(":");
+      id = getChunk(response, id);
       null !== initializingChunk &&
         isArrayImpl(initializingChunk._children) &&
-        initializingChunk._children.push(reference);
-      switch (reference.status) {
+        initializingChunk._children.push(id);
+      switch (id.status) {
         case "resolved_model":
-          initializeModelChunk(reference);
+          initializeModelChunk(id);
           break;
         case "resolved_module":
-          initializeModuleChunk(reference);
+          initializeModuleChunk(id);
       }
-      switch (reference.status) {
+      switch (id.status) {
         case "fulfilled":
-          for (var value = reference.value, i = 1; i < path.length; i++) {
+          for (var value = id.value, i = 1; i < reference.length; i++) {
             for (
               ;
               "object" === typeof value &&
@@ -2450,7 +2453,7 @@ __DEV__ &&
                     key,
                     response,
                     map,
-                    path.slice(i - 1),
+                    reference.slice(i - 1),
                     isInitializingDebugInfo
                   );
                 case "halted":
@@ -2486,7 +2489,7 @@ __DEV__ &&
                   );
               }
             }
-            var name = path[i];
+            var name = reference[i];
             if (
               "object" !== typeof value ||
               null === value ||
@@ -2504,17 +2507,17 @@ __DEV__ &&
             value.$$typeof === REACT_LAZY_TYPE;
 
           ) {
-            path = value._payload;
-            switch (path.status) {
+            reference = value._payload;
+            switch (reference.status) {
               case "resolved_model":
-                initializeModelChunk(path);
+                initializeModelChunk(reference);
                 break;
               case "resolved_module":
-                initializeModuleChunk(path);
+                initializeModuleChunk(reference);
             }
-            switch (path.status) {
+            switch (reference.status) {
               case "fulfilled":
-                value = path.value;
+                value = reference.value;
                 continue;
             }
             break;
@@ -2525,18 +2528,18 @@ __DEV__ &&
             ("4" !== key && "5" !== key)
           )
             isInitializingDebugInfo ||
-              transferReferencedDebugInfo(initializingChunk, reference);
+              transferReferencedDebugInfo(initializingChunk, id);
           return response;
         case "pending":
         case "pending_weak":
         case "blocked":
           return waitForReference(
-            reference,
+            id,
             parentObject,
             key,
             response,
             map,
-            path,
+            reference,
             isInitializingDebugInfo
           );
         case "halted":
@@ -2558,12 +2561,12 @@ __DEV__ &&
             initializingHandler
               ? ((initializingHandler.errored = !0),
                 (initializingHandler.value = null),
-                (initializingHandler.reason = reference.reason))
+                (initializingHandler.reason = id.reason))
               : (initializingHandler = {
                   parent: null,
                   chunk: null,
                   value: null,
-                  reason: reference.reason,
+                  reason: id.reason,
                   deps: 0,
                   errored: !0
                 }),
@@ -2984,7 +2987,18 @@ __DEV__ &&
     function resolveModule(response, id, model, streamState) {
       var chunks = response._chunks,
         chunk = chunks.get(id),
-        clientReference = parseModel(response, model);
+        prevHandler = initializingHandler;
+      initializingHandler = null;
+      try {
+        var clientReferenceMetadata = parseModel(response, model);
+        if (null !== initializingHandler)
+          throw Error(
+            "A client reference was blocked on a row that has not been received yet. This is a bug in React."
+          );
+      } finally {
+        initializingHandler = prevHandler;
+      }
+      var clientReference = clientReferenceMetadata;
       if ((model = preloadModule(clientReference))) {
         if (chunk) {
           releasePendingChunk(response, chunk);
@@ -5063,6 +5077,7 @@ __DEV__ &&
       initializingHandler = null,
       initializingChunk = null,
       isInitializingDebugInfo = !1,
+      EMPTY_REFERENCE_PATH = [],
       mightHaveStaticConstructor = /\bclass\b.*\bstatic\b/,
       MIN_CHUNK_SIZE = 65536,
       supportsCreateTask = !!console.createTask,
@@ -5174,10 +5189,10 @@ __DEV__ &&
       return hook.checkDCE ? !0 : !1;
     })({
       bundleType: 1,
-      version: "19.3.0-www-modern-055705ca-20260822",
+      version: "19.3.0-www-modern-dc631ef5-20260823",
       rendererPackageName: "react-flight-server-fb",
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-modern-055705ca-20260822",
+      reconcilerVersion: "19.3.0-www-modern-dc631ef5-20260823",
       getCurrentComponentInfo: function () {
         return currentOwnerInDEV;
       }
