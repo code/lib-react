@@ -15253,7 +15253,8 @@ var KeyboardEventInterface = assign({}, UIEventInterface, {
   SyntheticWheelEvent = createSyntheticEvent(WheelEventInterface),
   ToggleEventInterface = assign({}, EventInterface, {
     newState: 0,
-    oldState: 0
+    oldState: 0,
+    source: 0
   }),
   SyntheticToggleEvent = createSyntheticEvent(ToggleEventInterface),
   END_KEYCODES = [9, 13, 27, 32],
@@ -20739,14 +20740,14 @@ function getCrossOriginStringAs(as, input) {
 }
 var isomorphicReactPackageVersion$jscomp$inline_2079 = React.version;
 if (
-  "19.3.0-www-modern-a1124489-20260826" !==
+  "19.3.0-www-modern-29d9d318-20260826" !==
   isomorphicReactPackageVersion$jscomp$inline_2079
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2079,
-      "19.3.0-www-modern-a1124489-20260826"
+      "19.3.0-www-modern-29d9d318-20260826"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -20764,10 +20765,10 @@ Internals.Events = [
 ];
 var internals$jscomp$inline_2613 = {
   bundleType: 0,
-  version: "19.3.0-www-modern-a1124489-20260826",
+  version: "19.3.0-www-modern-29d9d318-20260826",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-modern-a1124489-20260826"
+  reconcilerVersion: "19.3.0-www-modern-29d9d318-20260826"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_2614 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -21359,4 +21360,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-modern-a1124489-20260826";
+exports.version = "19.3.0-www-modern-29d9d318-20260826";

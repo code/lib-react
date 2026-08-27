@@ -32856,7 +32856,8 @@ __DEV__ &&
       SyntheticWheelEvent = createSyntheticEvent(WheelEventInterface),
       ToggleEventInterface = assign({}, EventInterface, {
         newState: 0,
-        oldState: 0
+        oldState: 0,
+        source: 0
       }),
       SyntheticToggleEvent = createSyntheticEvent(ToggleEventInterface),
       END_KEYCODES = [9, 13, 27, 32],
@@ -33782,11 +33783,11 @@ __DEV__ &&
       return_targetInst = null;
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-www-modern-a1124489-20260826" !== isomorphicReactPackageVersion)
+      if ("19.3.0-www-modern-29d9d318-20260826" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-www-modern-a1124489-20260826\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-www-modern-29d9d318-20260826\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -33829,10 +33830,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-www-modern-a1124489-20260826",
+          version: "19.3.0-www-modern-29d9d318-20260826",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-www-modern-a1124489-20260826"
+          reconcilerVersion: "19.3.0-www-modern-29d9d318-20260826"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -34623,5 +34624,5 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-www-modern-a1124489-20260826";
+    exports.version = "19.3.0-www-modern-29d9d318-20260826";
   })();
