@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<09e4d187b1e35689e303885390b1244c>>
+ * @generated SignedSource<<93986deb70419ab342daf80786484616>>
  */
 
 /*
@@ -2188,7 +2188,8 @@ var KeyboardEventInterface = assign({}, UIEventInterface, {
   SyntheticWheelEvent = createSyntheticEvent(WheelEventInterface),
   ToggleEventInterface = assign({}, EventInterface, {
     newState: 0,
-    oldState: 0
+    oldState: 0,
+    source: 0
   }),
   SyntheticToggleEvent = createSyntheticEvent(ToggleEventInterface),
   END_KEYCODES = [9, 13, 27, 32],
@@ -21563,14 +21564,14 @@ ReactDOMHydrationRoot.prototype.unstable_scheduleHydration = function (target) {
 };
 var isomorphicReactPackageVersion$jscomp$inline_2472 = React.version;
 if (
-  "19.3.0-native-fb-a1124489-20260826" !==
+  "19.3.0-native-fb-29d9d318-20260826" !==
   isomorphicReactPackageVersion$jscomp$inline_2472
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2472,
-      "19.3.0-native-fb-a1124489-20260826"
+      "19.3.0-native-fb-29d9d318-20260826"
     )
   );
 ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
@@ -21592,10 +21593,10 @@ ReactDOMSharedInternals.findDOMNode = function (componentOrElement) {
 };
 var internals$jscomp$inline_2479 = {
   bundleType: 0,
-  version: "19.3.0-native-fb-a1124489-20260826",
+  version: "19.3.0-native-fb-29d9d318-20260826",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-native-fb-a1124489-20260826",
+  reconcilerVersion: "19.3.0-native-fb-29d9d318-20260826",
   getLaneLabelMap: function () {
     for (
       var map = new Map(), lane = 1, index$351 = 0;
@@ -21718,4 +21719,4 @@ exports.hydrateRoot = function (container, initialChildren, options) {
   listenToAllSupportedEvents(container);
   return new ReactDOMHydrationRoot(initialChildren);
 };
-exports.version = "19.3.0-native-fb-a1124489-20260826";
+exports.version = "19.3.0-native-fb-29d9d318-20260826";
