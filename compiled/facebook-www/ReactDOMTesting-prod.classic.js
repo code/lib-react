@@ -15820,6 +15820,7 @@ function makePrefixMap(styleProp, eventName) {
   return prefixes;
 }
 var vendorPrefixes = {
+    animationcancel: makePrefixMap("Animation", "AnimationCancel"),
     animationend: makePrefixMap("Animation", "AnimationEnd"),
     animationiteration: makePrefixMap("Animation", "AnimationIteration"),
     animationstart: makePrefixMap("Animation", "AnimationStart"),
@@ -15833,7 +15834,8 @@ var vendorPrefixes = {
 canUseDOM &&
   ((style = document.createElement("div").style),
   "AnimationEvent" in window ||
-    (delete vendorPrefixes.animationend.animation,
+    (delete vendorPrefixes.animationcancel.animation,
+    delete vendorPrefixes.animationend.animation,
     delete vendorPrefixes.animationiteration.animation,
     delete vendorPrefixes.animationstart.animation),
   "TransitionEvent" in window ||
@@ -15848,7 +15850,8 @@ function getVendorPrefixedEventName(eventName) {
       return (prefixedEventNames[eventName] = prefixMap[styleProp]);
   return eventName;
 }
-var ANIMATION_END = getVendorPrefixedEventName("animationend"),
+var ANIMATION_CANCEL = getVendorPrefixedEventName("animationcancel"),
+  ANIMATION_END = getVendorPrefixedEventName("animationend"),
   ANIMATION_ITERATION = getVendorPrefixedEventName("animationiteration"),
   ANIMATION_START = getVendorPrefixedEventName("animationstart"),
   TRANSITION_RUN = getVendorPrefixedEventName("transitionrun"),
@@ -16000,6 +16003,7 @@ for (
     "on" + capitalizedEvent$jscomp$inline_1843
   );
 }
+registerSimpleEvent(ANIMATION_CANCEL, "onAnimationCancel");
 registerSimpleEvent(ANIMATION_END, "onAnimationEnd");
 registerSimpleEvent(ANIMATION_ITERATION, "onAnimationIteration");
 registerSimpleEvent(ANIMATION_START, "onAnimationStart");
@@ -16329,6 +16333,7 @@ function dispatchEventForPluginEventSystem(
           case "touchstart":
             SyntheticEventCtor = SyntheticTouchEvent;
             break;
+          case ANIMATION_CANCEL:
           case ANIMATION_END:
           case ANIMATION_ITERATION:
           case ANIMATION_START:
@@ -21069,14 +21074,14 @@ function getCrossOriginStringAs(as, input) {
 }
 var isomorphicReactPackageVersion$jscomp$inline_2092 = React.version;
 if (
-  "19.3.0-www-classic-019019be-20260911" !==
+  "19.3.0-www-classic-ccea5fd2-20260913" !==
   isomorphicReactPackageVersion$jscomp$inline_2092
 )
   throw Error(
     formatProdErrorMessage(
       527,
       isomorphicReactPackageVersion$jscomp$inline_2092,
-      "19.3.0-www-classic-019019be-20260911"
+      "19.3.0-www-classic-ccea5fd2-20260913"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -21094,10 +21099,10 @@ Internals.Events = [
 ];
 var internals$jscomp$inline_2634 = {
   bundleType: 0,
-  version: "19.3.0-www-classic-019019be-20260911",
+  version: "19.3.0-www-classic-ccea5fd2-20260913",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-classic-019019be-20260911"
+  reconcilerVersion: "19.3.0-www-classic-ccea5fd2-20260913"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
   var hook$jscomp$inline_2635 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
@@ -21689,4 +21694,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-classic-019019be-20260911";
+exports.version = "19.3.0-www-classic-ccea5fd2-20260913";

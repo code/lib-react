@@ -23226,6 +23226,7 @@ __DEV__ &&
               case "touchstart":
                 SyntheticEventCtor = SyntheticTouchEvent;
                 break;
+              case ANIMATION_CANCEL:
               case ANIMATION_END:
               case ANIMATION_ITERATION:
               case ANIMATION_START:
@@ -32596,6 +32597,7 @@ __DEV__ &&
       lastSelection = null,
       mouseDown = !1,
       vendorPrefixes = {
+        animationcancel: makePrefixMap("Animation", "AnimationCancel"),
         animationend: makePrefixMap("Animation", "AnimationEnd"),
         animationiteration: makePrefixMap("Animation", "AnimationIteration"),
         animationstart: makePrefixMap("Animation", "AnimationStart"),
@@ -32609,12 +32611,14 @@ __DEV__ &&
     canUseDOM &&
       ((style = document.createElement("div").style),
       "AnimationEvent" in window ||
-        (delete vendorPrefixes.animationend.animation,
+        (delete vendorPrefixes.animationcancel.animation,
+        delete vendorPrefixes.animationend.animation,
         delete vendorPrefixes.animationiteration.animation,
         delete vendorPrefixes.animationstart.animation),
       "TransitionEvent" in window ||
         delete vendorPrefixes.transitionend.transition);
-    var ANIMATION_END = getVendorPrefixedEventName("animationend"),
+    var ANIMATION_CANCEL = getVendorPrefixedEventName("animationcancel"),
+      ANIMATION_END = getVendorPrefixedEventName("animationend"),
       ANIMATION_ITERATION = getVendorPrefixedEventName("animationiteration"),
       ANIMATION_START = getVendorPrefixedEventName("animationstart"),
       TRANSITION_RUN = getVendorPrefixedEventName("transitionrun"),
@@ -32641,6 +32645,7 @@ __DEV__ &&
         eventName = eventName[0].toUpperCase() + eventName.slice(1);
         registerSimpleEvent(domEventName, "on" + eventName);
       }
+      registerSimpleEvent(ANIMATION_CANCEL, "onAnimationCancel");
       registerSimpleEvent(ANIMATION_END, "onAnimationEnd");
       registerSimpleEvent(ANIMATION_ITERATION, "onAnimationIteration");
       registerSimpleEvent(ANIMATION_START, "onAnimationStart");
@@ -33509,11 +33514,11 @@ __DEV__ &&
       return_targetInst = null;
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-www-modern-019019be-20260911" !== isomorphicReactPackageVersion)
+      if ("19.3.0-www-modern-ccea5fd2-20260913" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-www-modern-019019be-20260911\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-www-modern-ccea5fd2-20260913\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -33556,10 +33561,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-www-modern-019019be-20260911",
+          version: "19.3.0-www-modern-ccea5fd2-20260913",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-www-modern-019019be-20260911"
+          reconcilerVersion: "19.3.0-www-modern-ccea5fd2-20260913"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -34184,7 +34189,7 @@ __DEV__ &&
     exports.useFormStatus = function () {
       return resolveDispatcher().useHostTransitionStatus();
     };
-    exports.version = "19.3.0-www-modern-019019be-20260911";
+    exports.version = "19.3.0-www-modern-ccea5fd2-20260913";
     "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ &&
       "function" ===
         typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop &&
