@@ -30197,7 +30197,7 @@ const TYPED_GLOBALS = [
     ],
     [
         'Date',
-        addObject(DEFAULT_SHAPES, 'Date', [
+        addFunction(DEFAULT_SHAPES, [
             [
                 'now',
                 addFunction(DEFAULT_SHAPES, [], {
@@ -30210,7 +30210,16 @@ const TYPED_GLOBALS = [
                     canonicalName: 'Date.now',
                 }),
             ],
-        ]),
+        ], {
+            positionalParams: [],
+            restParam: Effect.Read,
+            returnType: { kind: 'Poly' },
+            calleeEffect: Effect.Read,
+            returnValueKind: ValueKind.Mutable,
+            impure: true,
+            impureIfNoArgs: true,
+            canonicalName: 'Date',
+        }, 'Date'),
     ],
     [
         'Math',
@@ -40215,7 +40224,9 @@ function computeEffectsForLegacySignature(state, signature, lvalue, receiver, ar
         value: signature.returnValueKind,
         reason: returnValueReason,
     });
-    if (signature.impure && state.env.config.validateNoImpureFunctionsInRender) {
+    if (signature.impure &&
+        state.env.config.validateNoImpureFunctionsInRender &&
+        (!signature.impureIfNoArgs || args.length === 0)) {
         effects.push({
             kind: 'Impure',
             place: receiver,

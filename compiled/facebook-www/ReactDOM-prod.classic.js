@@ -15715,20 +15715,20 @@ function debounceScrollEnd(targetInst, nativeEvent, nativeEventTarget) {
     (nativeEventTarget[internalScrollTimer] = targetInst));
 }
 for (
-  var i$jscomp$inline_1811 = 0;
-  i$jscomp$inline_1811 < simpleEventPluginEvents.length;
-  i$jscomp$inline_1811++
+  var i$jscomp$inline_1812 = 0;
+  i$jscomp$inline_1812 < simpleEventPluginEvents.length;
+  i$jscomp$inline_1812++
 ) {
-  var eventName$jscomp$inline_1812 =
-      simpleEventPluginEvents[i$jscomp$inline_1811],
-    domEventName$jscomp$inline_1813 =
-      eventName$jscomp$inline_1812.toLowerCase(),
-    capitalizedEvent$jscomp$inline_1814 =
-      eventName$jscomp$inline_1812[0].toUpperCase() +
-      eventName$jscomp$inline_1812.slice(1);
+  var eventName$jscomp$inline_1813 =
+      simpleEventPluginEvents[i$jscomp$inline_1812],
+    domEventName$jscomp$inline_1814 =
+      eventName$jscomp$inline_1813.toLowerCase(),
+    capitalizedEvent$jscomp$inline_1815 =
+      eventName$jscomp$inline_1813[0].toUpperCase() +
+      eventName$jscomp$inline_1813.slice(1);
   registerSimpleEvent(
-    domEventName$jscomp$inline_1813,
-    "on" + capitalizedEvent$jscomp$inline_1814
+    domEventName$jscomp$inline_1814,
+    "on" + capitalizedEvent$jscomp$inline_1815
   );
 }
 registerSimpleEvent(ANIMATION_CANCEL, "onAnimationCancel");
@@ -16124,7 +16124,10 @@ function dispatchEventForPluginEventSystem(
               nativeEvent.type,
               inCapturePhase,
               !inCapturePhase &&
-                ("scroll" === domEventName || "scrollend" === domEventName),
+                ("scroll" === domEventName ||
+                  "scrollend" === domEventName ||
+                  "toggle" === domEventName ||
+                  "beforetoggle" === domEventName),
               nativeEvent
             )),
             0 < inCapturePhase.length &&
@@ -18686,13 +18689,19 @@ function validateDocumentPositionWithFiberTree(
     return precedingBoundaryFiber;
   }
   if (documentPosition & Node.DOCUMENT_POSITION_CONTAINS) {
-    if (null === otherFiber)
-      return (
-        (otherFiber = getOwnerDocumentFromRootContainer(otherNode)),
-        otherNode === otherFiber ||
-          otherNode === otherFiber.documentElement ||
-          otherNode === otherFiber.body
-      );
+    if (null === otherFiber) {
+      a: {
+        for (otherFiber = fragmentFiber.return; null !== otherFiber; ) {
+          if (3 === otherFiber.tag) {
+            otherFiber = otherFiber.stateNode.containerInfo;
+            break a;
+          }
+          otherFiber = otherFiber.return;
+        }
+        otherFiber = null;
+      }
+      return null !== otherFiber && otherNode.contains(otherFiber);
+    }
     a: {
       otherFiber = fragmentFiber;
       for (
@@ -20756,16 +20765,16 @@ function getCrossOriginStringAs(as, input) {
   if ("string" === typeof input)
     return "use-credentials" === input ? input : "";
 }
-var isomorphicReactPackageVersion$jscomp$inline_2063 = React.version;
+var isomorphicReactPackageVersion$jscomp$inline_2067 = React.version;
 if (
-  "19.3.0-www-classic-ccea5fd2-20260913" !==
-  isomorphicReactPackageVersion$jscomp$inline_2063
+  "19.3.0-www-classic-ff8f88fc-20260915" !==
+  isomorphicReactPackageVersion$jscomp$inline_2067
 )
   throw Error(
     formatProdErrorMessage(
       527,
-      isomorphicReactPackageVersion$jscomp$inline_2063,
-      "19.3.0-www-classic-ccea5fd2-20260913"
+      isomorphicReactPackageVersion$jscomp$inline_2067,
+      "19.3.0-www-classic-ff8f88fc-20260915"
     )
   );
 Internals.findDOMNode = function (componentOrElement) {
@@ -20781,24 +20790,24 @@ Internals.Events = [
     return fn(a);
   }
 ];
-var internals$jscomp$inline_2600 = {
+var internals$jscomp$inline_2604 = {
   bundleType: 0,
-  version: "19.3.0-www-classic-ccea5fd2-20260913",
+  version: "19.3.0-www-classic-ff8f88fc-20260915",
   rendererPackageName: "react-dom",
   currentDispatcherRef: ReactSharedInternals,
-  reconcilerVersion: "19.3.0-www-classic-ccea5fd2-20260913"
+  reconcilerVersion: "19.3.0-www-classic-ff8f88fc-20260915"
 };
 if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-  var hook$jscomp$inline_2601 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+  var hook$jscomp$inline_2605 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
   if (
-    !hook$jscomp$inline_2601.isDisabled &&
-    hook$jscomp$inline_2601.supportsFiber
+    !hook$jscomp$inline_2605.isDisabled &&
+    hook$jscomp$inline_2605.supportsFiber
   )
     try {
-      (rendererID = hook$jscomp$inline_2601.inject(
-        internals$jscomp$inline_2600
+      (rendererID = hook$jscomp$inline_2605.inject(
+        internals$jscomp$inline_2604
       )),
-        (injectedHook = hook$jscomp$inline_2601);
+        (injectedHook = hook$jscomp$inline_2605);
     } catch (err) {}
 }
 function defaultOnDefaultTransitionIndicator() {
@@ -21227,4 +21236,4 @@ exports.useFormState = function (action, initialState, permalink) {
 exports.useFormStatus = function () {
   return ReactSharedInternals.H.useHostTransitionStatus();
 };
-exports.version = "19.3.0-www-classic-ccea5fd2-20260913";
+exports.version = "19.3.0-www-classic-ff8f88fc-20260915";
