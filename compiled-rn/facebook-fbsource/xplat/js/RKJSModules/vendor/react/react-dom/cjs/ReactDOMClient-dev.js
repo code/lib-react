@@ -7,7 +7,7 @@
  * @noflow
  * @nolint
  * @preventMunge
- * @generated SignedSource<<3097a5340ca7e2d581c6385d80268ce2>>
+ * @generated SignedSource<<cb9110d0bf09d497b909378f2706968b>>
  */
 
 /*
@@ -22201,7 +22201,10 @@ __DEV__ &&
               nativeEvent.type,
               inCapturePhase,
               !inCapturePhase &&
-                ("scroll" === domEventName || "scrollend" === domEventName)
+                ("scroll" === domEventName ||
+                  "scrollend" === domEventName ||
+                  "toggle" === domEventName ||
+                  "beforetoggle" === domEventName)
             );
             0 < inCapturePhase.length &&
               ((reactName = new SyntheticEventCtor(
@@ -25902,13 +25905,19 @@ __DEV__ &&
         return precedingBoundaryFiber;
       }
       if (documentPosition & Node.DOCUMENT_POSITION_CONTAINS) {
-        if (null === otherFiber)
-          return (
-            (otherFiber = getOwnerDocumentFromRootContainer(otherNode)),
-            otherNode === otherFiber ||
-              otherNode === otherFiber.documentElement ||
-              otherNode === otherFiber.body
-          );
+        if (null === otherFiber) {
+          a: {
+            for (otherFiber = fragmentFiber.return; null !== otherFiber; ) {
+              if (3 === otherFiber.tag) {
+                otherFiber = otherFiber.stateNode.containerInfo;
+                break a;
+              }
+              otherFiber = otherFiber.return;
+            }
+            otherFiber = null;
+          }
+          return null !== otherFiber && otherNode.contains(otherFiber);
+        }
         a: {
           otherFiber = fragmentFiber;
           for (
@@ -32444,11 +32453,11 @@ __DEV__ &&
     };
     (function () {
       var isomorphicReactPackageVersion = React.version;
-      if ("19.3.0-native-fb-ccea5fd2-20260913" !== isomorphicReactPackageVersion)
+      if ("19.3.0-native-fb-ff8f88fc-20260915" !== isomorphicReactPackageVersion)
         throw Error(
           'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' +
             (isomorphicReactPackageVersion +
-              "\n  - react-dom:  19.3.0-native-fb-ccea5fd2-20260913\nLearn more: https://react.dev/warnings/version-mismatch")
+              "\n  - react-dom:  19.3.0-native-fb-ff8f88fc-20260915\nLearn more: https://react.dev/warnings/version-mismatch")
         );
     })();
     ("function" === typeof Map &&
@@ -32485,10 +32494,10 @@ __DEV__ &&
       !(function () {
         var internals = {
           bundleType: 1,
-          version: "19.3.0-native-fb-ccea5fd2-20260913",
+          version: "19.3.0-native-fb-ff8f88fc-20260915",
           rendererPackageName: "react-dom",
           currentDispatcherRef: ReactSharedInternals,
-          reconcilerVersion: "19.3.0-native-fb-ccea5fd2-20260913"
+          reconcilerVersion: "19.3.0-native-fb-ff8f88fc-20260915"
         };
         internals.overrideHookState = overrideHookState;
         internals.overrideHookStateDeletePath = overrideHookStateDeletePath;
@@ -32638,5 +32647,5 @@ __DEV__ &&
       listenToAllSupportedEvents(container);
       return new ReactDOMHydrationRoot(initialChildren);
     };
-    exports.version = "19.3.0-native-fb-ccea5fd2-20260913";
+    exports.version = "19.3.0-native-fb-ff8f88fc-20260915";
   })();
