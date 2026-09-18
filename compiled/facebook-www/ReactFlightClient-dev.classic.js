@@ -2734,6 +2734,8 @@ __DEV__ &&
               key,
               loadServerReference
             );
+          case "H":
+            return;
           case "T":
             parentObject = "$" + value.slice(2);
             response = response._tempRefs;
@@ -5225,10 +5227,10 @@ __DEV__ &&
       return hook.checkDCE ? !0 : !1;
     })({
       bundleType: 1,
-      version: "19.3.0-www-classic-ff8f88fc-20260915",
+      version: "19.3.0-www-classic-71f72559-20260917",
       rendererPackageName: "react-flight-server-fb",
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-classic-ff8f88fc-20260915",
+      reconcilerVersion: "19.3.0-www-classic-71f72559-20260917",
       getCurrentComponentInfo: function () {
         return currentOwnerInDEV;
       }

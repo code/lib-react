@@ -410,6 +410,7 @@ export default [
   "onError returned something with a type other than \"string\". onError should return a string and may return null or undefined but must not return anything else. It received something of type \"%s\" instead",
   "precomputed chunks must be smaller than the view size configured for this host. This is a bug in React.",
   "react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer",
+  "registerServerObjectReference: The reference is a function. Use registerServerReference to register a function as a Server Reference.",
   "removeRootViewTransitionClone is not implemented",
   "requestFormReset was called outside a transition or action. To fix, move to an action, or wrap with startTransition.",
   "restoreViewTransitionName is not implemented",
