@@ -6,7 +6,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
- * @generated SignedSource<<920d21207bf246eb40f1852762c803e7>>
+ * @generated SignedSource<<6bc38ae7fbffb60a707fd42698f73edf>>
  */
 
 'use strict';
@@ -25552,7 +25552,7 @@ function lowerValueToTemporary(builder, value) {
     return place;
 }
 function lowerIdentifier(builder, exprPath) {
-    var _a, _b;
+    var _a, _b, _c;
     const exprNode = exprPath.node;
     const exprLoc = (_a = exprNode.loc) !== null && _a !== void 0 ? _a : GeneratedSource;
     const binding = builder.resolveIdentifier(exprPath);
@@ -25574,6 +25574,15 @@ function lowerIdentifier(builder, exprPath) {
                     description: 'Eval is an anti-pattern in JavaScript, and the code executed cannot be evaluated by React Compiler',
                     category: ErrorCategory.UnsupportedSyntax,
                     loc: (_b = exprPath.node.loc) !== null && _b !== void 0 ? _b : null,
+                    suggestions: null,
+                }));
+            }
+            else if (binding.kind === 'Global' && binding.name === 'arguments') {
+                builder.recordError(new CompilerErrorDetail({
+                    reason: `Implicit 'arguments' is not supported`,
+                    description: 'React Compiler does not support compiling functions that reference the implicit arguments object',
+                    category: ErrorCategory.UnsupportedSyntax,
+                    loc: (_c = exprPath.node.loc) !== null && _c !== void 0 ? _c : null,
                     suggestions: null,
                 }));
             }
