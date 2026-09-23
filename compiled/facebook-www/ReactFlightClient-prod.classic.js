@@ -12,6 +12,12 @@
 
 "use strict";
 require("ReactFeatureFlags");
+function createStringDecoder() {
+  return new TextDecoder("utf-8", {
+    ignoreBOM:
+      0 < arguments.length && void 0 !== arguments[0] ? arguments[0] : !1
+  });
+}
 var decoderOptions = { stream: !0 },
   canUseDOM = !(
     "undefined" === typeof window ||
@@ -1385,7 +1391,7 @@ function ResponseInstance(
   this._encodeFormAction = encodeFormAction;
   this._nonce = nonce;
   this._chunks = chunks;
-  this._stringDecoder = new TextDecoder();
+  this._stringDecoder = createStringDecoder(!0);
   this._closed = !1;
   this._closedReason = null;
   this._allowPartialStream = allowPartialStream;

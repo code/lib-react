@@ -13,6 +13,12 @@
 "use strict";
 __DEV__ &&
   (function () {
+    function createStringDecoder() {
+      return new TextDecoder("utf-8", {
+        ignoreBOM:
+          0 < arguments.length && void 0 !== arguments[0] ? arguments[0] : !1
+      });
+    }
     function checkEvalAvailabilityOnceDev() {
       if (!hasConfirmedEval) {
         hasConfirmedEval = !0;
@@ -2903,7 +2909,7 @@ __DEV__ &&
       this._encodeFormAction = encodeFormAction;
       this._nonce = nonce;
       this._chunks = chunks;
-      this._stringDecoder = new TextDecoder();
+      this._stringDecoder = createStringDecoder(!0);
       this._closed = !1;
       this._closedReason = null;
       this._allowPartialStream = allowPartialStream;
@@ -5227,10 +5233,10 @@ __DEV__ &&
       return hook.checkDCE ? !0 : !1;
     })({
       bundleType: 1,
-      version: "19.3.0-www-classic-59aff3e1-20260918",
+      version: "19.3.0-www-classic-d083ec1d-20260922",
       rendererPackageName: "react-flight-server-fb",
       currentDispatcherRef: ReactSharedInternals,
-      reconcilerVersion: "19.3.0-www-classic-59aff3e1-20260918",
+      reconcilerVersion: "19.3.0-www-classic-d083ec1d-20260922",
       getCurrentComponentInfo: function () {
         return currentOwnerInDEV;
       }
