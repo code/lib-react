@@ -12,7 +12,7 @@
  * @lightSyntaxTransform
  * @preventMunge
  * @oncall react_core
- * @generated SignedSource<<3e583580e8ea4cef322310e3c4cd65b8>>
+ * @generated SignedSource<<6c7618af50408219174e60380f2578c1>>
  */
 
 'use strict';
@@ -37015,7 +37015,8 @@ function codegenInstructionValue(cx, instrValue) {
                     switch (property.type) {
                         case 'property': {
                             const value = codegenPlaceToExpression(cx, property.place);
-                            properties.push(libExports$1.objectProperty(key, value, property.key.kind === 'computed', key.type === 'Identifier' &&
+                            properties.push(libExports$1.objectProperty(key, value, property.key.kind === 'computed', property.key.kind !== 'computed' &&
+                                key.type === 'Identifier' &&
                                 value.type === 'Identifier' &&
                                 value.name === key.name));
                             break;
@@ -37467,7 +37468,8 @@ function codegenLValue(cx, pattern) {
                 if (property.kind === 'ObjectProperty') {
                     const key = codegenObjectPropertyKey(cx, property.key);
                     const value = codegenLValue(cx, property.place);
-                    return libExports$1.objectProperty(key, value, property.key.kind === 'computed', key.type === 'Identifier' &&
+                    return libExports$1.objectProperty(key, value, property.key.kind === 'computed', property.key.kind !== 'computed' &&
+                        key.type === 'Identifier' &&
                         value.type === 'Identifier' &&
                         value.name === key.name);
                 }
@@ -46572,8 +46574,12 @@ function validateNoSetStateInEffects(fn, env) {
     return errors.asResult();
 }
 function getSetStateCall(fn, setStateFunctions, env) {
+    var _a;
     const enableAllowSetStateFromRefsInEffects = env.config.enableAllowSetStateFromRefsInEffects;
     const refDerivedValues = new Set();
+    const blocksAfterAwait = fn.async
+        ? computeBlocksStartingAfterAwait(fn)
+        : null;
     const isDerivedFromRef = (place) => {
         return (refDerivedValues.has(place.identifier.id) ||
             isUseRefType(place.identifier) ||
@@ -46608,6 +46614,7 @@ function getSetStateCall(fn, setStateFunctions, env) {
                 }
             }
         }
+        let isAfterAwait = (_a = blocksAfterAwait === null || blocksAfterAwait === void 0 ? void 0 : blocksAfterAwait.has(block.id)) !== null && _a !== void 0 ? _a : false;
         for (const instr of block.instructions) {
             if (enableAllowSetStateFromRefsInEffects) {
                 const hasRefOperand = Iterable_some(eachInstructionValueOperand(instr.value), isDerivedFromRef);
@@ -46651,6 +46658,10 @@ function getSetStateCall(fn, setStateFunctions, env) {
                 }
             }
             switch (instr.value.kind) {
+                case 'Await': {
+                    isAfterAwait = true;
+                    break;
+                }
                 case 'LoadLocal': {
                     if (setStateFunctions.has(instr.value.place.identifier.id)) {
                         setStateFunctions.set(instr.lvalue.identifier.id, instr.value.place);
@@ -46668,6 +46679,9 @@ function getSetStateCall(fn, setStateFunctions, env) {
                     const callee = instr.value.callee;
                     if (isSetStateType(callee.identifier) ||
                         setStateFunctions.has(callee.identifier.id)) {
+                        if (isAfterAwait) {
+                            break;
+                        }
                         if (enableAllowSetStateFromRefsInEffects) {
                             const arg = instr.value.args.at(0);
                             if (arg !== undefined &&
@@ -46686,6 +46700,45 @@ function getSetStateCall(fn, setStateFunctions, env) {
         }
     }
     return null;
+}
+function computeBlocksStartingAfterAwait(fn) {
+    const blocksWithAwait = new Set();
+    for (const [id, block] of fn.body.blocks) {
+        if (block.instructions.some(instr => instr.value.kind === 'Await')) {
+            blocksWithAwait.add(id);
+        }
+    }
+    const startsAfterAwait = new Map();
+    for (const [id] of fn.body.blocks) {
+        startsAfterAwait.set(id, id !== fn.body.entry);
+    }
+    let changed = true;
+    while (changed) {
+        changed = false;
+        for (const [id, block] of fn.body.blocks) {
+            if (id === fn.body.entry) {
+                continue;
+            }
+            let startAfterAwait = block.preds.size !== 0;
+            for (const pred of block.preds) {
+                if (startsAfterAwait.get(pred) !== true && !blocksWithAwait.has(pred)) {
+                    startAfterAwait = false;
+                    break;
+                }
+            }
+            if (startAfterAwait !== startsAfterAwait.get(id)) {
+                startsAfterAwait.set(id, startAfterAwait);
+                changed = true;
+            }
+        }
+    }
+    const result = new Set();
+    for (const [id, afterAwait] of startsAfterAwait) {
+        if (afterAwait) {
+            result.add(id);
+        }
+    }
+    return result;
 }
 
 function validateNoJSXInTryStatement(fn) {
