@@ -6,7 +6,7 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
- * @generated SignedSource<<fe4dd7bb698222a2dc0ae63f71bec7b8>>
+ * @generated SignedSource<<c53a9a82d531ae86a9a0aa70e76d1227>>
  */
 
 'use strict';
@@ -43164,11 +43164,7 @@ function alignReactiveScopesToBlockScopesHIR(fn) {
     const activeScopes = new Set();
     const seen = new Set();
     const valueBlockNodes = new Map();
-    const placeScopes = new Map();
     function recordPlace(id, place, node) {
-        if (place.identifier.scope !== null) {
-            placeScopes.set(place, place.identifier.scope);
-        }
         const scope = getPlaceScope(id, place);
         if (scope == null) {
             return;
@@ -46746,13 +46742,9 @@ function collectNonNullsInBlocks(fn, context) {
 }
 function propagateNonNull(fn, nodes, registry) {
     const blockSuccessors = new Map();
-    const terminalPreds = new Set();
     for (const [blockId, block] of fn.body.blocks) {
         for (const pred of block.preds) {
             getOrInsertDefault(blockSuccessors, pred, new Set()).add(blockId);
-        }
-        if (block.terminal.kind === 'throw' || block.terminal.kind === 'return') {
-            terminalPreds.add(blockId);
         }
     }
     function recursivelyPropagateNonNull(nodeId, direction, traversalState) {
