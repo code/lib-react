@@ -43386,11 +43386,7 @@ function alignReactiveScopesToBlockScopesHIR(fn) {
     const activeScopes = new Set();
     const seen = new Set();
     const valueBlockNodes = new Map();
-    const placeScopes = new Map();
     function recordPlace(id, place, node) {
-        if (place.identifier.scope !== null) {
-            placeScopes.set(place, place.identifier.scope);
-        }
         const scope = getPlaceScope(id, place);
         if (scope == null) {
             return;
@@ -46968,13 +46964,9 @@ function collectNonNullsInBlocks(fn, context) {
 }
 function propagateNonNull(fn, nodes, registry) {
     const blockSuccessors = new Map();
-    const terminalPreds = new Set();
     for (const [blockId, block] of fn.body.blocks) {
         for (const pred of block.preds) {
             getOrInsertDefault(blockSuccessors, pred, new Set()).add(blockId);
-        }
-        if (block.terminal.kind === 'throw' || block.terminal.kind === 'return') {
-            terminalPreds.add(blockId);
         }
     }
     function recursivelyPropagateNonNull(nodeId, direction, traversalState) {
